@@ -113,10 +113,17 @@
        :metadata    (:metadata manifest-skeleton)})))
 
 (defn build
-  "Execute the requested target builds. Returns the manifest map.
-   build = execute! ∘ plan ∘ prepare."
+  "Execute the requested target builds and return the manifest map.
+   build = execute! ∘ plan ∘ prepare.
+
+   With `:dry-run` truthy in the request, return the inspectable plan
+   value instead of performing the build: the manuscript is still loaded
+   and validated, but no targets are rendered and no artifacts written."
   [request]
-  (-> request prepare plan/plan execute!))
+  (let [the-plan (-> request prepare plan/plan)]
+    (if (:dry-run request)
+      the-plan
+      (execute! the-plan))))
 
 (defn validate
   "Run validation only. Returns `{:status :ok :warnings [...]}` or

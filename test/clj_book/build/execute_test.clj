@@ -99,6 +99,17 @@
           (is (= 2 (count (:artifacts man))))
           (is (every? (set (map :target (:artifacts man))) #{:site :pdf})))))))
 
+(deftest dry-run-returns-plan-without-building
+  (testing "Dry run validates and plans but performs no target render"
+    ;; No docbook stub and no asciidoctor on PATH: if a dry run tried to
+    ;; render, this would throw. Returning the plan proves it did not.
+    (let [p (execute/build (request "dry" :targets [:site :pdf] :dry-run true))]
+      (is (= [:site :pdf] (:targets p)))
+      (is (= 2 (count (:target-steps p))))
+      (is (= "tiny-book" (-> p :manifest-skeleton :book/slug)))
+      (is (= [:master-adoc :site-css :pdf-theme]
+             (map :kind (:prereqs p)))))))
+
 (deftest invalid-target-blocked-by-request-normalization
   ;; This is asserted at the public api/request layer; execute assumes
   ;; the request has been normalized.

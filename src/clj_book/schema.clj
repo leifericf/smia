@@ -42,6 +42,7 @@
    [:config-path :string]
    [:output-root :string]
    [:profile :any]
+   [:dry-run {:optional true} :boolean]
    [:targets [:maybe [:sequential :keyword]]]])
 
 (def Paths
