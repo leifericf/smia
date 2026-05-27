@@ -67,12 +67,14 @@
 
 (deftest pdf-target-fails-clearly-without-cli
   (testing "Build with [:pdf] surfaces structured CLI-missing error"
-    (with-redefs [docbook/generate-docbook! (stub-docbook!)]
+    ;; Force the missing-CLI path deterministically: CI installs
+    ;; asciidoctor-pdf for the dogfood build, so we cannot rely on it
+    ;; being absent from PATH.
+    (with-redefs [docbook/generate-docbook! (stub-docbook!)
+                  clj-book.targets.pdf/cli-available? (constantly false)]
       (let [d (catch-data #(pipeline/build (request "pdf-fail"
                                                     :targets [:pdf])))]
-        (is (#{:clj-book.targets.pdf/cli-missing
-               :clj-book.targets.pdf/build-failed}
-              (:error/type d)))))))
+        (is (= :clj-book.targets.pdf/cli-missing (:error/type d)))))))
 
 (deftest multi-target-build-shares-prereqs
   (testing "Multi-target run reuses the composed master and tokens"
