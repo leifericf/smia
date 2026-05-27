@@ -36,6 +36,10 @@ Initial pre-release.
 - Renamed Theme error types from `:clj-book.tokens*` to
   `:clj-book.theme.load/*` (for example `:clj-book.theme.load/missing`).
 
+### Removed
+
+- The unused `:profile` request field, which was normalized but never read.
+
 ### Excluded (not in v1 alpha)
 
 - Default target behavior (explicit targets only).

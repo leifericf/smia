@@ -63,14 +63,13 @@
     (throw (error/ex :clj-book.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
-  (let [{:keys [book-root config-path targets output-root profile dry-run]} request-map
+  (let [{:keys [book-root config-path targets output-root dry-run]} request-map
         normalized {:command     command
                     :book-root   (require-book-root book-root)
                     :config-path (or (string-or-throw :config-path config-path)
                                      default-config-path)
                     :output-root (or (string-or-throw :output-root output-root)
                                      default-output-root)
-                    :profile     profile
                     :dry-run     (boolean dry-run)
                     :targets     (normalize-targets targets)}]
     (cond-> normalized
