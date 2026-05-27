@@ -20,9 +20,10 @@
     (is (= "2026-05-27T12:00:00Z" (:build/started-at m)))
     (is (= "2026-05-27T12:00:08Z" (:build/finished-at m)))
     (is (= 2 (count (:artifacts m))))
-    (testing "build metadata carries tool identifier and version"
+    (testing "build metadata carries the tool identifier and no SemVer version"
       (is (= "clj-book" (-> m :build/metadata :tool)))
-      (is (= "1.0.0-alpha" (-> m :build/metadata :version))))))
+      (is (nil? (-> m :build/metadata :version))
+          "no version string until a dated release tag exists"))))
 
 (deftest write-emits-edn-on-disk
   (let [tmp (str (System/getProperty "java.io.tmpdir")

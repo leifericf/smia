@@ -1,32 +1,36 @@
-# Release Checklist — v1.0.0-alpha
+# Release Checklist
 
-A reproducible checklist for cutting the `v1.0.0-alpha` tag.
+A reproducible checklist for cutting a release. Releases are marked with a
+date tag (`YYYY-MM-DD`); there is no SemVer scheme and no changelog is kept
+between releases.
 
 ## Pre-flight
 
-- [ ] CI green on `main`/`master` for the candidate SHA.
+- [ ] CI green on `main` for the candidate SHA.
 - [ ] `LICENSE` present and contains the full EPL 2.0 text.
 - [ ] `README.md` references the EPL 2.0 license.
-- [ ] `CHANGELOG.md` describes everything since the last tag.
-- [ ] `docs/traceability-matrix.md` reflects current test names.
-- [ ] Dogfood manual under `docs/manual/` builds end-to-end for `[:site :pdf]` in CI.
+- [ ] Dogfood manual under `docs/manual/` builds end-to-end for
+      `[:screen :print]` in CI.
 
 ## Non-goal verification
 
-- [ ] `build` fails without explicit `:targets`.
-- [ ] No `<script>` tags appear in any `:site` output (CI assertion in place).
+- [ ] No external process: no `ProcessBuilder` and no asciidoctor in `src`
+      (enforced by `clj-book.non-goals-test`).
+- [ ] No HTML/site output or CSS dependencies (`stasis`, `garden`, `hiccup`,
+      `ring`) in `deps.edn`.
 - [ ] No Datomic dependency in `deps.edn`.
 - [ ] No third-party manuscript text in the repo outside `docs/manual/`.
 
 ## Tagging
 
+Use the release date as the tag:
+
 ```bash
-git tag -a v1.0.0-alpha -m "Initial alpha release"
-git push origin v1.0.0-alpha
+git tag -a "$(date +%F)" -m "Release $(date +%F)"
+git push origin "$(date +%F)"
 ```
 
 ## Post-release
 
-- [ ] GitHub Release created from the tag with `CHANGELOG.md` excerpt.
+- [ ] GitHub Release created from the dated tag.
 - [ ] CI uploaded dogfood artifacts attached to the release (optional).
-- [ ] `MEMORY.md`/internal notes refreshed if any contract changed.

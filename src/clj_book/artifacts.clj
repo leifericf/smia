@@ -15,8 +15,7 @@
    :build/finished-at (str finished-at)
    :build/profiles    (vec profiles)
    :artifacts         (vec artifacts)
-   :build/metadata    (merge {:tool "clj-book" :version "1.0.0-alpha"}
-                             metadata)})
+   :build/metadata    (merge {:tool "clj-book"} metadata)})
 
 (defn write!
   "Write the manifest as EDN to `<output-dir>/artifacts.edn`. Returns
