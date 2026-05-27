@@ -1,7 +1,0 @@
-{:base {:font_color "#1c1c1c"
-        :font_size  12
-        :line_height_length 14}
- :heading {:font_color "#2a52be"
-           :font_style "bold"}
- :code  {:font_color "#1c1c1c"
-         :background_color "#f4f4f4"}}

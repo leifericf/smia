@@ -1,7 +1,7 @@
 (ns clj-book.build.execute-test
   (:require
    [clj-book.build.execute :as execute]
-   [clj-book.error :as error]
+   [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
 
@@ -10,9 +10,6 @@
 (defn- tmp-dir [tag]
   (str (System/getProperty "java.io.tmpdir")
        "/clj-book-execute-" tag "-" (System/currentTimeMillis)))
-
-(defn- catch-data [f]
-  (try (f) nil (catch Exception e (error/data e))))
 
 (defn- request [tag & {:as overrides}]
   (merge {:command     :build
@@ -26,11 +23,13 @@
     (is (= "tiny-book" (:book/slug (:config manuscript))))
     (is (map? (:tokens manuscript)))
     (is (vector? (:warnings manuscript)))
-    (is (str/includes? (:intermediate-dir paths) "tiny-book/intermediate"))))
+    (is (str/includes? (:intermediate-dir paths) "tiny-book/intermediate"))
+    (is (str/includes? (:pdf-output-dir paths) "tiny-book/pdf"))))
 
 (deftest validate-returns-ok
-  (let [out (execute/validate (request "validate"))]
-    (is (= :ok (:status out)))))
+  (testing "validate loads, assembles and vocabulary-checks the chapters"
+    (let [out (execute/validate (request "validate"))]
+      (is (= :ok (:status out))))))
 
 (deftest dry-run-returns-plan-without-building
   (testing "Dry run validates and plans but performs no profile render"
@@ -40,10 +39,17 @@
       (is (= 2 (count (:profile-steps p))))
       (is (= "tiny-book" (-> p :manifest-skeleton :book/slug))))))
 
-(deftest real-build-not-yet-implemented
-  (testing "Rendering pipeline is under construction"
-    (let [d (catch-data #(execute/build (request "build" :profiles [:print])))]
-      (is (= :clj-book.build.execute/not-implemented (:error/type d))))))
+(deftest ^:integration single-profile-build-writes-pdf-and-manifest
+  (let [req (request "build" :profiles [:screen])
+        man (execute/build req)
+        art (first (:artifacts man))]
+    (is (= "tiny-book" (:book/slug man)))
+    (is (= [:screen] (:build/profiles man)))
+    (is (= :screen (:profile art)))
+    (is (.exists (io/file (:path art))) "the PDF is written to disk")
+    (is (str/ends-with? (:path art) "tiny-book-screen.pdf"))
+    (is (.exists (io/file (-> art :paths :fo))) "the intermediate FO is written")
+    (is (.exists (io/file (:manifest/path man))))))
 
 (deftest invalid-profile-blocked-by-request-normalization
   ;; This is asserted at the public api/request layer; execute assumes

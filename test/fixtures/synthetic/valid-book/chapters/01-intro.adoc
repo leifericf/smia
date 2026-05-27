@@ -1,7 +1,0 @@
-[#ch-intro]
-== Introduction
-
-This is the introduction chapter of the synthetic test book.
-
-* Bullet one.
-* Bullet two.

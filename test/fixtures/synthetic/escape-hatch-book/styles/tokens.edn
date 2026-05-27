@@ -1,4 +1,0 @@
-{:color   {:bg "#000000" :fg "#ffffff"}
- :type    {:family "Serif" :size 11}
- :spacing {:margin 12}
- :layout  {:max-width "40rem"}}

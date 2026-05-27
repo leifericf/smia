@@ -1,88 +1,112 @@
 # clj-book
 
-A reusable JVM Clojure publishing engine for technical books.
+A PDF-first JVM Clojure publishing engine for technical books.
 
-`clj-book` separates platform concerns (manuscript loading, theme compilation, document rendering, build orchestration) from manuscript concerns (book text, structure metadata, design tokens, customization, assets). Author input is AsciiDoc. HTML is generated server-side via Hiccup; CSS via Garden. DocBook 5 is an internal intermediate.
+`clj-book` turns a Clojure-data manuscript into publication-quality **PDF** —
+screen and print editions — entirely on the JVM via [Apache FOP](https://xmlgraphics.apache.org/fop/).
+There is no Ruby, no asciidoctor, no external binary, and **no subprocess**:
+FOP runs in-process. Authors write **Hiccup** (the HTML-flavored data Clojure
+already produces); the engine treats it as the convenient surface of a true
+superset that reaches the entire XSL-FO formatting model.
 
 ## Status
 
-`v1.0.0-alpha` — pre-release. APIs and contracts may change.
+Pre-release. APIs and contracts may change.
 
-## v1 targets
+## Pipeline
 
-- `:site` — static HTML + CSS, no client-side JavaScript (Stasis + Hiccup)
-- `:pdf`  — Asciidoctor PDF
+```
+author hiccup  (HTML sugar + book extensions + raw :fo/*)
+  → assemble   chapters + metadata + theme → :fo/root          [pure]
+  → expand     known tags → FO; identity pass-through for :fo/* [pure]
+  → serialize  FO-hiccup → XSL-FO XML                           [pure]
+  → render     Apache FOP: FO XML → PDF, per profile            [shell]
+```
 
 ## Quickstart
 
-Prerequisites:
+Prerequisites: a JDK and the Clojure CLI. That's all — Apache FOP arrives as a
+Maven dependency (it pulls Batik and XML Graphics Commons; all Apache-2.0).
 
-- JDK 17+
-- Clojure CLI (`clojure -X`)
-- Asciidoctor CLI (`asciidoctor`) for the `:site` target's DocBook intermediate
-- Asciidoctor PDF CLI (`asciidoctor-pdf`) for the `:pdf` target
-
-A minimal manuscript repo contains:
+A minimal manuscript repo:
 
 ```
 my-book/
-  book.adoc            # AsciiDoc document header + chapter includes
-  book.edn             # build configuration (open map)
-  styles/tokens.edn    # canonical design tokens
-  chapters/*.adoc      # chapter source files
+  book.edn             # metadata + chapter order (open map)
+  styles/tokens.edn    # design tokens → the FO theme
+  chapters/*.clj        # chapter sources: Clojure that evaluates to Hiccup
+```
+
+A chapter file evaluates to a `[:chapter …]` form:
+
+```clojure
+[:chapter {:id :intro :title "Introduction"}
+ [:p "Plain prose with " [:strong "emphasis"] " and " [:code "inline code"] "."]
+ [:admonition {:kind :note} [:p "Worth knowing."]]
+ [:p "See " [:xref {:to :config}] " to configure."]
+ [:fo/block {:space-before "12pt"} "Drop to raw FO only when you need to."]]
 ```
 
 Validate:
 
 ```bash
-clojure -X clj-book.api/validate :book-root '"."'
+clojure -X clj-book.api/validate :book-root '"my-book"'
 ```
 
-Build:
+Build (both editions by default; pass `:profiles` to select a subset):
 
 ```bash
-clojure -X clj-book.api/build :book-root '"."' :targets '[:site :pdf]'
+clojure -X clj-book.api/build :book-root '"my-book"' :profiles '[:screen :print]'
 ```
 
-Serve (local preview, site target):
+Output lands under `build/<slug>/pdf/` with deterministic names
+(`<slug>-screen.pdf`, `<slug>-print.pdf`) plus an `artifacts.edn` manifest.
 
-```bash
-clojure -X clj-book.api/serve :book-root '"."'
-```
+## The Hiccup superset
 
-## Customization tiers
+One syntax, three concentric layers:
 
-1. **Tokens** — `styles/tokens.edn` (cross-target)
-2. **Layout** — tier-2 keys in `book.edn`: `:page-size`, `:page-margins`, `:chapter-opener`, `:toc-depth`, `:code-line-numbers`, `:admonition-style`
-3. **Escape hatches** — `styles/site.clj` (Garden, site only) and `styles/pdf-theme.edn` (PDF only)
+1. **HTML-flavored sugar** — `:p`, `:h1`–`:h6`, `:ul`/`:ol`/`:li`, `:strong`,
+   `:em`, `:code`, `:pre`, `:a`, `:blockquote`, `:img`, `:hr`, and tables.
+2. **Book extensions** — `:chapter`, `:xref`, `:footnote`, `:admonition`.
+3. **Raw FO** — any `:fo/*` tag passes straight through, so 100% of XSL-FO is
+   reachable. Sugar nested inside raw FO still expands.
+
+Styling comes from `tokens.edn` plus the layout profile — never from arbitrary
+CSS. The two profiles, `:screen` (symmetric margins) and `:print` (mirrored
+recto/verso with a binding gutter), are two layouts over one document model.
+The default theme uses the PDF base-14 fonts, so output is zero-config and
+reproducible.
 
 ## Architecture
 
-The platform is a **functional core behind an imperative shell**. Pure
-transforms (validation, theme compilation, the DocBook → HTML document
-model, build planning) take and return plain Clojure data; all IO and
-shelling out live in a thin shell. Values that cross context seams are
-checked against malli schemas (`clj_book/schema.clj`).
+A **functional core behind an imperative shell**. Assembly, expansion, and
+serialization are pure transforms over plain data; the only effects are
+reading inputs, evaluating chapters, and FOP writing PDF bytes. Values that
+cross context seams are checked against malli schemas (`clj_book/schema.clj`).
 
-Bounded contexts (DDD):
+| Context       | Namespaces                                              | Role                                            |
+|---------------|---------------------------------------------------------|-------------------------------------------------|
+| Manuscript    | `config`                                                | load + validate `book.edn`                      |
+| Theme         | `theme.load`, `book.theme`                              | tokens → FO style + page masters                |
+| Renderer (L1) | `fo.attrs`, `fo.serialize`, `fo.expand`, `fo.schema`    | Hiccup superset → XSL-FO (pure)                 |
+| Renderer (L1) | `fo.render`                                             | XSL-FO → PDF via Apache FOP (shell)             |
+| Book (L2)     | `book.assemble`, `book.load`                            | chapters → one `:fo/root`; load `.clj` chapters |
+| Build         | `build.plan` (pure), `build.execute` (shell)            | plan the build, then perform it                 |
+| Interface     | `api`, `request`                                        | `-X` entry points                               |
+| Shared kernel | `error`, `schema`, `artifacts`                          | structured errors, value contracts, manifest    |
 
-| Context       | Namespaces                                            | Role                                          |
-|---------------|-------------------------------------------------------|-----------------------------------------------|
-| Manuscript    | `config`                                              | load + validate `book.edn`                    |
-| Theme         | `theme.load`, `theme.css`, `theme.pdf`                | tokens + escape hatches → CSS / PDF theme     |
-| Document      | `compose`, `docbook`, `document`                      | master adoc → DocBook → semantic HTML model   |
-| Render        | `targets.site`, `targets.pdf`                         | HTML model + theme → site / PDF artifacts     |
-| Build         | `build.plan` (pure), `build.execute` (shell)          | plan the build, then perform it               |
-| Interface     | `api`, `serve`, `request`                             | `-X` entry points + preview server            |
-| Shared kernel | `error`, `schema`                                     | structured errors + value contracts           |
+The interface routes through `build.execute` only; the pure cores do no IO and
+never touch FOP. Both invariants are enforced in `clj-book.boundaries-test`.
 
-The interface layer routes through `build.execute` only; the pure cores
-do no IO. Both invariants are enforced as tests in
-`clj-book.boundaries-test`.
+> **Trust boundary:** chapters are `.clj` files, so building a book runs the
+> author's own Clojure code (the same model as Pollen). Only build manuscripts
+> you trust.
 
 ## Documentation
 
-The full user manual is built by `clj-book` itself from `docs/manual/` as a dogfood manuscript.
+The full user manual is itself a Hiccup manuscript under `docs/manual/`, built
+by `clj-book` as a dogfood and the platform's real-manuscript regression case.
 
 ## License
 

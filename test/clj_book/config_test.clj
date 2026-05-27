@@ -41,7 +41,7 @@
             #(config/load-config {:book-root missing-chapter-root
                                   :config-path "book.edn"}))]
     (is (= :clj-book.config/missing-chapter (:error/type d)))
-    (is (some #{"chapters/does-not-exist.adoc"}
+    (is (some #{"chapters/does-not-exist.clj"}
               (:missing (:error/context d))))))
 
 (deftest duplicate-chapter-rejected

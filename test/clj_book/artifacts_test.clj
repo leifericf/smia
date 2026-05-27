@@ -10,13 +10,13 @@
 (deftest manifest-shape
   (let [m (artifacts/manifest
             {:config       cfg
-             :targets      [:site :pdf]
-             :artifacts    [{:target :site :path "build/example-book/site/index.html"}
-                            {:target :pdf  :path "build/example-book/pdf/example-book.pdf"}]
+             :profiles     [:screen :print]
+             :artifacts    [{:profile :screen :path "build/example-book/pdf/example-book-screen.pdf"}
+                            {:profile :print  :path "build/example-book/pdf/example-book-print.pdf"}]
              :started-at   "2026-05-27T12:00:00Z"
              :finished-at  "2026-05-27T12:00:08Z"})]
     (is (= "example-book" (:book/slug m)))
-    (is (= [:site :pdf]    (:build/targets m)))
+    (is (= [:screen :print]    (:build/profiles m)))
     (is (= "2026-05-27T12:00:00Z" (:build/started-at m)))
     (is (= "2026-05-27T12:00:08Z" (:build/finished-at m)))
     (is (= 2 (count (:artifacts m))))
@@ -30,20 +30,20 @@
         out (artifacts/write!
               {:output-dir  tmp
                :config      cfg
-               :targets     [:site]
-               :artifacts   [{:target :site :path "build/example-book/site/index.html"}]
+               :profiles    [:screen]
+               :artifacts   [{:profile :screen :path "build/example-book/pdf/example-book-screen.pdf"}]
                :started-at  "2026-05-27T12:00:00Z"
                :finished-at "2026-05-27T12:00:08Z"})
         path (:manifest/path out)
         parsed (edn/read-string (slurp path))]
     (is (.exists (io/file path)))
     (is (= "example-book" (:book/slug parsed)))
-    (is (= [:site] (:build/targets parsed)))))
+    (is (= [:screen] (:build/profiles parsed)))))
 
-(deftest manifest-shape-preserves-target-order
+(deftest manifest-shape-preserves-profile-order
   (let [m (artifacts/manifest
             {:config cfg
-             :targets [:pdf :site]
+             :profiles [:print :screen]
              :artifacts []
              :started-at "x" :finished-at "y"})]
-    (is (= [:pdf :site] (:build/targets m)))))
+    (is (= [:print :screen] (:build/profiles m)))))

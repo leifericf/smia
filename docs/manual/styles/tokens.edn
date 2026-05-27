@@ -1,13 +1,22 @@
-{:color   {:bg     "#ffffff"
-           :fg     "#1c1c1c"
-           :accent "#2a52be"
-           :muted  "#666666"
-           :code-bg "#f4f4f4"}
- :type    {:family "Source Serif Pro"
-           :family-mono "Source Code Pro"
-           :size 12
-           :line-height "1.55"}
- :spacing {:margin 18
-           :gap    8
-           :section-gap 24}
- :layout  {:max-width "44rem"}}
+{:color   {:text "#1c1c1c"
+           :link "#2a52be"
+           :muted "#666666"
+           :rule "#bbbbbb"
+           :code-background "#f4f4f4"}
+ :type    {:body-family    "serif"
+           :heading-family "sans-serif"
+           :mono-family    "monospace"
+           :base-size      "11pt"
+           :line-height    "1.45"
+           :h1-size        "22pt"
+           :h2-size        "16pt"
+           :h3-size        "13pt"}
+ :spacing {:paragraph "6pt"
+           :block     "8pt"}
+ :layout  {:page-size      :a4
+           :margin-top     "24mm"
+           :margin-bottom  "24mm"
+           :margin-inside  "26mm"
+           :margin-outside "20mm"
+           :header-extent  "12mm"
+           :footer-extent  "12mm"}}

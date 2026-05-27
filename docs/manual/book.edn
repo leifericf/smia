@@ -1,14 +1,9 @@
-{:book/slug      "clj-book-manual"
- :book/title     "clj-book User Manual"
- :book/chapters  ["chapters/01-quickstart.adoc"
-                  "chapters/02-configuration.adoc"
-                  "chapters/03-tokens-and-theming.adoc"
-                  "chapters/04-escape-hatches.adoc"
-                  "chapters/05-commands.adoc"
-                  "chapters/06-error-catalog.adoc"]
- :page-size      :a4
- :page-margins   "0.75in"
- :chapter-opener :page-break
- :toc-depth      2
- :code-line-numbers true
- :admonition-style  :icon}
+{:book/slug     "clj-book-manual"
+ :book/title    "The clj-book Manual"
+ :book/author   "The clj-book authors"
+ :book/chapters ["chapters/01-quickstart.clj"
+                 "chapters/02-authoring.clj"
+                 "chapters/03-configuration.clj"
+                 "chapters/04-theming.clj"
+                 "chapters/05-commands.clj"
+                 "chapters/06-error-catalog.clj"]}

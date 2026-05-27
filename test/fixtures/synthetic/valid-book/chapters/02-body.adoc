@@ -1,4 +1,0 @@
-[#ch-body]
-== Main Body
-
-The main body of the synthetic book has one short paragraph.

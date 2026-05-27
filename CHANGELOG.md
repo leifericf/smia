@@ -9,8 +9,7 @@ clj-book is being repositioned as a **PDF-first** publishing engine: authors
 write Clojure **Hiccup** and the engine renders **PDF** (screen and print
 editions) entirely on the JVM via **Apache FOP** — no Ruby, no asciidoctor, no
 external binary, no subprocess. This supersedes the earlier AsciiDoc /
-static-site direction. The work is in progress; the bullets below track what has
-landed on the redesign branch.
+static-site direction.
 
 ### Removed
 
@@ -28,6 +27,14 @@ landed on the redesign branch.
 
 ### Added
 
+- End-to-end PDF rendering wired through `clj-book.build.execute`:
+  load chapters once, then per profile assemble -> expand -> serialize ->
+  FOP, writing the intermediate FO and the PDF and emitting the
+  `artifacts.edn` manifest. `clj-book.api/validate` now also checks
+  chapter vocabulary and cross-reference resolution without rendering.
+- `.clj` chapter files: each chapter is a Clojure program whose value is a
+  `[:chapter {:id :title} ..]` Hiccup form, so chapters can slurp real
+  code samples or generate content.
 - The L2 book layer: `clj-book.book.theme` (compiles `tokens.edn` + a
   profile into the FO style map and page masters — `:screen` is one
   symmetric master, `:print` mirrors recto/verso around a binding
@@ -67,11 +74,17 @@ landed on the redesign branch.
   `:code-line-numbers`, `:admonition-style`); styling comes from
   `tokens.edn` and the profile instead. Required keys, types, and chapter
   existence/uniqueness are still enforced; extra keys are preserved.
+- `tokens.edn` now compiles to FO properties and page geometry (color,
+  type families/sizes, spacing, page size and margins) instead of CSS and
+  PDF-theme YAML.
+- The artifact manifest reports `:build/profiles` (was `:build/targets`),
+  one artifact per profile.
+- The dogfood manual under `docs/manual/` was re-authored from AsciiDoc to
+  Hiccup `.clj` chapters and now builds to PDF in CI.
 
 ### Retained spine
 
-- `clj-book.api/validate` and `clj-book.api/build` entrypoints (`build`
-  rendering is temporarily unavailable while the FOP pipeline is wired in).
+- `clj-book.api/validate` and `clj-book.api/build` entrypoints.
 - `book.edn` open-map configuration and `styles/tokens.edn` loading/validation.
 - Deterministic output layout under `<output-root>/<book-slug>/` and the
   machine-readable `artifacts.edn` manifest.

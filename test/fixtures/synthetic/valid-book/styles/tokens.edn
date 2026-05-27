@@ -1,8 +1,20 @@
-{:color   {:bg     "#ffffff"
-           :fg     "#111111"
-           :accent "#3050d0"}
- :type    {:family "Inter"
-           :size   12}
- :spacing {:margin 18
-           :gap    8}
- :layout  {:max-width "44rem"}}
+{:color   {:text "#1a1a1a"
+           :link "#1a0dab"
+           :muted "#5a5a5a"
+           :rule "#999999"
+           :code-background "#f4f4f4"}
+ :type    {:body-family    "serif"
+           :heading-family "sans-serif"
+           :mono-family    "monospace"
+           :base-size      "11pt"
+           :line-height    "1.4"
+           :h1-size        "20pt"
+           :h2-size        "16pt"
+           :h3-size        "13pt"}
+ :spacing {:paragraph "6pt"
+           :block     "8pt"}
+ :layout  {:page-size      :a4
+           :margin-top     "22mm"
+           :margin-bottom  "22mm"
+           :margin-inside  "26mm"
+           :margin-outside "20mm"}}

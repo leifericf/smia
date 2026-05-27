@@ -13,17 +13,16 @@
     (is (= #{"synthetic"} subs)
         "test/fixtures should contain only synthetic manuscripts")))
 
-(deftest no-third-party-manuscript-in-platform
-  (let [docs (io/file "docs")
-        offenders (->> (file-seq docs)
+(deftest only-manuscript-under-docs-is-the-manual
+  ;; The dogfood manual is the only manuscript the platform ships; no other
+  ;; book.edn should live under docs/.
+  (let [offenders (->> (file-seq (io/file "docs"))
                        (filter #(.isFile %))
-                       (filter #(re-find #"\.adoc$" (.getName %)))
-                       (filter #(not (str/starts-with? (.getPath %)
-                                                       "docs/manual")))
-                       (map #(.getPath %)))]
+                       (filter #(= "book.edn" (.getName %)))
+                       (map #(.getPath %))
+                       (remove #(str/starts-with? % "docs/manual")))]
     (is (empty? offenders)
-        (str "Non-manual AsciiDoc files found in docs/: "
-             (str/join ", " offenders)))))
+        (str "Unexpected manuscript(s) under docs/: " (str/join ", " offenders)))))
 
 ;; --- Functional core, imperative shell -----------------------------------
 
@@ -46,15 +45,23 @@
              internal " directly"))))
 
 (def pure-core-nss
-  "Source files that are pure cores: transforms with no IO and no
+  "Source files that are pure cores: transforms with no IO, no FOP, and no
    shelling out, so they are exercisable on in-memory data alone."
-  ["src/clj_book/build/plan.clj"])
+  ["src/clj_book/build/plan.clj"
+   "src/clj_book/fo/attrs.clj"
+   "src/clj_book/fo/serialize.clj"
+   "src/clj_book/fo/expand.clj"
+   "src/clj_book/fo/schema.clj"
+   "src/clj_book/book/theme.clj"
+   "src/clj_book/book/assemble.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss
           :let [src (slurp (io/file path))]]
     (is (not (str/includes? src "clojure.java.io"))
         (str path " is a pure core and must not import clojure.java.io"))
+    (is (not (str/includes? src "org.apache.fop"))
+        (str path " is a pure core and must not reach into FOP"))
     (is (not (str/includes? src "ProcessBuilder"))
         (str path " is a pure core and must not shell out"))))
 
@@ -63,8 +70,8 @@
   ;; `validate` must operate on in-memory data with no file present.
   (let [warnings (config/validate
                    {:book/slug "s" :book/title "t"
-                    :book/chapters ["a.adoc"] :unknown-key 1}
+                    :book/chapters ["a.clj"] :unknown-key 1}
                    "/does/not/exist/book.edn")]
     (is (vector? warnings))
     (is (some #(= :clj-book.config/unknown-key (:warning/type %)) warnings)
-        "validate computes layout warnings without touching the disk")))
+        "validate computes warnings without touching the disk")))

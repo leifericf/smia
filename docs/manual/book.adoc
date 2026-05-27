@@ -1,7 +1,0 @@
-= clj-book User Manual
-clj-book contributors
-v1.0.0-alpha
-:doctype: book
-:lang: en
-:toc:
-:icons: font
