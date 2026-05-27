@@ -2,7 +2,7 @@
 
 A reusable JVM Clojure publishing engine for technical books.
 
-`clj-book` separates platform concerns (pipeline, rendering adapters, validation, orchestration) from manuscript concerns (book text, structure metadata, design tokens, customization, assets). Author input is AsciiDoc. HTML is generated server-side via Hiccup; CSS via Garden. DocBook 5 is an internal intermediate.
+`clj-book` separates platform concerns (manuscript loading, theme compilation, document rendering, build orchestration) from manuscript concerns (book text, structure metadata, design tokens, customization, assets). Author input is AsciiDoc. HTML is generated server-side via Hiccup; CSS via Garden. DocBook 5 is an internal intermediate.
 
 ## Status
 
@@ -55,6 +55,30 @@ clojure -X clj-book.api/serve :book-root '"."'
 1. **Tokens** — `styles/tokens.edn` (cross-target)
 2. **Layout** — tier-2 keys in `book.edn`: `:page-size`, `:page-margins`, `:chapter-opener`, `:toc-depth`, `:code-line-numbers`, `:admonition-style`
 3. **Escape hatches** — `styles/site.clj` (Garden, site only) and `styles/pdf-theme.edn` (PDF only)
+
+## Architecture
+
+The platform is a **functional core behind an imperative shell**. Pure
+transforms (validation, theme compilation, the DocBook → HTML document
+model, build planning) take and return plain Clojure data; all IO and
+shelling out live in a thin shell. Values that cross context seams are
+checked against malli schemas (`clj_book/schema.clj`).
+
+Bounded contexts (DDD):
+
+| Context       | Namespaces                                            | Role                                          |
+|---------------|-------------------------------------------------------|-----------------------------------------------|
+| Manuscript    | `config`                                              | load + validate `book.edn`                    |
+| Theme         | `theme.load`, `theme.css`, `theme.pdf`                | tokens + escape hatches → CSS / PDF theme     |
+| Document      | `compose`, `docbook`, `document`                      | master adoc → DocBook → semantic HTML model   |
+| Render        | `targets.site`, `targets.pdf`                         | HTML model + theme → site / PDF artifacts     |
+| Build         | `build.plan` (pure), `build.execute` (shell)          | plan the build, then perform it               |
+| Interface     | `api`, `serve`, `request`                             | `-X` entry points + preview server            |
+| Shared kernel | `error`, `schema`                                     | structured errors + value contracts           |
+
+The interface layer routes through `build.execute` only; the pure cores
+do no IO. Both invariants are enforced as tests in
+`clj-book.boundaries-test`.
 
 ## Documentation
 

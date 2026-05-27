@@ -33,4 +33,4 @@ Using a tier-3 hatch is a per-target intervention by definition. The manuscript 
 
 === Validation
 
-`clj-book` validates the *existence* of these files when referenced but does not police semantic correctness. A malformed Garden form will surface as a `:clj-book.tokens.css/site-clj-eval-error`. A malformed EDN file will surface as `:clj-book.tokens.pdf/extras-read-error`.
+`clj-book` validates the *existence* of these files when referenced but does not police semantic correctness. A malformed Garden form will surface as a `:clj-book.theme.load/site-clj-eval-error`. A malformed EDN file will surface as `:clj-book.theme.load/pdf-extras-read-error`.
