@@ -4,7 +4,7 @@
    transform lives in clj-book.document; this namespace owns page
    assembly and output."
   (:require
-   [clj-book.docbook :as docbook]
+   [clj-book.docbook.parse :as docbook-parse]
    [clj-book.document :as document]
    [clj-book.theme.css :as theme-css]
    [clj-book.theme.load :as theme]
@@ -78,7 +78,7 @@
    disk, the preview server serves it directly, and both agree on one
    HTML model. Reads the generated `book.xml`; does not write."
   [{:keys [intermediate-dir config css-href]}]
-  (let [docbook (docbook/parse-docbook-file
+  (let [docbook (docbook-parse/parse-docbook-file
                   (str intermediate-dir "/book.xml"))
         body    (document/->html-model docbook)]
     (page-map {:book/title  (:book/title config)

@@ -1,6 +1,6 @@
 (ns clj-book.targets.site-test
   (:require
-   [clj-book.docbook :as docbook]
+   [clj-book.docbook.parse :as docbook-parse]
    [clj-book.document :as document]
    [clj-book.targets.site :as site]
    [clojure.string :as str]
@@ -10,7 +10,7 @@
   "test/fixtures/synthetic/canned-docbook/book.xml")
 
 (defn- hiccup-tree []
-  (let [tree (docbook/parse-docbook-file canned-xml-path)]
+  (let [tree (docbook-parse/parse-docbook-file canned-xml-path)]
     (document/->html-model tree)))
 
 (deftest docbook-transforms-to-article-hiccup

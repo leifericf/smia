@@ -1,13 +1,13 @@
 (ns clj-book.document-test
   (:require
-   [clj-book.docbook :as docbook]
+   [clj-book.docbook.parse :as docbook-parse]
    [clj-book.document :as document]
    [clojure.test :refer [deftest is testing]]))
 
 (def canned-xml-path "test/fixtures/synthetic/canned-docbook/book.xml")
 
 (defn- model []
-  (document/->html-model (docbook/parse-docbook-file canned-xml-path)))
+  (document/->html-model (docbook-parse/parse-docbook-file canned-xml-path)))
 
 (deftest book-becomes-article
   (let [m (model)]

@@ -38,6 +38,9 @@ Initial pre-release.
 - Centralized all subprocess execution in a single `clj-book.proc`
   kernel; `docbook` and the PDF target no longer construct their own
   `ProcessBuilder`s.
+- Split the DocBook bridge: `clj-book.docbook` now only produces XML
+  (shell), and the pure XML-to-Hiccup parser moved to
+  `clj-book.docbook.parse`.
 
 ### Removed
 
