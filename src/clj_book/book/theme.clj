@@ -25,23 +25,33 @@
   (let [body-family (token type :body-family "serif")
         head-family (token type :heading-family "sans-serif")
         mono-family (token type :mono-family "monospace")
+        text        (token color :text "#1a1a1a")
+        muted       (token color :muted "#666666")
+        rule        (token color :rule "#999999")
+        link        (token color :link "#1a0dab")
         code-bg     (token color :code-background "#f4f4f4")]
     (-> expand/default-style
         (assoc :body {:font-family body-family
                       :font-size   (token type :base-size "11pt")
                       :line-height (token type :line-height "1.4")
-                      :color       (token color :text "#1a1a1a")})
+                      :color       text})
         (update :p merge {:space-after (token spacing :paragraph "6pt")})
-        (update :h1 merge {:font-family head-family
+        (update :h1 merge {:font-family head-family :color text
                            :font-size   (token type :h1-size "20pt")})
-        (update :h2 merge {:font-family head-family
+        (update :h2 merge {:font-family head-family :color text
                            :font-size   (token type :h2-size "16pt")})
-        (update :h3 merge {:font-family head-family
+        (update :h3 merge {:font-family head-family :color text
                            :font-size   (token type :h3-size "13pt")})
         (update :code merge {:font-family mono-family})
-        (update :pre merge {:font-family mono-family :background-color code-bg})
-        (update :hr merge {:border-top (str "0.5pt solid "
-                                            (token color :rule "#999999"))}))))
+        (update :pre merge {:font-family   mono-family
+                            :background-color code-bg
+                            :border-left   (str "3pt solid " link)
+                            :padding-left  "8pt"})
+        (update :blockquote merge {:border-left  (str "3pt solid " rule)
+                                   :padding-left "10pt"
+                                   :start-indent "0pt"
+                                   :color        muted})
+        (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
 
 (defn- page-dims [layout]
   (get page-sizes (token layout :page-size :a4) (:a4 page-sizes)))
@@ -88,9 +98,15 @@
 
 (defn compile-theme
   "Compile validated `tokens` and a layout `profile` (`:screen` or
-   `:print`) into `{:profile :style :master-reference :masters}`."
+   `:print`) into `{:profile :style :master-reference :masters
+   :link-color :rule-color :muted-color}`. The palette colors are
+   surfaced for the assembled furniture (title page, TOC, rules)."
   [tokens profile]
-  {:profile          profile
-   :style            (style-from-tokens tokens)
-   :master-reference "book"
-   :masters          (masters profile (:layout tokens))})
+  (let [color (:color tokens)]
+    {:profile          profile
+     :style            (style-from-tokens tokens)
+     :link-color       (token color :link "#1a0dab")
+     :rule-color       (token color :rule "#999999")
+     :muted-color      (token color :muted "#666666")
+     :master-reference "book"
+     :masters          (masters profile (:layout tokens))}))

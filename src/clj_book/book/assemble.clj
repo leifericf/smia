@@ -78,49 +78,71 @@
           [:fo/bookmark {:internal-destination (name id)}
            [:fo/bookmark-title title]])))
 
-(defn- toc-entry [{:keys [id title]}]
+(defn- toc-entry [{:keys [id title]} link-color]
   ;; text-align-last="justify" pushes the page number flush right; the
   ;; leader must be free to stretch (maximum 100%) so it absorbs all the
   ;; slack. A fixed-length leader would instead leave the line short and
   ;; spill the leftover space into the title's word spacing.
-  [:fo/block {:text-align-last "justify" :space-after "4pt"}
-   [:fo/basic-link {:internal-destination (name id) :color "#1a0dab"} title]
+  [:fo/block {:text-align-last "justify" :space-after "5pt"}
+   [:fo/basic-link {:internal-destination (name id) :color link-color} title]
    [:fo/leader {:leader-pattern         "dots"
                 :leader-length.minimum  "12pt"
                 :leader-length.optimum  "12pt"
                 :leader-length.maximum  "100%"}]
    [:fo/page-number-citation {:ref-id (name id)}]])
 
-(defn- front-matter [title author chapters master-ref body-style]
-  [:fo/page-sequence {:master-reference master-ref :format "i"}
-   [:fo/static-content {:flow-name "xsl-region-after"}
-    [:fo/block {:text-align "center" :font-size "9pt"} [:fo/page-number]]]
-   (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-         (concat
-           [[:fo/block {:font-size "30pt" :font-weight "bold"
-                        :space-before "48pt" :space-after "12pt"} title]]
-           (when author
-             [[:fo/block {:font-size "14pt" :space-after "36pt"} author]])
-           [[:fo/block {:font-size "18pt" :font-weight "bold"
-                        :break-before "page" :space-after "10pt"} "Contents"]]
-           (map toc-entry chapters)))])
+(defn- title-page [title author head-family muted-color]
+  [:fo/block {:text-align "center" :space-before "108pt"
+              :space-before.conditionality "retain"}
+   [:fo/block {:font-family head-family :font-size "36pt" :font-weight "bold"
+               :space-after "12pt"} title]
+   (when author
+     [:fo/block {:font-size "13pt" :color muted-color} author])])
 
-(defn- chapter-heading [id title style]
-  [:fo/block (merge (get style :h1) {:id (name id) :break-before "page"
-                                     :space-before "0pt"})
+(defn- front-matter [title author chapters master-ref theme]
+  (let [{:keys [style link-color rule-color muted-color]} theme
+        body-style  (:body style)
+        head-family (get-in style [:h1 :font-family])]
+    [:fo/page-sequence {:master-reference master-ref :format "i"}
+     [:fo/static-content {:flow-name "xsl-region-after"}
+      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
+       [:fo/page-number]]]
+     (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
+           (concat
+             [(title-page title author head-family muted-color)]
+             [[:fo/block {:font-family head-family :font-size "18pt"
+                          :font-weight "bold" :break-before "page"
+                          :border-bottom (str "0.5pt solid " rule-color)
+                          :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
+             (map #(toc-entry % link-color) chapters)))]))
+
+(defn- chapter-heading [id title style rule-color]
+  [:fo/block (merge (get style :h1)
+                    {:id            (name id)
+                     :break-before  "page"
+                     :space-before  "36pt"
+                     :space-before.conditionality "retain"
+                     :space-after   "18pt"
+                     :border-bottom (str "1pt solid " rule-color)
+                     :padding-bottom "6pt"})
    [:fo/marker {:marker-class-name "chapter-title"} title]
    title])
 
-(defn- chapter-sequence [{:keys [id title body]} master-ref style body-style first?]
-  [:fo/page-sequence (cond-> {:master-reference master-ref}
-                       first? (assoc :initial-page-number "1" :format "1"))
-   [:fo/static-content {:flow-name "xsl-region-before"}
-    [:fo/block {:text-align "center" :font-size "9pt" :color "#666666"}
-     [:fo/retrieve-marker {:retrieve-class-name "chapter-title"}]]]
-   [:fo/static-content {:flow-name "xsl-region-after"}
-    [:fo/block {:text-align "center" :font-size "9pt"} [:fo/page-number]]]
-   (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-         (cons (chapter-heading id title style) body))])
+(defn- chapter-sequence [{:keys [id title body]} master-ref theme first?]
+  (let [{:keys [style rule-color muted-color]} theme
+        body-style (:body style)]
+    [:fo/page-sequence (cond-> {:master-reference master-ref}
+                         first? (assoc :initial-page-number "1" :format "1"))
+     [:fo/static-content {:flow-name "xsl-region-before"}
+      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color
+                  :border-bottom (str "0.25pt solid " rule-color)
+                  :padding-bottom "3pt" :space-before "4pt"}
+       [:fo/retrieve-marker {:retrieve-class-name "chapter-title"}]]]
+     [:fo/static-content {:flow-name "xsl-region-after"}
+      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
+       [:fo/page-number]]]
+     (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
+           (cons (chapter-heading id title style rule-color) body))]))
 
 ;; --- assembly -------------------------------------------------------------
 
@@ -129,8 +151,9 @@
    `[:chapter {:id :title} ..]` Hiccup forms) and a compiled `theme`
    (from `clj-book.book.theme/compile-theme`) into one `:fo/root` tree.
    Bodies remain authored sugar for the later expansion pass."
-  [{:keys [title author chapters]} {:keys [style master-reference masters]}]
-  (let [parsed     (mapv parse-chapter chapters)
+  [{:keys [title author chapters]} theme]
+  (let [{:keys [style master-reference masters]} theme
+        parsed     (mapv parse-chapter chapters)
         _          (resolve-xrefs! parsed)
         body-style (get style :body)]
     (into [:fo/root {:font-family (:font-family body-style)
@@ -139,8 +162,8 @@
           (concat
             [(into [:fo/layout-master-set] masters)]
             [(bookmark-tree parsed)]
-            [(front-matter title author parsed master-reference body-style)]
+            [(front-matter title author parsed master-reference theme)]
             (map-indexed
               (fn [i ch]
-                (chapter-sequence ch master-reference style body-style (zero? i)))
+                (chapter-sequence ch master-reference theme (zero? i)))
               parsed)))))
