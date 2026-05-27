@@ -28,6 +28,15 @@ landed on the redesign branch.
 
 ### Added
 
+- The L2 book layer: `clj-book.book.theme` (compiles `tokens.edn` + a
+  profile into the FO style map and page masters — `:screen` is one
+  symmetric master, `:print` mirrors recto/verso around a binding
+  gutter), `clj-book.book.assemble` (orders chapters into one `:fo/root`
+  with layout-master-set, a title page and dotted-leader table of
+  contents, per-chapter `fo:page-sequence` with running heads and page
+  numbers, a PDF bookmark tree, and hard-error cross-reference
+  resolution), and `clj-book.book.load` (the shell that reads and
+  evaluates `.clj` chapters — a documented build-time trust boundary).
 - `clj-book.fo.render`: the FOP rendering shell (the only namespace that
   touches Apache FOP or an output stream). Renders an XSL-FO string to PDF
   bytes in-process via an identity `Transformer` into FOP's SAX handler;

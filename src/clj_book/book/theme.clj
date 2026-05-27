@@ -1,0 +1,96 @@
+(ns clj-book.book.theme
+  "Pure core: compile design tokens plus a layout profile into the FO
+   styling the book layer needs.
+
+   Produces (a) a `style` map (tag -> FO property map) that overrides the
+   renderer's base-14 defaults from `clj-book.fo.expand`, and (b) the
+   page geometry: `simple-page-master` fragments for the profile and the
+   `master-reference` chapters point at. `:screen` uses one symmetric
+   master; `:print` uses mirrored recto/verso masters (binding gutter on
+   the inside edge) selected by a `page-sequence-master`. No IO."
+  (:require
+   [clj-book.fo.expand :as expand]))
+
+(def page-sizes
+  "Trim sizes by name (width x height)."
+  {:a4     {:width "210mm" :height "297mm"}
+   :letter {:width "8.5in" :height "11in"}
+   :digest {:width "140mm" :height "216mm"}})
+
+(defn- token [m k default] (get m k default))
+
+(defn- style-from-tokens
+  "Override the renderer defaults with token-driven typography."
+  [{:keys [color type spacing]}]
+  (let [body-family (token type :body-family "serif")
+        head-family (token type :heading-family "sans-serif")
+        mono-family (token type :mono-family "monospace")
+        code-bg     (token color :code-background "#f4f4f4")]
+    (-> expand/default-style
+        (assoc :body {:font-family body-family
+                      :font-size   (token type :base-size "11pt")
+                      :line-height (token type :line-height "1.4")
+                      :color       (token color :text "#1a1a1a")})
+        (update :p merge {:space-after (token spacing :paragraph "6pt")})
+        (update :h1 merge {:font-family head-family
+                           :font-size   (token type :h1-size "20pt")})
+        (update :h2 merge {:font-family head-family
+                           :font-size   (token type :h2-size "16pt")})
+        (update :h3 merge {:font-family head-family
+                           :font-size   (token type :h3-size "13pt")})
+        (update :code merge {:font-family mono-family})
+        (update :pre merge {:font-family mono-family :background-color code-bg})
+        (update :hr merge {:border-top (str "0.5pt solid "
+                                            (token color :rule "#999999"))}))))
+
+(defn- page-dims [layout]
+  (get page-sizes (token layout :page-size :a4) (:a4 page-sizes)))
+
+(defn- regions [header footer]
+  [[:fo/region-body {:margin-top header :margin-bottom footer}]
+   [:fo/region-before {:extent header}]
+   [:fo/region-after {:extent footer}]])
+
+(defn- masters
+  "Page-master fragments for `profile`, all reachable through the
+   `master-reference` \"book\"."
+  [profile layout]
+  (let [{:keys [width height]} (page-dims layout)
+        mt      (token layout :margin-top "22mm")
+        mb      (token layout :margin-bottom "22mm")
+        inside  (token layout :margin-inside "26mm")
+        outside (token layout :margin-outside "20mm")
+        header  (token layout :header-extent "12mm")
+        footer  (token layout :footer-extent "12mm")
+        region  (regions header footer)]
+    (if (= profile :print)
+      [(into [:fo/simple-page-master
+              {:master-name "book-recto" :page-width width :page-height height
+               :margin-top mt :margin-bottom mb
+               :margin-left inside :margin-right outside}]
+             region)
+       (into [:fo/simple-page-master
+              {:master-name "book-verso" :page-width width :page-height height
+               :margin-top mt :margin-bottom mb
+               :margin-left outside :margin-right inside}]
+             region)
+       [:fo/page-sequence-master {:master-name "book"}
+        [:fo/repeatable-page-master-alternatives
+         [:fo/conditional-page-master-reference
+          {:master-reference "book-recto" :odd-or-even "odd"}]
+         [:fo/conditional-page-master-reference
+          {:master-reference "book-verso" :odd-or-even "even"}]]]]
+      [(into [:fo/simple-page-master
+              {:master-name "book" :page-width width :page-height height
+               :margin-top mt :margin-bottom mb
+               :margin-left outside :margin-right outside}]
+             region)])))
+
+(defn compile-theme
+  "Compile validated `tokens` and a layout `profile` (`:screen` or
+   `:print`) into `{:profile :style :master-reference :masters}`."
+  [tokens profile]
+  {:profile          profile
+   :style            (style-from-tokens tokens)
+   :master-reference "book"
+   :masters          (masters profile (:layout tokens))})
