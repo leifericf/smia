@@ -11,7 +11,9 @@
    [clj-book.tokens :as tokens]
    [clj-book.tokens.css :as tokens-css]
    [clj-book.tokens.pdf :as tokens-pdf]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io])
+  (:import
+   (java.time Instant)))
 
 (defn- build-paths [{:keys [output-root]} config]
   (let [slug (:book/slug config)
@@ -43,7 +45,8 @@
   [{:keys [intermediate-dir tokens-dir book-root tokens] :as ctx}]
   (let [master-path (compose/write-master!
                       (assoc ctx :intermediate-dir intermediate-dir))
-        css         (tokens-css/compile-css {:book-root book-root :tokens tokens})
+        extras      (tokens-css/load-site-extras book-root)
+        css         (tokens-css/compile-css {:tokens tokens :extras extras})
         css-out     (io/file tokens-dir "site.css")
         theme-yaml  (pdf-target/write-theme-yaml!
                       {:book-root book-root :tokens tokens
@@ -79,7 +82,7 @@
 (defn build
   "Execute the requested target builds. Returns the manifest map."
   [{:keys [targets] :as request}]
-  (let [started (artifacts/started-marker)
+  (let [started (Instant/now)
         ctx     (prepare request)
         prereqs (emit-shared-prereqs! ctx)
         ctx*    (merge ctx prereqs
@@ -95,7 +98,7 @@
                                      prereqs)))
                 []
                 targets)
-        finished (artifacts/finished-marker)]
+        finished (Instant/now)]
     (artifacts/write!
       {:output-dir   (:book-output-dir ctx*)
        :config       (:config ctx*)

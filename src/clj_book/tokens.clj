@@ -39,6 +39,19 @@
                        (str "Token group " g " must be a map.")
                        {:path path :group g :value v})))))
 
+(defn validate
+  "Pure validation of an already-parsed `tokens.edn` map. Performs no IO.
+   Throws structured `ex-info` for malformed/invalid inputs; returns the
+   tokens map unchanged otherwise. `path` is used only for error context."
+  [tokens path]
+  (when-not (map? tokens)
+    (throw (error/ex :clj-book.tokens/invalid-shape
+                     "Top-level value of tokens.edn must be a map."
+                     {:path path :value tokens})))
+  (check-required-groups tokens path)
+  (check-group-shapes tokens path)
+  tokens)
+
 (defn load-tokens
   "Read, parse, and validate `styles/tokens.edn`.
 
@@ -52,10 +65,5 @@
                        {:book-root book-root :path (.getPath f)})))
     (let [path   (.getPath f)
           tokens (read-edn f)]
-      (when-not (map? tokens)
-        (throw (error/ex :clj-book.tokens/invalid-shape
-                         "Top-level value of tokens.edn must be a map."
-                         {:path path :value tokens})))
-      (check-required-groups tokens path)
-      (check-group-shapes tokens path)
+      (validate tokens path)
       {:tokens tokens :path path})))

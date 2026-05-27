@@ -26,8 +26,9 @@
       (is (= one two)))))
 
 (deftest site-clj-extras-appended
-  (let [css (tokens-css/compile-css
-              {:book-root escape-root :tokens (read-tokens escape-root)})]
+  (let [extras (tokens-css/load-site-extras escape-root)
+        css    (tokens-css/compile-css
+                 {:tokens (read-tokens escape-root) :extras extras})]
     (is (str/includes? css "--color-bg") "token-derived rules present")
     (is (str/includes? css "rebeccapurple") "Garden tier-3 rules present")
     (let [bg-idx    (.indexOf css "--color-bg")
@@ -36,7 +37,9 @@
           "tier-3 rules appear after token-derived rules"))))
 
 (deftest absent-site-clj-leaves-css-unchanged
-  (let [base  (tokens-css/token-css (read-tokens valid-root))
-        full  (tokens-css/compile-css
-                {:book-root valid-root :tokens (read-tokens valid-root)})]
+  (let [extras (tokens-css/load-site-extras valid-root)
+        base   (tokens-css/token-css (read-tokens valid-root))
+        full   (tokens-css/compile-css
+                 {:tokens (read-tokens valid-root) :extras extras})]
+    (is (nil? extras) "valid-book ships no site.clj")
     (is (= base full))))

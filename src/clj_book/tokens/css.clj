@@ -45,9 +45,14 @@
                             (tokens->custom-props tokens)))]
     (garden/css [":root" props])))
 
-(defn- load-site-clj
-  "Load `styles/site.clj` (if present) and return its Garden data
-   structure. Returns nil if the file does not exist."
+(defn load-site-extras
+  "Load `styles/site.clj` (the tier-3 escape hatch) and return its Garden
+   data structure, or nil when the file is absent.
+
+   TRUST BOUNDARY: this evaluates arbitrary Clojure from the manuscript
+   directory via `load-file`. It is a deliberate deserialization seam;
+   only run it against manuscripts you trust. Kept apart from the pure
+   `compile-css` so the effectful eval is the only impure step here."
   [book-root]
   (let [f (io/file book-root "styles" "site.clj")]
     (when (.exists f)
@@ -61,11 +66,11 @@
 
 (defn compile-css
   "Return a CSS string composed of the token-derived stylesheet followed
-   by the tier-3 `styles/site.clj` rules (when present)."
-  [{:keys [book-root tokens]}]
-  (let [base    (token-css tokens)
-        extra  (load-site-clj book-root)
-        extra-css (when extra (garden/css extra))]
+   by the already-loaded tier-3 Garden `extras` (when present). Pure: the
+   `extras` are supplied as data; see `load-site-extras` for the IO."
+  [{:keys [tokens extras]}]
+  (let [base      (token-css tokens)
+        extra-css (when extras (garden/css extras))]
     (if (str/blank? extra-css)
       base
       (str base "\n" extra-css))))

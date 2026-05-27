@@ -172,7 +172,8 @@
   (let [docbook (docbook/parse-docbook-file
                   (str intermediate-dir "/book.xml"))
         body    (->hiccup docbook)
-        css     (tokens-css/compile-css {:book-root book-root :tokens tokens})
+        extras  (tokens-css/load-site-extras book-root)
+        css     (tokens-css/compile-css {:tokens tokens :extras extras})
         css-href "assets/site.css"
         slug    (:book/slug config)
         title   (:book/title config)

@@ -2,24 +2,21 @@
   "Artifact manifest emitter."
   (:require
    [clojure.java.io :as io]
-   [clojure.pprint :as pp])
-  (:import
-   (java.time Instant)))
-
-(defn- now-instant-str []
-  (str (Instant/now)))
+   [clojure.pprint :as pp]))
 
 (defn manifest
   "Build the deterministic-shape artifact manifest map for a completed
-   build."
+   build. `started-at`/`finished-at` are clock readings supplied by the
+   caller (an `Instant` or an ISO-8601 string); they are stringified so
+   the manifest is readable EDN. Pure: takes no clock of its own."
   [{:keys [config targets artifacts started-at finished-at metadata]}]
-  {:book/slug       (:book/slug config)
-   :build/started-at  started-at
-   :build/finished-at finished-at
-   :build/targets   (vec targets)
-   :artifacts       (vec artifacts)
-   :build/metadata  (merge {:tool "clj-book" :version "1.0.0-alpha"}
-                           metadata)})
+  {:book/slug         (:book/slug config)
+   :build/started-at  (str started-at)
+   :build/finished-at (str finished-at)
+   :build/targets     (vec targets)
+   :artifacts         (vec artifacts)
+   :build/metadata    (merge {:tool "clj-book" :version "1.0.0-alpha"}
+                             metadata)})
 
 (defn write!
   "Write the manifest as EDN to `<output-dir>/artifacts.edn`. Returns
@@ -30,13 +27,3 @@
     (io/make-parents out)
     (spit out (with-out-str (pp/pprint (dissoc man :manifest/path))))
     man))
-
-(defn started-marker
-  "Capture an ISO-8601 instant string for the build start time."
-  []
-  (now-instant-str))
-
-(defn finished-marker
-  "Capture an ISO-8601 instant string for the build end time."
-  []
-  (now-instant-str))

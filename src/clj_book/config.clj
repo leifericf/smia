@@ -47,22 +47,22 @@
                             (str/join ", " (map pr-str missing)))
                        {:path path :missing missing})))))
 
+(defn- non-empty-string-seq? [v]
+  (and (sequential? v) (seq v) (every? string? v)))
+
+(def ^:private type-checks
+  "Required-key type contracts as data: `[key predicate message]`."
+  [[:book/slug     string? ":book/slug must be a string."]
+   [:book/title    string? ":book/title must be a string."]
+   [:book/chapters non-empty-string-seq?
+    ":book/chapters must be a non-empty vector of strings."]])
+
 (defn- check-types [config path]
-  (when-not (string? (:book/slug config))
+  (doseq [[k pred msg] type-checks
+          :when (not (pred (get config k)))]
     (throw (error/ex :clj-book.config/invalid-type
-                     ":book/slug must be a string."
-                     {:path path :key :book/slug :value (:book/slug config)})))
-  (when-not (string? (:book/title config))
-    (throw (error/ex :clj-book.config/invalid-type
-                     ":book/title must be a string."
-                     {:path path :key :book/title :value (:book/title config)})))
-  (when-not (and (sequential? (:book/chapters config))
-                 (every? string? (:book/chapters config))
-                 (seq (:book/chapters config)))
-    (throw (error/ex :clj-book.config/invalid-type
-                     ":book/chapters must be a non-empty vector of strings."
-                     {:path path :key :book/chapters
-                      :value (:book/chapters config)}))))
+                     msg
+                     {:path path :key k :value (get config k)}))))
 
 (defn- check-chapters-exist [config book-root path]
   (let [missing (->> (:book/chapters config)
@@ -74,28 +74,49 @@
                             book-root ": " (str/join ", " missing))
                        {:path path :book-root book-root :missing missing})))))
 
-(defn- validate-layout [config path]
-  (let [layout (select-keys config layout-keys)
-        warnings (atom [])]
-    (doseq [[k allowed] known-layout-values
-            :let [v (get layout k)]
-            :when (some? v)]
-      (when-not (contains? allowed v)
-        (swap! warnings conj
-               {:warning/type :clj-book.config/unknown-layout-value
-                :warning/key  k
-                :warning/value v
-                :warning/allowed (vec (sort allowed))})))
-    (let [unknown (->> (keys config)
-                       (remove #(or (= "book" (namespace %))
-                                    (contains? layout-keys %)))
-                       vec)]
-      (when (seq unknown)
-        (swap! warnings conj
-               {:warning/type  :clj-book.config/unknown-key
-                :warning/keys  unknown
-                :warning/note  "Preserved but not interpreted by clj-book."})))
-    @warnings))
+(defn- value-warnings
+  "Warn about layout keys set to values clj-book does not recognize."
+  [config]
+  (let [layout (select-keys config layout-keys)]
+    (for [[k allowed] known-layout-values
+          :let [v (get layout k)]
+          :when (and (some? v) (not (contains? allowed v)))]
+      {:warning/type    :clj-book.config/unknown-layout-value
+       :warning/key     k
+       :warning/value   v
+       :warning/allowed (vec (sort allowed))})))
+
+(defn- unknown-key-warnings
+  "Warn about top-level keys that are neither `book/*` nor known layout
+   keys. They are preserved verbatim but not interpreted."
+  [config]
+  (let [unknown (->> (keys config)
+                     (remove #(or (= "book" (namespace %))
+                                  (contains? layout-keys %)))
+                     vec)]
+    (when (seq unknown)
+      [{:warning/type :clj-book.config/unknown-key
+        :warning/keys unknown
+        :warning/note "Preserved but not interpreted by clj-book."}])))
+
+(defn- validate-layout
+  "Return the layout warning vector for `config` as a pure value."
+  [config]
+  (vec (concat (value-warnings config)
+               (unknown-key-warnings config))))
+
+(defn validate
+  "Pure validation of an already-parsed `book.edn` map. Performs no IO.
+   Throws structured `ex-info` for shape/type errors; returns the layout
+   warning vector otherwise. `path` is used only for error context."
+  [config path]
+  (when-not (map? config)
+    (throw (error/ex :clj-book.config/invalid-shape
+                     "Top-level value of book.edn must be a map."
+                     {:path path :value config})))
+  (check-required-keys config path)
+  (check-types config path)
+  (validate-layout config))
 
 (defn load-config
   "Read, parse, and validate the manuscript `book.edn`.
@@ -109,15 +130,10 @@
                        (str "Configuration file not found: "
                             (.getPath f))
                        {:book-root book-root :config-path config-path})))
-    (let [path   (.getPath f)
-          config (read-edn f)]
-      (when-not (map? config)
-        (throw (error/ex :clj-book.config/invalid-shape
-                         "Top-level value of book.edn must be a map."
-                         {:path path :value config})))
-      (check-required-keys config path)
-      (check-types config path)
+    (let [path     (.getPath f)
+          config   (read-edn f)
+          warnings (validate config path)]
       (check-chapters-exist config book-root path)
       {:config   config
        :path     path
-       :warnings (validate-layout config path)})))
+       :warnings warnings})))
