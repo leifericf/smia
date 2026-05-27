@@ -56,6 +56,16 @@ Initial pre-release.
 - The unused intermediate `intermediate/tokens/site.css`, which was
   written but never consumed (the site target compiles its own CSS).
 
+### Fixed
+
+- Multi-chapter builds now resolve their chapter includes. Both the
+  DocBook (site) and asciidoctor-pdf (PDF) invocations run with
+  `--base-dir` (the manuscript root) and `--doctype book`, so the
+  generated master's relative `include::` paths resolve and level-1
+  headings become chapters. Previously the master was processed from the
+  intermediate dir, yielding a one-page/one-section result full of
+  unresolved-directive text instead of a multi-chapter book.
+
 ### Excluded (not in v1 alpha)
 
 - Default target behavior (explicit targets only).

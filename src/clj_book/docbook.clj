@@ -10,9 +10,14 @@
 
 (defn generate-docbook!
   "Invoke Asciidoctor with the DocBook 5 backend on the composed master
-   `book.adoc`. Writes `book.xml` next to the master file. Returns the
-   path to the generated DocBook file."
-  [{:keys [intermediate-dir master-path]}]
+   `book.adoc`. Writes `book.xml` in the intermediate dir and returns its
+   path.
+
+   `--doctype book` makes level-1 headings chapters; `--base-dir`
+   anchors `include::` resolution at the manuscript root, since the
+   generated master lives in the intermediate dir but its chapter paths
+   are relative to `book-root`."
+  [{:keys [intermediate-dir master-path book-root]}]
   (when-not (proc/cli-available? "asciidoctor")
     (throw (error/ex :clj-book.docbook/asciidoctor-missing
                      "asciidoctor CLI not found on PATH."
@@ -20,8 +25,10 @@
   (let [xml-out (io/file intermediate-dir "book.xml")
         {:keys [exit out]} (proc/run-cli! ["asciidoctor"
                                            "--backend" "docbook5"
-                                           "--out-file" (.getPath xml-out)
-                                           master-path])]
+                                           "--doctype" "book"
+                                           "--base-dir" book-root
+                                           "--out-file" (.getAbsolutePath xml-out)
+                                           (.getAbsolutePath (io/file master-path))])]
     (when-not (zero? exit)
       (throw (error/ex :clj-book.docbook/generation-failed
                        "asciidoctor DocBook generation failed."

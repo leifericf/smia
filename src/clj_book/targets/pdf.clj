@@ -34,22 +34,27 @@
 
 (defn build!
   "Build the PDF target: compile this target's theme YAML, then invoke
-   asciidoctor-pdf on the master. Returns the produced artifact path."
+   asciidoctor-pdf on the master. `--doctype book` and `--base-dir` mirror
+   the DocBook step so chapter `include::`s resolve from the manuscript
+   root. Returns the produced artifact path."
   [{:keys [master-path output-dir config book-root tokens intermediate-dir]}]
   (preflight! {:master-path master-path})
   (let [theme-yaml (write-theme-yaml! {:book-root        book-root
                                        :tokens           tokens
                                        :intermediate-dir intermediate-dir})
+        theme-file (.getAbsoluteFile (io/file theme-yaml))
         out (io/file output-dir (str (:book/slug config) ".pdf"))
         _   (io/make-parents out)
-        theme-dir (-> (io/file theme-yaml) .getParent)
-        theme-name (-> (io/file theme-yaml) .getName
+        theme-dir  (.getParent theme-file)
+        theme-name (-> (.getName theme-file)
                        (str/replace #"\.ya?ml$" ""))
         args ["asciidoctor-pdf"
-              "--out-file" (.getPath out)
+              "--doctype" "book"
+              "--base-dir" book-root
+              "--out-file" (.getAbsolutePath out)
               "-a" (str "pdf-themesdir=" theme-dir)
               "-a" (str "pdf-theme=" theme-name)
-              master-path]
+              (.getAbsolutePath (io/file master-path))]
         {exit :exit log :out} (proc/run-cli! args)]
     (when-not (zero? exit)
       (throw (error/ex :clj-book.targets.pdf/build-failed

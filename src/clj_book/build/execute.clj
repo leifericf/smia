@@ -59,7 +59,8 @@
   (let [{:keys [config tokens]} manuscript
         intermediate-dir        (:intermediate-dir paths)]
     (docbook/generate-docbook! {:intermediate-dir intermediate-dir
-                                :master-path      (:master-path prereqs)})
+                                :master-path      (:master-path prereqs)
+                                :book-root        book-root})
     (let [out (site-target/build! {:intermediate-dir intermediate-dir
                                    :output-dir       output-dir
                                    :book-root        book-root
@@ -140,7 +141,8 @@
                             :config           config
                             :intermediate-dir intermediate-dir})]
     (docbook/generate-docbook! {:intermediate-dir intermediate-dir
-                                :master-path      master-path})
+                                :master-path      master-path
+                                :book-root        book-root})
     (site-target/render-pages {:intermediate-dir intermediate-dir
                                :config           config
                                :css-href         css-href})))
