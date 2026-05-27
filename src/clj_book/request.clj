@@ -1,7 +1,8 @@
 (ns clj-book.request
   "Normalization and validation of public request maps."
   (:require
-   [clj-book.error :as error]))
+   [clj-book.error :as error]
+   [clojure.string :as str]))
 
 (def supported-targets
   "Targets supported by v1 alpha."
@@ -40,7 +41,7 @@
     (when (seq unknown)
       (throw (error/ex :clj-book.request/unknown-target
                        (str "Unsupported target(s): "
-                            (clojure.string/join ", " (map pr-str unknown)))
+                            (str/join ", " (map pr-str unknown)))
                        {:targets         targets
                         :unknown-targets (vec unknown)
                         :supported       (vec (sort supported-targets))}))))

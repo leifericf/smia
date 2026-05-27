@@ -3,7 +3,8 @@
   (:require
    [clj-book.error :as error]
    [clj-book.tokens.pdf :as tokens-pdf]
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [clojure.string :as str]))
 
 (defn- cli-available? [cmd]
   (try
@@ -45,7 +46,7 @@
         _   (io/make-parents out)
         theme-dir (-> (io/file theme-yaml) .getParent)
         theme-name (-> (io/file theme-yaml) .getName
-                       (clojure.string/replace #"\.ya?ml$" ""))
+                       (str/replace #"\.ya?ml$" ""))
         args ["asciidoctor-pdf"
               "--out-file" (.getPath out)
               "-a" (str "pdf-themesdir=" theme-dir)
