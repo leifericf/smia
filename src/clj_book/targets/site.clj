@@ -6,7 +6,8 @@
   (:require
    [clj-book.docbook :as docbook]
    [clj-book.document :as document]
-   [clj-book.tokens.css :as tokens-css]
+   [clj-book.theme.css :as theme-css]
+   [clj-book.theme.load :as theme]
    [clojure.java.io :as io]
    [hiccup2.core :as h]
    [stasis.core :as stasis]))
@@ -78,8 +79,8 @@
   (let [docbook (docbook/parse-docbook-file
                   (str intermediate-dir "/book.xml"))
         body    (document/->html-model docbook)
-        extras  (tokens-css/load-site-extras book-root)
-        css     (tokens-css/compile-css {:tokens tokens :extras extras})
+        extras  (theme/load-site-extras book-root)
+        css     (theme-css/compile-css {:tokens tokens :extras extras})
         css-href "assets/site.css"
         slug    (:book/slug config)
         title   (:book/title config)

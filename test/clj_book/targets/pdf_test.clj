@@ -2,7 +2,7 @@
   (:require
    [clj-book.error :as error]
    [clj-book.targets.pdf :as pdf]
-   [clj-book.tokens :as tokens]
+   [clj-book.theme.load :as theme]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
@@ -20,7 +20,7 @@
   (let [intermediate (tmp-dir "yaml")
         path (pdf/write-theme-yaml!
                {:book-root        valid-root
-                :tokens           (:tokens (tokens/load-tokens
+                :tokens           (:tokens (theme/load-tokens
                                              {:book-root valid-root}))
                 :intermediate-dir intermediate})]
     (is (.exists (io/file path)))

@@ -1,13 +1,10 @@
-(ns clj-book.tokens.pdf
-  "Compile design tokens into Asciidoctor PDF theme YAML. The tier-3
-   `styles/pdf-theme.edn` escape hatch is deep-merged on top when
-   present."
+(ns clj-book.theme.pdf
+  "Theme context (pure core): compile design tokens into Asciidoctor PDF
+   theme YAML. The tier-3 `styles/pdf-theme.edn` escape hatch is
+   deep-merged on top when supplied. No IO: the extras are loaded by
+   clj-book.theme.load and passed in as data."
   (:require
-   [clj-book.error :as error]
-   [clj-yaml.core :as yaml]
-   [clojure.edn :as edn]
-   [clojure.java.io :as io])
-  (:import (java.io PushbackReader)))
+   [clj-yaml.core :as yaml]))
 
 (defn- ->theme-key
   "Asciidoctor PDF theme files use underscored snake_case keys. Convert a
@@ -44,18 +41,6 @@
                        (:margin spacing) (assoc :margin (:margin spacing))))
       layout  (assoc :layout layout))))
 
-(defn- load-pdf-extras [book-root]
-  (let [f (io/file book-root "styles" "pdf-theme.edn")]
-    (when (.exists f)
-      (try
-        (with-open [r (PushbackReader. (io/reader f))]
-          (edn/read r))
-        (catch Exception e
-          (throw (error/ex :clj-book.tokens.pdf/extras-read-error
-                           (str "Failed to read styles/pdf-theme.edn: "
-                                (.getMessage e))
-                           {:path (.getPath f)})))))))
-
 (defn- map-keys-recursive [m f]
   (cond
     (map? m) (into {} (map (fn [[k v]] [(f k) (map-keys-recursive v f)]) m))
@@ -63,16 +48,16 @@
     :else m))
 
 (defn theme-map
-  "Return the merged Asciidoctor PDF theme map (token-derived plus
-   tier-3 extras)."
-  [{:keys [book-root tokens]}]
-  (let [base   (tokens->theme-map tokens)
-        extras (load-pdf-extras book-root)]
-    (deep-merge base (or extras {}))))
+  "Return the merged Asciidoctor PDF theme map (token-derived plus the
+   already-loaded tier-3 `extras`). Pure."
+  [{:keys [tokens extras]}]
+  (deep-merge (tokens->theme-map tokens) (or extras {})))
 
 (defn compile-yaml
-  "Return the YAML string representing the compiled PDF theme."
-  [ctx]
-  (let [m (theme-map ctx)
+  "Return the YAML string representing the compiled PDF theme. Pure: the
+   tier-3 `extras` are supplied as data; see
+   `clj-book.theme.load/load-pdf-extras`."
+  [{:keys [tokens extras] :as theme}]
+  (let [m     (theme-map theme)
         snake (map-keys-recursive m ->theme-key)]
     (yaml/generate-string snake :dumper-options {:flow-style :block})))

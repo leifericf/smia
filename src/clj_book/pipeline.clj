@@ -15,8 +15,8 @@
    [clj-book.schema :as schema]
    [clj-book.targets.pdf :as pdf-target]
    [clj-book.targets.site :as site-target]
-   [clj-book.tokens :as tokens]
-   [clj-book.tokens.css :as tokens-css]
+   [clj-book.theme.css :as theme-css]
+   [clj-book.theme.load :as theme]
    [clojure.java.io :as io])
   (:import
    (java.time Instant)))
@@ -35,7 +35,7 @@
    build context `{:request <normalized> :manuscript {...} :paths {...}}`."
   [request]
   (let [{:keys [config path warnings]} (config/load-config request)
-        {:keys [tokens]}               (tokens/load-tokens request)
+        {:keys [tokens]}               (theme/load-tokens request)
         paths                          (build-paths request config)]
     {:request    request
      :manuscript {:config      config
@@ -52,8 +52,8 @@
   (let [master-path (compose/write-master! {:book-root        book-root
                                             :config           config
                                             :intermediate-dir intermediate-dir})
-        extras      (tokens-css/load-site-extras book-root)
-        css         (tokens-css/compile-css {:tokens tokens :extras extras})
+        extras      (theme/load-site-extras book-root)
+        css         (theme-css/compile-css {:tokens tokens :extras extras})
         css-out     (io/file tokens-dir "site.css")
         theme-yaml  (pdf-target/write-theme-yaml!
                       {:book-root        book-root

@@ -1,10 +1,16 @@
-(ns clj-book.tokens
-  "Loader and validator for `styles/tokens.edn`."
+(ns clj-book.theme.load
+  "Theme context (shell): read and validate `styles/tokens.edn` and load
+   the tier-3 escape-hatch files (`styles/site.clj`, `styles/pdf-theme.edn`).
+
+   All Theme IO lives here so the css and pdf compilers stay pure. The
+   pure validation of a parsed token map is exposed as `validate`."
   (:require
    [clj-book.error :as error]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
-   [clojure.string :as str]))
+   [clojure.string :as str])
+  (:import
+   (java.io PushbackReader)))
 
 (def required-groups
   "Required top-level token groups."
@@ -12,21 +18,21 @@
 
 (defn- read-edn [^java.io.File f]
   (try
-    (with-open [r (java.io.PushbackReader. (io/reader f))]
+    (with-open [r (PushbackReader. (io/reader f))]
       (edn/read r))
     (catch java.io.IOException e
-      (throw (error/ex :clj-book.tokens/unreadable
+      (throw (error/ex :clj-book.theme.load/unreadable
                        (str "Could not read tokens file: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))
     (catch RuntimeException e
-      (throw (error/ex :clj-book.tokens/invalid-edn
+      (throw (error/ex :clj-book.theme.load/invalid-edn
                        (str "Tokens file is not valid EDN: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))))
 
 (defn- check-required-groups [tokens path]
   (let [missing (sort (remove #(contains? tokens %) required-groups))]
     (when (seq missing)
-      (throw (error/ex :clj-book.tokens/missing-group
+      (throw (error/ex :clj-book.theme.load/missing-group
                        (str "Missing required token group(s): "
                             (str/join ", " (map pr-str missing)))
                        {:path path :missing missing})))))
@@ -35,7 +41,7 @@
   (doseq [g required-groups
           :let [v (get tokens g)]]
     (when-not (map? v)
-      (throw (error/ex :clj-book.tokens/invalid-type
+      (throw (error/ex :clj-book.theme.load/invalid-type
                        (str "Token group " g " must be a map.")
                        {:path path :group g :value v})))))
 
@@ -45,7 +51,7 @@
    tokens map unchanged otherwise. `path` is used only for error context."
   [tokens path]
   (when-not (map? tokens)
-    (throw (error/ex :clj-book.tokens/invalid-shape
+    (throw (error/ex :clj-book.theme.load/invalid-shape
                      "Top-level value of tokens.edn must be a map."
                      {:path path :value tokens})))
   (check-required-groups tokens path)
@@ -60,10 +66,43 @@
   [{:keys [book-root]}]
   (let [f (io/file book-root "styles" "tokens.edn")]
     (when-not (.exists f)
-      (throw (error/ex :clj-book.tokens/missing
+      (throw (error/ex :clj-book.theme.load/missing
                        (str "Tokens file not found: " (.getPath f))
                        {:book-root book-root :path (.getPath f)})))
     (let [path   (.getPath f)
           tokens (read-edn f)]
       (validate tokens path)
       {:tokens tokens :path path})))
+
+(defn load-site-extras
+  "Load `styles/site.clj` (the tier-3 CSS escape hatch) and return its
+   Garden data structure, or nil when the file is absent.
+
+   TRUST BOUNDARY: this evaluates arbitrary Clojure from the manuscript
+   directory via `load-file`. It is a deliberate deserialization seam;
+   only run it against manuscripts you trust."
+  [book-root]
+  (let [f (io/file book-root "styles" "site.clj")]
+    (when (.exists f)
+      (try
+        (load-file (.getPath f))
+        (catch Exception e
+          (throw (error/ex :clj-book.theme.load/site-clj-eval-error
+                           (str "Failed to evaluate styles/site.clj: "
+                                (.getMessage e))
+                           {:path (.getPath f)})))))))
+
+(defn load-pdf-extras
+  "Load `styles/pdf-theme.edn` (the tier-3 PDF escape hatch) and return
+   its data map, or nil when the file is absent."
+  [book-root]
+  (let [f (io/file book-root "styles" "pdf-theme.edn")]
+    (when (.exists f)
+      (try
+        (with-open [r (PushbackReader. (io/reader f))]
+          (edn/read r))
+        (catch Exception e
+          (throw (error/ex :clj-book.theme.load/pdf-extras-read-error
+                           (str "Failed to read styles/pdf-theme.edn: "
+                                (.getMessage e))
+                           {:path (.getPath f)})))))))

@@ -2,7 +2,8 @@
   "PDF target adapter: invoke Asciidoctor PDF on the composed master."
   (:require
    [clj-book.error :as error]
-   [clj-book.tokens.pdf :as tokens-pdf]
+   [clj-book.theme.load :as theme]
+   [clj-book.theme.pdf :as theme-pdf]
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
@@ -32,7 +33,8 @@
   "Write the compiled PDF theme YAML next to the master adoc. Returns
    the path."
   [{:keys [book-root tokens intermediate-dir]}]
-  (let [yaml (tokens-pdf/compile-yaml {:book-root book-root :tokens tokens})
+  (let [extras (theme/load-pdf-extras book-root)
+        yaml (theme-pdf/compile-yaml {:tokens tokens :extras extras})
         out  (io/file intermediate-dir "tokens" "pdf-theme.yml")]
     (io/make-parents out)
     (spit out yaml)

@@ -3,7 +3,7 @@
    [clj-book.config :as config]
    [clj-book.error :as error]
    [clj-book.schema :as schema]
-   [clj-book.tokens :as tokens]
+   [clj-book.theme.load :as theme]
    [clojure.test :refer [deftest is testing]]))
 
 (def valid-root "test/fixtures/synthetic/valid-book")
@@ -15,7 +15,7 @@
   (testing "the synthetic fixture's parsed values satisfy the schemas"
     (let [{:keys [config]} (config/load-config {:book-root valid-root
                                                 :config-path "book.edn"})
-          {:keys [tokens]} (tokens/load-tokens {:book-root valid-root})]
+          {:keys [tokens]} (theme/load-tokens {:book-root valid-root})]
       (is (schema/valid? schema/Manuscript config))
       (is (schema/valid? schema/Tokens tokens))
       (is (nil? (schema/explain schema/Manuscript config)))

@@ -1,10 +1,10 @@
-(ns clj-book.tokens.css
-  "Compile design tokens into a CSS custom-properties stylesheet. The
-   tier-3 `styles/site.clj` escape hatch (Garden) is appended after the
-   token-derived rules when present."
+(ns clj-book.theme.css
+  "Theme context (pure core): compile design tokens into a CSS
+   custom-properties stylesheet. The tier-3 `styles/site.clj` escape
+   hatch (Garden data) is appended after the token-derived rules when
+   supplied. No IO: the extras are loaded by clj-book.theme.load and
+   passed in as data."
   (:require
-   [clj-book.error :as error]
-   [clojure.java.io :as io]
    [clojure.string :as str]
    [garden.core :as garden]))
 
@@ -45,29 +45,10 @@
                             (tokens->custom-props tokens)))]
     (garden/css [":root" props])))
 
-(defn load-site-extras
-  "Load `styles/site.clj` (the tier-3 escape hatch) and return its Garden
-   data structure, or nil when the file is absent.
-
-   TRUST BOUNDARY: this evaluates arbitrary Clojure from the manuscript
-   directory via `load-file`. It is a deliberate deserialization seam;
-   only run it against manuscripts you trust. Kept apart from the pure
-   `compile-css` so the effectful eval is the only impure step here."
-  [book-root]
-  (let [f (io/file book-root "styles" "site.clj")]
-    (when (.exists f)
-      (try
-        (load-file (.getPath f))
-        (catch Exception e
-          (throw (error/ex :clj-book.tokens.css/site-clj-eval-error
-                           (str "Failed to evaluate styles/site.clj: "
-                                (.getMessage e))
-                           {:path (.getPath f)})))))))
-
 (defn compile-css
   "Return a CSS string composed of the token-derived stylesheet followed
    by the already-loaded tier-3 Garden `extras` (when present). Pure: the
-   `extras` are supplied as data; see `load-site-extras` for the IO."
+   `extras` are supplied as data; see `clj-book.theme.load/load-site-extras`."
   [{:keys [tokens extras]}]
   (let [base      (token-css tokens)
         extra-css (when extras (garden/css extras))]
