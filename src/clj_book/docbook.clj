@@ -18,10 +18,10 @@
                      "asciidoctor CLI not found on PATH."
                      {:command "asciidoctor"})))
   (let [xml-out (io/file intermediate-dir "book.xml")
-        {:keys [exit out]} (proc/run! ["asciidoctor"
-                                       "--backend" "docbook5"
-                                       "--out-file" (.getPath xml-out)
-                                       master-path])]
+        {:keys [exit out]} (proc/run-cli! ["asciidoctor"
+                                           "--backend" "docbook5"
+                                           "--out-file" (.getPath xml-out)
+                                           master-path])]
     (when-not (zero? exit)
       (throw (error/ex :clj-book.docbook/generation-failed
                        "asciidoctor DocBook generation failed."

@@ -6,7 +6,7 @@
    Functions return data; callers decide how to turn a non-zero exit
    into a structured `clj-book.error`.")
 
-(defn run!
+(defn run-cli!
   "Run an external command given as a vector of program-and-arguments.
    Merges stderr into stdout and blocks until the process exits. Returns
    `{:exit <int> :out <string>}`. Reads the output stream to completion
@@ -24,5 +24,5 @@
    launch the command (for example, it is not on PATH) yields false."
   [cmd]
   (try
-    (zero? (:exit (run! [cmd "--version"])))
+    (zero? (:exit (run-cli! [cmd "--version"])))
     (catch Exception _ false)))

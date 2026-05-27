@@ -50,7 +50,7 @@
               "-a" (str "pdf-themesdir=" theme-dir)
               "-a" (str "pdf-theme=" theme-name)
               master-path]
-        {exit :exit log :out} (proc/run! args)]
+        {exit :exit log :out} (proc/run-cli! args)]
     (when-not (zero? exit)
       (throw (error/ex :clj-book.targets.pdf/build-failed
                        "asciidoctor-pdf build failed."
