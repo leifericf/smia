@@ -1,244 +1,227 @@
-# clj-book User-Facing Functionality and Affordances (v1)
+# clj-book User-Facing Functionality and Affordances
 
-## Target User
+## Status — PDF-first redesign
 
-`clj-book` is built for **semi-technical authors with programming experience** — typically developers writing technical books, technical writers comfortable in a terminal, or adjacent technical roles. The user is expected to:
+This reflects the repositioned product: author in **Hiccup**, output **PDF**
+(screen and print) on the JVM. It supersedes the earlier AsciiDoc / static-site
+affordances.
 
-- Read and follow technical documentation.
+## Target user
+
+`clj-book` is built for **programming-comfortable, Clojure-friendly authors** —
+developers writing technical books, or technical writers at home in a terminal
+and in Clojure data. The user is expected to:
+
 - Use `git` and a command-line build tool.
-- Edit text files in their editor of choice.
-- Diagnose issues from descriptive error messages.
-- Read EDN, AsciiDoc, and minimal Clojure (Garden) as configuration/customization formats.
-- Not necessarily be a Clojure expert, but willing to author a few lines of EDN and (if reaching for tier-3) Garden.
+- Edit `.edn`/`.clj` files in their editor of choice (structural editing helps).
+- Author content as **Hiccup** (the HTML-flavored data Clojure devs already know).
+- Diagnose issues from descriptive `ex-info` errors.
 
-`clj-book` is **explicitly not** built for:
+It is **not** for non-technical authors expecting WYSIWYG or a zero-CLI workflow.
+`clj-book` is the engine, not the editor; because Hiccup is the contract, a
+friendlier prose front-end (e.g. Markdown → Hiccup) could be layered on top later
+as a separate project.
 
-- Non-technical authors expecting WYSIWYG, browser-based authoring, or a zero-CLI workflow.
-- Teams requiring a fully managed publishing platform with hosting, collaboration UI, or editorial workflows.
-- Users who need to avoid the command line entirely.
+## Core user experience
 
-**Future direction (out of scope for v1)**: less-technical authoring tools may be layered *on top of* `clj-book` as separate projects. The platform aims to be the engine, not the editor.
+- Write each chapter as **Hiccup data**.
+- Configure the book in one `book.edn` (metadata + chapter order + build config).
+- Define the theme once in `tokens.edn` (compiled to the FO theme).
+- Run one command to render **PDF** in the requested profile(s).
+- Get deterministic output paths and a machine-readable artifact manifest.
+- Get hard, descriptive errors for missing or malformed inputs.
 
-## Core User Experience
+## Commands
 
-- Users run one explicit command to build one or more requested outputs.
-- Users control behavior through one config map in `book.edn`.
-- Users define one cross-target theme in `styles/tokens.edn` as EDN-native design tokens (conceptually modeled on W3C Design Tokens).
-- Users get deterministic output paths and a machine-readable artifact manifest.
-- Users get hard, descriptive errors for missing required inputs.
+- `validate` — manuscript config and chapter data are well-formed.
+- `build` — render the requested profile(s) to PDF.
+- `preview` *(optional)* — rebuild and open the PDF; replaces the old site server.
 
-## User Commands
+Canonical invocation is standard JVM Clojure (`clojure -X …`).
 
-- `validate`: Validate manuscript config and required files.
-- `build`: Build explicit targets requested by the user.
-- `serve`: Preview the online book locally.
+## Authoring surface — the Hiccup superset
 
-Canonical invocation style is standard JVM Clojure commands (`clojure -X ...`).
+One syntax, three layers, no ceiling:
 
-## Build Target Selection
+- **Ordinary HTML-flavored Hiccup** for the common case: `[:p]`, `[:h1]`, `[:ul]`,
+  `[:code]`, `[:pre]`, `[:a]`, `[:table]`, `[:blockquote]`, `[:img]`, …
+- **Book extensions** for things HTML can't name: `[:chapter {…}]`,
+  `[:xref {:to :ch-config}]`, `[:footnote …]`, `[:admonition {:kind :note}]`.
+- **Raw FO** for full power, in the same data: `[:fo/block {…} …]` reaches any
+  XSL-FO construct.
 
-- No default targets are assumed.
-- User must explicitly provide `:targets`.
-- Supported v1 targets:
-  - `:site` (Stasis + Hiccup static site, HTML + CSS only)
-  - `:pdf` (Asciidoctor PDF)
-- Multi-target builds are supported in one run, e.g. `[:site :pdf]`.
+```clojure
+[:chapter {:id :intro :title "Introduction"}
+ [:p "Plain prose with " [:strong "emphasis"] " and " [:code "inline code"] "."]
+ [:admonition {:kind :note} [:p "Worth knowing."]]
+ [:p "See " [:xref {:to :ch-config}] " to configure."]
+ [:fo/block {:space-before "12pt"} "Drop to FO only when you need to."]]
+```
 
-## Configuration Affordances
+Most authors stay in the first two layers and let the theme handle layout; raw FO
+is opt-in.
 
-Manuscript metadata and build configuration live in two complementary places:
+## Editions / profiles
 
-- **AsciiDoc document header** (`book.adoc`): authorial metadata such as title, author, revision number, and custom document attributes. This is the primary source for anything that affects the rendered manuscript content.
-- **`book.edn`**: minimal build configuration that is orthogonal to manuscript content (chapter ordering, output paths, build profiles). Required keys must be present and valid; additional keys are allowed (open map, Clojure-friendly).
+The same manuscript renders into layout profiles:
 
-## Customization Affordances
+- `:screen` — on-screen reading: comfortable margins, full color, live hyperlinks.
+- `:print` — print/binding: trim size, gutter/recto-verso margins, page-number
+  cross-references, running heads.
 
-User control over presentation is organized into three tiers. Higher tiers stay cross-target by design; the escape hatches at the lowest tier are per-target by definition.
+## Configuration affordances
 
-### Tier 1 — Tokens (style)
+- **`book.edn`** — open map: title/author metadata (there is no AsciiDoc header
+  anymore), chapter list and order, output config, profile selection. Required
+  keys enforced; extra keys preserved.
+- **`tokens.edn`** — design tokens (color, type, spacing, page) compiled into the
+  FO theme.
 
-- `styles/tokens.edn`: EDN-native design tokens (conceptually modeled on W3C Design Tokens) covering colors, typography, spacing, borders, radii.
-- One canonical source per manuscript, compiled to:
-  - CSS custom properties for site output (via Garden)
-  - Asciidoctor PDF theme YAML for PDF output
-- Where exact parity is impossible, consistent fallbacks are applied.
+## Customization model
 
-### Tier 2 — Layout configuration (symmetric)
+Replaces the old three tiers with a simpler, more powerful stack:
 
-A small, deliberate set of layout keys in `book.edn`, translated to both targets:
+1. **Tokens** — the cross-profile theme (`tokens.edn` → FO theme).
+2. **Profiles** — `:screen` / `:print` layout differences.
+3. **Raw FO** — the first-class, full-power escape: drop to `:fo/*` anywhere in
+   content or theme. No separate escape-hatch file or language.
 
-- `:page-size` (PDF page size: `:a4` / `:letter` / `:digest`)
-- `:page-margins` (PDF margins; site derives content max-width from typography tokens)
-- `:chapter-opener` (`:page-break` / `:inline`)
-- `:toc-depth` (integer)
-- `:code-line-numbers` (boolean)
-- `:admonition-style` (`:icon` / `:label`)
+## Output affordances
 
-Tier-2 keys are part of `book.edn`'s open map; unknown keys are preserved but ignored.
+- One PDF per requested profile, under deterministic paths.
+- An `artifacts.edn` manifest listing profiles, produced paths, and build metadata.
 
-### Tier 3 — Per-target escape hatches (asymmetric)
+## Error and validation affordances
 
-Optional files used only when tiers 1+2 don't cover an author's need. Anything in tier 3 is per-target by definition; using it forfeits automatic cross-target parity for the affected area.
+- Missing required `book.edn` keys or chapter files → hard error.
+- Malformed sugar/book Hiccup → malli validation error with actionable context.
+- Invalid raw `:fo/*` → surfaced FOP diagnostics.
 
-- `styles/site.clj` (Garden): authored as a Clojure file evaluating to a Garden data structure; compiled to CSS and appended after the token-derived stylesheet.
-- `styles/pdf-theme.edn`: EDN extras merged into the token-derived Asciidoctor PDF theme YAML before invocation.
+## Content and repository affordances
 
-The platform validates the *existence* of these files when referenced but does not police semantic correctness of their contents.
-
-## Output Affordances
-
-- Deterministic build output structure under configured output root.
-- Artifacts for each requested target are emitted in predictable locations.
-- Build emits an artifact manifest containing:
-  - requested targets
-  - produced artifact paths
-  - timestamps and build metadata
-
-## Error and Validation Affordances
-
-- Missing required `:targets` is a hard error.
-- Unknown targets are hard errors.
-- Missing required config keys or required files are hard errors.
-- Error messages are descriptive and include actionable context (key/path/target).
-
-## Content and Repository Affordances
-
-- Third-party book text lives in separate manuscript repositories.
-- Manuscript repos consume `clj-book` via normal Clojure dependency usage.
-- The one exception is the `clj-book` user manual itself, which is authored as a dogfood manuscript inside the `clj-book` repository under `docs/manual/` and is built by `clj-book`.
+- Third-party manuscripts live in separate repos consuming `clj-book` as a
+  dependency.
+- The `clj-book` user manual lives under `docs/manual/` as a dogfood manuscript —
+  to be re-authored in Hiccup — and is the platform's primary real-manuscript
+  regression case.
 
 ## Scope of v1
 
-- Included: `:site` and `:pdf` targets.
-- Site output is HTML + CSS only with zero client-side JavaScript runtime.
-- Excluded for now: default target behavior, client-side runtime, Datomic dependency, ebook formats.
-- Ebook formats may be added later as additional explicit targets.
+- **Included:** build PDF (`:screen` + `:print`) from Hiccup; `validate`; `tokens`
+  theme; deterministic output + manifest.
+- **Excluded:** HTML/static site, EPUB, arbitrary CSS interpretation, external
+  binaries/subprocesses, Datomic, WYSIWYG.
+
+## Open decisions
+
+- Chapter files `.edn` (pure data) vs `.clj` (programmable, runs at build).
+- One PDF edition vs two profiles emitted by default.
+- v1 sugar element set + unknown-tag policy.
+- Optional `(markdown "…")` prose front-end.
 
 ## BDD Scenarios (Gherkin)
 
 ```gherkin
-Feature: Explicit target builds
+Feature: Render a manuscript to PDF
   As a manuscript maintainer
-  I want to explicitly select output targets
-  So that builds are intentional and predictable
+  I want to build my Hiccup manuscript into a PDF
+  So that I can publish a screen or print edition
 
-  Scenario: Build fails when targets are missing
+  Scenario: Build a PDF from a valid manuscript
     Given a manuscript repo with a valid "book.edn"
-    When I run the build command without ":targets"
-    Then the command fails
-    And the error message says that ":targets" is required
-    And the error includes actionable context
-
-  Scenario: Build fails when target is unknown
-    Given a manuscript repo with a valid "book.edn"
-    When I run the build command with ":targets [:unknown]"
-    Then the command fails
-    And the error message identifies ":unknown" as unsupported
-
-  Scenario: Build succeeds for one valid target
-    Given a manuscript repo with a valid "book.edn"
-    And a valid "styles/tokens.edn"
-    When I run the build command with ":targets [:site]"
+    And valid Hiccup chapter sources
+    And a valid "tokens.edn"
+    When I run the build command for the ":print" profile
     Then the command succeeds
-    And site artifacts are written to deterministic output paths
+    And a PDF artifact is written to a deterministic output path
     And an artifact manifest is emitted
 
-  Scenario: Build succeeds for multiple valid targets
-    Given a manuscript repo with a valid "book.edn"
-    And a valid "styles/tokens.edn"
-    When I run the build command with ":targets [:site :pdf]"
-    Then the command succeeds
-    And site artifacts are written to deterministic output paths
-    And PDF artifacts are written to deterministic output paths
-    And one artifact manifest lists both targets
+  Scenario: Build both editions
+    Given a valid manuscript
+    When I run the build command for ":screen" and ":print"
+    Then a screen PDF and a print PDF are written to deterministic paths
+    And one artifact manifest lists both profiles
+
+Feature: Hiccup superset authoring
+  As an author
+  I want bog-standard Hiccup to work, with full FO available when needed
+  So that the common case is easy and nothing is out of reach
+
+  Scenario: Ordinary HTML hiccup renders
+    Given a chapter using ":p", ":h2", ":ul", ":code", and ":a" elements
+    When I build the manuscript
+    Then those elements are rendered to the corresponding FO and appear in the PDF
+
+  Scenario: Raw FO passes through
+    Given a chapter containing a ":fo/block" with FO properties
+    When I build the manuscript
+    Then the raw FO is emitted verbatim into the FO document
+    And the PDF reflects it
+
+  Scenario: Cross-references resolve to page numbers in print
+    Given a chapter with "[:xref {:to :ch-config}]"
+    And a chapter with id ":ch-config"
+    When I build the ":print" profile
+    Then the cross-reference renders as a link with the target's page number
 
 Feature: Open-map manuscript configuration
-  As a manuscript maintainer
-  I want required keys enforced while still allowing extra keys
-  So that configuration is robust and Clojure-friendly
+  As a maintainer
+  I want required keys enforced while extra keys are preserved
 
-  Scenario: Validation fails when required key is missing
-    Given a manuscript repo with "book.edn" missing a required key
+  Scenario: Validation fails when a required key is missing
+    Given a "book.edn" missing a required key
     When I run the validate command
-    Then the command fails
-    And the error identifies the missing key
+    Then the command fails and the error identifies the missing key
 
-  Scenario: Validation accepts additional non-required keys
-    Given a manuscript repo with all required keys in "book.edn"
-    And additional custom keys in "book.edn"
+  Scenario: Validation accepts additional keys
+    Given a "book.edn" with all required keys plus custom keys
     When I run the validate command
     Then the command succeeds
 
-Feature: Single cross-target theme file
-  As a manuscript maintainer
-  I want one canonical theme definition
-  So that visual identity is consistent across outputs
+  Scenario: Malformed chapter content is rejected with context
+    Given a chapter whose Hiccup violates the vocabulary schema
+    When I run the validate command
+    Then the command fails with a humanized schema error identifying the element
 
-  Scenario: Tokens compile to site and PDF artifacts
-    Given a manuscript repo with valid "styles/tokens.edn"
-    When I run the build command with ":targets [:site :pdf]"
-    Then token data is compiled to CSS custom properties for site output
-    And token data is compiled to Asciidoctor PDF YAML for PDF output
+Feature: Single cross-profile theme
+  As a maintainer
+  I want one theme definition compiled into the FO output
 
-  Scenario: Build fails when tokens file is missing
-    Given a manuscript repo with valid "book.edn"
-    And no "styles/tokens.edn"
-    When I run the build command with ":targets [:site]"
-    Then the command fails
-    And the error identifies the missing tokens file path
+  Scenario: Tokens drive the PDF theme
+    Given a valid "tokens.edn"
+    When I build the manuscript
+    Then fonts, sizes, spacing, and colors in the PDF derive from the tokens
 
-  Scenario: Tier-3 site escape hatch is applied after compiled CSS
-    Given a manuscript repo with valid "styles/tokens.edn"
-    And a "styles/site.clj" file containing a Garden stylesheet
-    When I run the build command with ":targets [:site]"
-    Then the site CSS contains the token-derived rules
-    And the site CSS contains the Garden-derived rules appearing after the token-derived rules
+  Scenario: Build fails when the tokens file is missing
+    Given a valid "book.edn" and no "tokens.edn"
+    When I run the build command
+    Then the command fails and the error identifies the missing tokens path
 
-  Scenario: Tier-3 PDF extras are merged into compiled PDF theme
-    Given a manuscript repo with valid "styles/tokens.edn"
-    And a "styles/pdf-theme.edn" file containing additional theme keys
-    When I run the build command with ":targets [:pdf]"
-    Then the Asciidoctor PDF theme contains the token-derived keys
-    And the Asciidoctor PDF theme contains the user-provided keys merged on top
+Feature: Deterministic outputs and manifest
+  As a maintainer
+  I want reproducible PDFs and machine-readable metadata
 
-Feature: Artifact manifest and deterministic outputs
-  As a manuscript maintainer
-  I want deterministic paths and machine-readable metadata
-  So that CI and publishing automation can consume build results
-
-  Scenario: Manifest includes requested targets and paths
-    Given a successful build for ":targets [:site :pdf]"
-    When I inspect the artifact manifest
-    Then it contains both requested targets
-    And it contains output paths for each artifact
-    And it contains build timestamps and metadata
-
-  Scenario: Same input produces same output layout
-    Given the same manuscript inputs and the same build request
+  Scenario: Same input produces the same bytes
+    Given identical manuscript inputs and the same build request
     When I run the build twice
-    Then artifact directory layout is identical across both runs
+    Then the produced PDF bytes are identical across both runs
+
+  Scenario: Manifest lists profiles and paths
+    Given a successful build for ":screen" and ":print"
+    When I inspect the artifact manifest
+    Then it lists both profiles, their output paths, and build metadata
 
 Feature: Repository and content boundaries
   As a platform maintainer
-  I want clj-book and manuscript content separated
-  So that the platform remains reusable and book text remains external
+  I want clj-book and manuscript content kept separate
 
   Scenario: Platform tests use synthetic manuscripts
-    Given the clj-book platform repository
-    When I run its test suite
-    Then unit and integration tests run using synthetic fixture manuscripts
-    And no third-party manuscript text is required
+    Given the clj-book repository
+    When I run the test suite
+    Then it uses synthetic Hiccup fixtures and no third-party manuscript text
 
-  Scenario: User manual is built by clj-book as a dogfood manuscript
-    Given the clj-book platform repository
-    And a manuscript at "docs/manual/" containing "book.adoc", "book.edn", and "styles/tokens.edn"
-    When I run the build command from the platform repo with ":targets [:site :pdf]" against "docs/manual/"
-    Then the command succeeds
-    And site and PDF artifacts for the user manual are written to deterministic output paths
-
-  Scenario: Manuscript repository consumes clj-book as a dependency
-    Given a separate manuscript repository
-    When I configure clj-book in deps.edn
-    And I run clj-book commands from that repository
-    Then builds run against the manuscript repository inputs
+  Scenario: The user manual is a dogfood manuscript
+    Given a manuscript at "docs/manual/" authored in Hiccup
+    When I build it with clj-book
+    Then the manual PDF is produced for the requested profiles
 ```
