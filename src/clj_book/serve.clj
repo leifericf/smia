@@ -3,6 +3,7 @@
   (:require
    [clj-book.compose :as compose]
    [clj-book.docbook :as docbook]
+   [clj-book.document :as document]
    [clj-book.pipeline :as pipeline]
    [clj-book.targets.site :as site-target]
    [clojure.java.io :as io]
@@ -11,14 +12,17 @@
 
 (defn build-preview-pages
   "Run the shared prerequisites and return the Stasis page map for the
-   site target. Suitable both for local preview and for tests."
-  [{:keys [intermediate-dir book-root tokens config] :as ctx}]
+   site target. Suitable both for local preview and for tests. Writes the
+   master adoc and generates DocBook once per call; the resulting HTML
+   model goes through the same `document`/`site` path as a full build."
+  [{:keys [intermediate-dir config] :as ctx}]
   (io/make-parents (io/file intermediate-dir "book.adoc"))
-  (let [_ (compose/write-master! ctx)
-        _ (docbook/generate-docbook! ctx)
-        docbook (docbook/parse-docbook-file
-                  (str intermediate-dir "/book.xml"))
-        body    (#'site-target/->hiccup docbook)]
+  (let [master-path (compose/write-master! ctx)
+        _           (docbook/generate-docbook!
+                      (assoc ctx :master-path master-path))
+        docbook     (docbook/parse-docbook-file
+                      (str intermediate-dir "/book.xml"))
+        body        (document/->html-model docbook)]
     (site-target/page-map {:book/title  (:book/title config)
                            :book/slug   (:book/slug config)
                            :css-href    "/assets/site.css"
@@ -29,11 +33,8 @@
    manuscript. Pages are rebuilt on each request so edits are picked
    up; the underlying tools are cached so the cost is small."
   [request]
-  (let [ctx   (pipeline/prepare request)
-        ctx*  (assoc ctx
-                     :master-path
-                     (compose/write-master! ctx))]
-    (stasis/serve-pages (fn [] (build-preview-pages ctx*)))))
+  (let [ctx (pipeline/prepare request)]
+    (stasis/serve-pages (fn [] (build-preview-pages ctx)))))
 
 (defn run
   "Start a local preview server. Returns the running Jetty server."
