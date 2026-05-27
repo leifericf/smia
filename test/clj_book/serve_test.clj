@@ -1,8 +1,8 @@
 (ns clj-book.serve-test
   (:require
+   [clj-book.build.execute :as execute]
    [clj-book.docbook :as docbook]
    [clj-book.error :as error]
-   [clj-book.pipeline :as pipeline]
    [clj-book.serve :as serve]
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -29,7 +29,7 @@
 
 (deftest preview-pages-built-from-context
   (with-redefs [docbook/generate-docbook! (stub-docbook!)]
-    (let [ctx (pipeline/prepare {:book-root valid-root
+    (let [ctx (execute/prepare {:book-root valid-root
                                  :config-path "book.edn"
                                  :output-root (tmp "ctx")
                                  :command :serve})
@@ -40,7 +40,7 @@
 (deftest invalid-manuscript-surfaces-clear-error
   (testing "Serving an invalid book fails during prepare, not during request"
     (let [d (catch-data
-              #(pipeline/prepare {:book-root invalid-root
+              #(execute/prepare {:book-root invalid-root
                                   :config-path "book.edn"
                                   :output-root (tmp "invalid")
                                   :command :serve}))]

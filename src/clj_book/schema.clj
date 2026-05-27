@@ -60,6 +60,28 @@
    [:site-css :string]
    [:theme-yaml :string]])
 
+(def TargetStep
+  "A single target's place in the plan: what to build and where it goes."
+  [:map
+   [:target Target]
+   [:output-dir :string]])
+
+(def Plan
+  "An inspectable, pure description of a build: which targets, where each
+   writes, the shared prerequisites to emit, and the manifest skeleton.
+   Produced by clj-book.build.plan; performed by clj-book.build.execute."
+  [:map
+   [:book-root :string]
+   [:targets [:sequential Target]]
+   [:manuscript :map]
+   [:paths Paths]
+   [:prereqs [:sequential [:map [:kind :keyword] [:path :string]]]]
+   [:target-steps [:sequential TargetStep]]
+   [:manifest-skeleton [:map
+                        [:book/slug :string]
+                        [:build/targets [:sequential Target]]
+                        [:metadata :map]]]])
+
 (defn valid?
   "True when `value` conforms to `schema`."
   [schema value]

@@ -4,6 +4,8 @@
 .clj-kondo/
 .nrepl-port
 target/
-build/
+# Anchored to the repo root: this is the build output dir. An unanchored
+# `build/` would also swallow source packages like src/clj_book/build/.
+/build/
 *.log
 .DS_Store

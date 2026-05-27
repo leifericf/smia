@@ -1,10 +1,10 @@
 (ns clj-book.serve
   "Local preview server for the :site target."
   (:require
+   [clj-book.build.execute :as build]
    [clj-book.compose :as compose]
    [clj-book.docbook :as docbook]
    [clj-book.document :as document]
-   [clj-book.pipeline :as pipeline]
    [clj-book.targets.site :as site-target]
    [clojure.java.io :as io]
    [ring.adapter.jetty :as jetty]
@@ -12,7 +12,7 @@
 
 (defn build-preview-pages
   "Run the shared prerequisites and return the Stasis page map for the
-   site target. Takes the structured value from `pipeline/prepare`.
+   site target. Takes the structured value from `build/prepare`.
    Writes the master adoc and generates DocBook once per call; the
    resulting HTML model goes through the same `document`/`site` path as a
    full build."
@@ -40,7 +40,7 @@
    manuscript. Pages are rebuilt on each request so edits are picked
    up; the underlying tools are cached so the cost is small."
   [request]
-  (let [prepared (pipeline/prepare request)]
+  (let [prepared (build/prepare request)]
     (stasis/serve-pages (fn [] (build-preview-pages prepared)))))
 
 (defn run

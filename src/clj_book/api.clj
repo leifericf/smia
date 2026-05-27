@@ -1,7 +1,7 @@
 (ns clj-book.api
   "Public entrypoints invoked via `clojure -X`."
   (:require
-   [clj-book.pipeline :as pipeline]
+   [clj-book.build.execute :as build]
    [clj-book.request :as request]
    [clj-book.serve :as serve]))
 
@@ -10,14 +10,14 @@
   [request-map]
   (-> request-map
       (request/normalize :validate)
-      pipeline/validate))
+      build/validate))
 
 (defn build
   "Build the requested targets. Required keys: `:book-root`, `:targets`."
   [request-map]
   (-> request-map
       (request/normalize :build)
-      pipeline/build))
+      build/build))
 
 (defn serve
   "Run a local preview server for the `:site` target."

@@ -1,11 +1,10 @@
-(ns clj-book.pipeline-test
+(ns clj-book.build.execute-test
   (:require
+   [clj-book.build.execute :as execute]
    [clj-book.compose :as compose]
    [clj-book.docbook :as docbook]
    [clj-book.error :as error]
-   [clj-book.pipeline :as pipeline]
    [clj-book.targets.pdf :as pdf-target]
-   [clj-book.targets.site :as site-target]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
@@ -15,7 +14,7 @@
 
 (defn- tmp-dir [tag]
   (str (System/getProperty "java.io.tmpdir")
-       "/clj-book-pipeline-" tag "-" (System/currentTimeMillis)))
+       "/clj-book-execute-" tag "-" (System/currentTimeMillis)))
 
 (defn- catch-data [f]
   (try (f) nil (catch Exception e (error/data e))))
@@ -28,7 +27,7 @@
          overrides))
 
 (deftest prepare-loads-config-and-tokens
-  (let [{:keys [manuscript paths]} (pipeline/prepare (request "prepare"))]
+  (let [{:keys [manuscript paths]} (execute/prepare (request "prepare"))]
     (is (= "tiny-book" (:book/slug (:config manuscript))))
     (is (map? (:tokens manuscript)))
     (is (vector? (:warnings manuscript)))
@@ -37,7 +36,7 @@
     (is (str/includes? (:pdf-output-dir paths)   "tiny-book/pdf"))))
 
 (deftest validate-returns-ok
-  (let [out (pipeline/validate (request "validate"))]
+  (let [out (execute/validate (request "validate"))]
     (is (= :ok (:status out)))))
 
 (defn- stub-docbook!
@@ -54,7 +53,7 @@
   (testing "Build runs prereqs, emits site artifacts and manifest"
     (with-redefs [docbook/generate-docbook! (stub-docbook!)]
       (let [req (request "site-build" :targets [:site])
-            man (pipeline/build req)
+            man (execute/build req)
             slug (:book/slug man)]
         (is (= "tiny-book" slug))
         (is (= [:site] (:build/targets man)))
@@ -72,7 +71,7 @@
     ;; being absent from PATH.
     (with-redefs [docbook/generate-docbook! (stub-docbook!)
                   clj-book.targets.pdf/cli-available? (constantly false)]
-      (let [d (catch-data #(pipeline/build (request "pdf-fail"
+      (let [d (catch-data #(execute/build (request "pdf-fail"
                                                     :targets [:pdf])))]
         (is (= :clj-book.targets.pdf/cli-missing (:error/type d)))))))
 
@@ -93,7 +92,7 @@
                         (spit out "%PDF-1.4\n%fake\n")
                         {:pdf (.getPath out) :dir (.getParent out)}))]
         (let [req (request "multi" :targets [:site :pdf])
-              man (pipeline/build req)]
+              man (execute/build req)]
           (is (= 1 @write-count)
               "compose/write-master! must run exactly once for multi-target builds")
           (is (= [:site :pdf] (:build/targets man)))
@@ -101,6 +100,6 @@
           (is (every? (set (map :target (:artifacts man))) #{:site :pdf})))))))
 
 (deftest invalid-target-blocked-by-request-normalization
-  ;; This is asserted at the public api/request layer; pipeline assumes
+  ;; This is asserted at the public api/request layer; execute assumes
   ;; the request has been normalized.
   (is true))
