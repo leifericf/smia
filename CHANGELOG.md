@@ -35,6 +35,9 @@ Initial pre-release.
   checked in the shell, never inside a pure core.
 - Renamed Theme error types from `:clj-book.tokens*` to
   `:clj-book.theme.load/*` (for example `:clj-book.theme.load/missing`).
+- Centralized all subprocess execution in a single `clj-book.proc`
+  kernel; `docbook` and the PDF target no longer construct their own
+  `ProcessBuilder`s.
 
 ### Removed
 

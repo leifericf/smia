@@ -4,6 +4,7 @@
    [clj-book.compose :as compose]
    [clj-book.docbook :as docbook]
    [clj-book.error :as error]
+   [clj-book.proc :as proc]
    [clj-book.targets.pdf :as pdf-target]
    [clojure.java.io :as io]
    [clojure.string :as str]
@@ -70,7 +71,7 @@
     ;; asciidoctor-pdf for the dogfood build, so we cannot rely on it
     ;; being absent from PATH.
     (with-redefs [docbook/generate-docbook! (stub-docbook!)
-                  clj-book.targets.pdf/cli-available? (constantly false)]
+                  proc/cli-available? (constantly false)]
       (let [d (catch-data #(execute/build (request "pdf-fail"
                                                     :targets [:pdf])))]
         (is (= :clj-book.targets.pdf/cli-missing (:error/type d)))))))

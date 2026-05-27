@@ -1,6 +1,7 @@
 (ns clj-book.targets.pdf-test
   (:require
    [clj-book.error :as error]
+   [clj-book.proc :as proc]
    [clj-book.targets.pdf :as pdf]
    [clj-book.theme.load :as theme]
    [clojure.java.io :as io]
@@ -38,10 +39,9 @@
 
 (deftest preflight-reports-missing-master
   (let [d (catch-data
-            #(with-redefs [pdf/cli-available? (constantly true)
-                           ;; bypass missing CLI by stubbing internals
-                           ]
-               ;; preflight! checks master-path before CLI presence:
+            #(with-redefs [proc/cli-available? (constantly true)]
+               ;; With the CLI present, preflight! proceeds to the
+               ;; master-path check, which fails for a missing file.
                (pdf/preflight! {:master-path "/no/such/file"})))]
     (is (or (= :clj-book.targets.pdf/cli-missing (:error/type d))
             (= :clj-book.targets.pdf/missing-master (:error/type d)))

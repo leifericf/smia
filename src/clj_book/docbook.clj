@@ -3,47 +3,33 @@
    a Hiccup-friendly Clojure data structure."
   (:require
    [clj-book.error :as error]
+   [clj-book.proc :as proc]
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
-   (java.io ByteArrayInputStream StringReader)
+   (java.io ByteArrayInputStream)
    (javax.xml.parsers DocumentBuilderFactory)
    (org.w3c.dom Element Node)))
-
-(defn- asciidoctor-available? []
-  (try
-    (let [pb (doto (ProcessBuilder. ["asciidoctor" "--version"])
-               (.redirectErrorStream true))
-          p  (.start pb)]
-      (.waitFor p)
-      (zero? (.exitValue p)))
-    (catch Exception _ false)))
 
 (defn generate-docbook!
   "Invoke Asciidoctor with the DocBook 5 backend on the composed master
    `book.adoc`. Writes `book.xml` next to the master file. Returns the
    path to the generated DocBook file."
   [{:keys [intermediate-dir master-path]}]
-  (when-not (asciidoctor-available?)
+  (when-not (proc/cli-available? "asciidoctor")
     (throw (error/ex :clj-book.docbook/asciidoctor-missing
                      "asciidoctor CLI not found on PATH."
                      {:command "asciidoctor"})))
-  (let [out (io/file intermediate-dir "book.xml")
-        pb  (doto (ProcessBuilder.
-                    ["asciidoctor"
-                     "--backend" "docbook5"
-                     "--out-file" (.getPath out)
-                     master-path])
-              (.redirectErrorStream true))
-        p   (.start pb)
-        _   (.waitFor p)]
-    (when-not (zero? (.exitValue p))
-      (let [output (slurp (.getInputStream p))]
-        (throw (error/ex :clj-book.docbook/generation-failed
-                         "asciidoctor DocBook generation failed."
-                         {:exit-code (.exitValue p)
-                          :output    output}))))
-    (.getPath out)))
+  (let [xml-out (io/file intermediate-dir "book.xml")
+        {:keys [exit out]} (proc/run! ["asciidoctor"
+                                       "--backend" "docbook5"
+                                       "--out-file" (.getPath xml-out)
+                                       master-path])]
+    (when-not (zero? exit)
+      (throw (error/ex :clj-book.docbook/generation-failed
+                       "asciidoctor DocBook generation failed."
+                       {:exit-code exit :output out})))
+    (.getPath xml-out)))
 
 (defn- parse-xml-string [^String s]
   (let [factory (doto (DocumentBuilderFactory/newInstance)

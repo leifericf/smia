@@ -2,25 +2,17 @@
   "PDF target adapter: invoke Asciidoctor PDF on the composed master."
   (:require
    [clj-book.error :as error]
+   [clj-book.proc :as proc]
    [clj-book.theme.load :as theme]
    [clj-book.theme.pdf :as theme-pdf]
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(defn- cli-available? [cmd]
-  (try
-    (let [pb (doto (ProcessBuilder. [cmd "--version"])
-               (.redirectErrorStream true))
-          p  (.start pb)]
-      (.waitFor p)
-      (zero? (.exitValue p)))
-    (catch Exception _ false)))
-
 (defn preflight!
   "Verify required CLI tools and inputs exist. Throws structured
    `ex-info` on failure."
   [{:keys [master-path]}]
-  (when-not (cli-available? "asciidoctor-pdf")
+  (when-not (proc/cli-available? "asciidoctor-pdf")
     (throw (error/ex :clj-book.targets.pdf/cli-missing
                      "asciidoctor-pdf CLI not found on PATH."
                      {:command "asciidoctor-pdf"})))
@@ -54,15 +46,10 @@
               "-a" (str "pdf-themesdir=" theme-dir)
               "-a" (str "pdf-theme=" theme-name)
               master-path]
-        pb   (doto (ProcessBuilder. ^java.util.List args)
-               (.redirectErrorStream true))
-        p    (.start pb)
-        log  (slurp (.getInputStream p))
-        _    (.waitFor p)]
-    (when-not (zero? (.exitValue p))
+        {exit :exit log :out} (proc/run! args)]
+    (when-not (zero? exit)
       (throw (error/ex :clj-book.targets.pdf/build-failed
                        "asciidoctor-pdf build failed."
-                       {:exit-code (.exitValue p)
-                        :output    log})))
+                       {:exit-code exit :output log})))
     {:pdf (.getPath out)
      :dir (.getParent out)}))
