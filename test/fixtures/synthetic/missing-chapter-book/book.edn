@@ -1,0 +1,3 @@
+{:book/slug     "missing-chapter-book"
+ :book/title    "Missing Chapter Book"
+ :book/chapters ["chapters/does-not-exist.adoc"]}

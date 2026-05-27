@@ -6,7 +6,7 @@
 
 (def valid-root "test/fixtures/synthetic/valid-book")
 (def invalid-root "test/fixtures/synthetic/invalid-book")
-(def missing-tokens-root "test/fixtures/synthetic/missing-tokens-book")
+(def missing-chapter-root "test/fixtures/synthetic/missing-chapter-book")
 
 (defn- catch-data [f]
   (try (f) nil
@@ -38,10 +38,20 @@
 
 (deftest missing-chapter-fails
   (let [d (catch-data
-            #(config/load-config {:book-root missing-tokens-root
+            #(config/load-config {:book-root missing-chapter-root
                                   :config-path "book.edn"}))]
-    ;; The fixture's chapters/01.adoc exists, so this succeeds.
-    (is (nil? d) "missing-tokens fixture has its own chapter")))
+    (is (= :clj-book.config/missing-chapter (:error/type d)))
+    (is (some #{"chapters/does-not-exist.adoc"}
+              (:missing (:error/context d))))))
+
+(deftest duplicate-chapter-rejected
+  (testing "Manuscript validation owns chapter uniqueness (pure)"
+    (let [d (catch-data
+              #(config/validate {:book/slug "x" :book/title "t"
+                                 :book/chapters ["a.adoc" "a.adoc"]}
+                                "book.edn"))]
+      (is (= :clj-book.config/duplicate-chapter (:error/type d)))
+      (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
 (deftest config-file-not-found
   (let [d (catch-data

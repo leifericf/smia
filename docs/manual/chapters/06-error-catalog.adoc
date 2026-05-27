@@ -51,13 +51,9 @@
 |A token group is not a map.
 |Fix the value to be a Clojure map.
 
-|`:clj-book.compose/duplicate-chapter`
+|`:clj-book.config/duplicate-chapter`
 |`:book/chapters` lists the same path twice.
 |Deduplicate the chapter list.
-
-|`:clj-book.compose/missing-chapter`
-|A composed chapter path does not exist on disk.
-|Fix the path or create the file.
 
 |`:clj-book.docbook/asciidoctor-missing`
 |`asciidoctor` CLI is not on `PATH`.

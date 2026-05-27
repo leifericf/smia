@@ -64,6 +64,21 @@
                      msg
                      {:path path :key k :value (get config k)}))))
 
+(defn- duplicate-chapters [chapters]
+  (->> (frequencies chapters)
+       (filter (fn [[_ n]] (> n 1)))
+       (map key)
+       sort
+       vec))
+
+(defn- check-no-duplicate-chapters [config path]
+  (let [dupes (duplicate-chapters (:book/chapters config))]
+    (when (seq dupes)
+      (throw (error/ex :clj-book.config/duplicate-chapter
+                       (str "Duplicate chapter reference(s) in " path ": "
+                            (str/join ", " dupes))
+                       {:path path :duplicates dupes})))))
+
 (defn- check-chapters-exist [config book-root path]
   (let [missing (->> (:book/chapters config)
                      (remove #(.exists (io/file book-root %)))
@@ -116,6 +131,7 @@
                      {:path path :value config})))
   (check-required-keys config path)
   (check-types config path)
+  (check-no-duplicate-chapters config path)
   (validate-layout config))
 
 (defn load-config

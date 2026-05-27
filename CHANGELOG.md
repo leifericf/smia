@@ -41,6 +41,11 @@ Initial pre-release.
 - Split the DocBook bridge: `clj-book.docbook` now only produces XML
   (shell), and the pure XML-to-Hiccup parser moved to
   `clj-book.docbook.parse`.
+- Consolidated chapter validation (existence and uniqueness) in the
+  Manuscript context; `compose` now only assembles. The duplicate-chapter
+  error moved from `:clj-book.compose/duplicate-chapter` to
+  `:clj-book.config/duplicate-chapter`, and `:clj-book.compose/missing-chapter`
+  is gone (use `:clj-book.config/missing-chapter`).
 
 ### Removed
 
