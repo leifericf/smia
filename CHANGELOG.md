@@ -28,6 +28,16 @@ landed on the redesign branch.
 
 ### Added
 
+- `clj-book.fo.render`: the FOP rendering shell (the only namespace that
+  touches Apache FOP or an output stream). Renders an XSL-FO string to PDF
+  bytes in-process via an identity `Transformer` into FOP's SAX handler;
+  pins producer/creator/creation-date for structurally reproducible
+  output; collects FOP events, returning warnings and surfacing
+  ERROR/FATAL events (and transform failures) as structured errors.
+- Apache FOP (`org.apache.xmlgraphics/fop`) as the sole new runtime
+  dependency (pulls Batik and XML Graphics Commons; all Apache-2.0,
+  EPL-compatible). PDFBox is a test-only dependency for asserting PDF page
+  count and text.
 - The L1 renderer core (pure, no IO, no FOP): `clj-book.fo.attrs`
   (FO attribute name/value mapping, sorted for reproducibility),
   `clj-book.fo.serialize` (hand-rolled FO-Hiccup -> XSL-FO XML; XML
