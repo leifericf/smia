@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <title>Tiny Synthetic Book</title>
+    <author><personname><firstname>clj-book</firstname><surname>contributors</surname></personname></author>
+  </info>
+  <chapter xml:id="ch-intro">
+    <title>Introduction</title>
+    <simpara>This is the introduction chapter of the synthetic test book.</simpara>
+    <itemizedlist>
+      <listitem><simpara>Bullet one.</simpara></listitem>
+      <listitem><simpara>Bullet two.</simpara></listitem>
+    </itemizedlist>
+  </chapter>
+  <chapter xml:id="ch-body">
+    <title>Main Body</title>
+    <simpara>The main body of the synthetic book has one short paragraph.</simpara>
+  </chapter>
+</book>
