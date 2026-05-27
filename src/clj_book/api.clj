@@ -3,7 +3,6 @@
   (:require
    [clj-book.build.execute :as build]
    [clj-book.request :as request]
-   [clj-book.serve :as serve]
    [clojure.pprint :as pp]))
 
 (defn validate
@@ -22,10 +21,3 @@
     (when (:dry-run req)
       (pp/pprint result))
     result))
-
-(defn serve
-  "Run a local preview server for the `:site` target."
-  [request-map]
-  (-> request-map
-      (request/normalize :serve)
-      serve/run))

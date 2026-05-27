@@ -6,8 +6,7 @@
 
 (deftest public-api-surface
   (is (var? #'api/validate))
-  (is (var? #'api/build))
-  (is (var? #'api/serve)))
+  (is (var? #'api/build)))
 
 (deftest build-without-targets-is-hard-error
   (let [d (try (api/build {:book-root "test/fixtures/synthetic/valid-book"})

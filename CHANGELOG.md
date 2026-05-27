@@ -3,9 +3,40 @@
 All notable changes to clj-book are recorded in this file. Format
 follows the spirit of [Keep a Changelog](https://keepachangelog.com/).
 
-## v1.0.0-alpha — Unreleased
+## Unreleased — PDF-first redesign
 
-Initial pre-release.
+clj-book is being repositioned as a **PDF-first** publishing engine: authors
+write Clojure **Hiccup** and the engine renders **PDF** (screen and print
+editions) entirely on the JVM via **Apache FOP** — no Ruby, no asciidoctor, no
+external binary, no subprocess. This supersedes the earlier AsciiDoc /
+static-site direction. The work is in progress; the bullets below track what has
+landed on the redesign branch.
+
+### Removed
+
+- The static-site (`:site`) target (Stasis + Hiccup HTML + Garden CSS) and the
+  local preview server (`clj-book.api/serve`), along with the Ring/Jetty
+  dependency.
+- The DocBook bridge (`clj-book.docbook`, `clj-book.docbook.parse`), the HTML
+  document model (`clj-book.document`), the master composer
+  (`clj-book.compose`), and the CSS theme compiler (`clj-book.theme.css`).
+
+### Retained spine
+
+- `clj-book.api/validate` and `clj-book.api/build` entrypoints (`build`
+  rendering is temporarily unavailable while the FOP pipeline is wired in).
+- `book.edn` open-map configuration and `styles/tokens.edn` loading/validation.
+- Deterministic output layout under `<output-root>/<book-slug>/` and the
+  machine-readable `artifacts.edn` manifest.
+- Structured `ex-info` errors with `:error/type`, `:error/message`,
+  `:error/context`.
+- `:dry-run` option for `clj-book.api/build`: returns the build plan without
+  rendering or writing artifacts.
+
+## v1.0.0-alpha — superseded
+
+The pre-release described below was the AsciiDoc / multi-format design now
+replaced by the PDF-first redesign above. Recorded for history.
 
 ### Added
 

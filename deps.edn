@@ -2,12 +2,7 @@
 
  :deps {org.clojure/clojure        {:mvn/version "1.12.0"}
         metosin/malli              {:mvn/version "0.16.4"}
-        stasis/stasis              {:mvn/version "2023.11.21"}
-        hiccup/hiccup              {:mvn/version "2.0.0-RC5"}
-        garden/garden              {:mvn/version "1.3.10"}
-        clj-commons/clj-yaml       {:mvn/version "1.0.27"}
-        ring/ring-core             {:mvn/version "1.12.2"}
-        ring/ring-jetty-adapter    {:mvn/version "1.12.2"}}
+        clj-commons/clj-yaml       {:mvn/version "1.0.27"}}
 
  :aliases
  {:test  {:extra-paths ["test" "test/resources"]
@@ -20,9 +15,6 @@
           :extra-deps  {nrepl/nrepl {:mvn/version "1.3.0"}}}
 
   :build {:exec-fn   clj-book.api/build
-          :exec-args {}}
-
-  :serve {:exec-fn   clj-book.api/serve
           :exec-args {}}
 
   :validate {:exec-fn   clj-book.api/validate

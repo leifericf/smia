@@ -30,13 +30,12 @@
 (def interface-nss
   "Interface-layer source files: the only entry points to the system."
   ["src/clj_book/api.clj"
-   "src/clj_book/serve.clj"
    "src/clj_book/request.clj"])
 
 (def render-internals
   "Rendering-context namespaces the interface must not reach into; it
    routes through clj-book.build.execute instead."
-  ["clj-book.docbook" "clj-book.compose" "clj-book.targets" "clj-book.document"])
+  ["clj-book.targets" "clj-book.proc" "clj-book.theme.pdf"])
 
 (deftest interface-routes-through-build
   (doseq [path interface-nss
@@ -49,9 +48,7 @@
 (def pure-core-nss
   "Source files that are pure cores: transforms with no IO and no
    shelling out, so they are exercisable on in-memory data alone."
-  ["src/clj_book/document.clj"
-   "src/clj_book/theme/css.clj"
-   "src/clj_book/theme/pdf.clj"
+  ["src/clj_book/theme/pdf.clj"
    "src/clj_book/build/plan.clj"])
 
 (deftest pure-cores-do-no-io
