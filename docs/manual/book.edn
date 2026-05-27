@@ -6,4 +6,5 @@
                  "chapters/03-configuration.clj"
                  "chapters/04-theming.clj"
                  "chapters/05-commands.clj"
-                 "chapters/06-error-catalog.clj"]}
+                 "chapters/06-error-catalog.clj"
+                 "chapters/07-design.clj"]}
