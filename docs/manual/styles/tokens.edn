@@ -1,0 +1,13 @@
+{:color   {:bg     "#ffffff"
+           :fg     "#1c1c1c"
+           :accent "#2a52be"
+           :muted  "#666666"
+           :code-bg "#f4f4f4"}
+ :type    {:family "Source Serif Pro"
+           :family-mono "Source Code Pro"
+           :size 12
+           :line-height "1.55"}
+ :spacing {:margin 18
+           :gap    8
+           :section-gap 24}
+ :layout  {:max-width "44rem"}}

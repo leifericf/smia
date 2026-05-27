@@ -1,0 +1,39 @@
+[#ch-tokens]
+== Tokens and Theming
+
+Visual identity is defined once per manuscript in `styles/tokens.edn`. The same data is compiled into:
+
+* CSS custom properties for the `:site` target (via Garden)
+* Asciidoctor PDF theme YAML for the `:pdf` target
+
+This is the *tier-1* surface and the only style source that automatically applies to both targets.
+
+=== Required token groups
+
+[%header,cols="1,3"]
+|===
+|Group     |Purpose
+
+|`:color`   |Colors (background, foreground, accent, etc.)
+|`:type`    |Typography (font families, sizes, line-height)
+|`:spacing` |Spacing scale (margins, gaps)
+|`:layout`  |Page-layout primitives (e.g. `:max-width`)
+|===
+
+=== Naming convention
+
+Tokens are compiled to CSS custom properties with the pattern `--<group>-<leaf>`. For example, `:color {:accent "#2a52be"}` becomes `--color-accent: #2a52be;` and is reachable from any selector as `var(--color-accent)`.
+
+=== Example
+
+[source,clojure]
+----
+{:color   {:bg "#ffffff" :fg "#1c1c1c" :accent "#2a52be"}
+ :type    {:family "Source Serif Pro" :size 12}
+ :spacing {:margin 18 :gap 8}
+ :layout  {:max-width "44rem"}}
+----
+
+=== Parity policy
+
+`clj-book` preserves shared design intent across both targets. Where exact parity is impossible (e.g. CSS-only effects without a PDF equivalent), it applies deterministic fallback and emits a warning in build metadata.

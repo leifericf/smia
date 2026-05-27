@@ -1,0 +1,98 @@
+[#ch-errors]
+== Error Catalog
+
+`clj-book` raises structured errors as `clojure.lang.ExceptionInfo` instances. The `ex-data` carries `:error/type`, `:error/message`, and `:error/context`.
+
+[%header,cols="2,2,3"]
+|===
+|`:error/type` |Likely cause |How to fix
+
+|`:clj-book.request/missing-book-root`
+|`:book-root` was nil or empty.
+|Pass `:book-root` pointing at the manuscript directory.
+
+|`:clj-book.request/missing-targets`
+|`build` invoked without `:targets`, or with an empty vector.
+|Pass `:targets [:site]`, `:targets [:pdf]`, or `:targets [:site :pdf]`.
+
+|`:clj-book.request/unknown-target`
+|`:targets` contains a value that is not `:site` or `:pdf`.
+|Use a supported target; alpha v1 supports `:site` and `:pdf` only.
+
+|`:clj-book.request/invalid-targets`
+|`:targets` contained a non-keyword (e.g. `"site"`).
+|Use keyword targets: `:site`, `:pdf`.
+
+|`:clj-book.config/missing`
+|`book.edn` was not found at the configured `:config-path`.
+|Confirm the manuscript layout and the `:book-root`/`:config-path` you passed.
+
+|`:clj-book.config/missing-required-key`
+|`book.edn` is missing one of `:book/slug`, `:book/title`, or `:book/chapters`.
+|Add the missing key(s) — see chapter 2.
+
+|`:clj-book.config/invalid-type`
+|A required key has the wrong type (e.g. `:book/chapters` is not a vector of strings).
+|Fix the type to match the contract in chapter 2.
+
+|`:clj-book.config/missing-chapter`
+|A chapter referenced by `:book/chapters` does not exist on disk.
+|Create the file or fix the path.
+
+|`:clj-book.tokens/missing`
+|`styles/tokens.edn` was not found relative to `:book-root`.
+|Add the tokens file. A starter template ships with the user manual.
+
+|`:clj-book.tokens/missing-group`
+|`styles/tokens.edn` is missing one of the required groups (`:color`, `:type`, `:spacing`, `:layout`).
+|Add the missing group(s).
+
+|`:clj-book.tokens/invalid-type`
+|A token group is not a map.
+|Fix the value to be a Clojure map.
+
+|`:clj-book.compose/duplicate-chapter`
+|`:book/chapters` lists the same path twice.
+|Deduplicate the chapter list.
+
+|`:clj-book.compose/missing-chapter`
+|A composed chapter path does not exist on disk.
+|Fix the path or create the file.
+
+|`:clj-book.docbook/asciidoctor-missing`
+|`asciidoctor` CLI is not on `PATH`.
+|Install Asciidoctor (Ruby gem) before building the `:site` target.
+
+|`:clj-book.docbook/generation-failed`
+|`asciidoctor` reported a non-zero exit code.
+|Inspect the diagnostic output in `:error/context`.
+
+|`:clj-book.targets.pdf/cli-missing`
+|`asciidoctor-pdf` CLI is not on `PATH`.
+|Install Asciidoctor PDF (Ruby gem) before building the `:pdf` target.
+
+|`:clj-book.targets.pdf/build-failed`
+|`asciidoctor-pdf` reported a non-zero exit code.
+|Inspect the diagnostic output in `:error/context`.
+
+|`:clj-book.tokens.css/site-clj-eval-error`
+|The tier-3 `styles/site.clj` Garden form did not evaluate.
+|Open the file in a REPL and confirm it returns a Garden data structure.
+
+|`:clj-book.tokens.pdf/extras-read-error`
+|The tier-3 `styles/pdf-theme.edn` is malformed EDN.
+|Fix the EDN syntax.
+|===
+
+=== Inspecting errors programmatically
+
+[source,clojure]
+----
+(try
+  (clj-book.api/build {:book-root "." :targets [:site]})
+  (catch clojure.lang.ExceptionInfo e
+    (let [d (ex-data e)]
+      (println (:error/type d))
+      (println (:error/message d))
+      (clojure.pprint/pprint (:error/context d)))))
+----

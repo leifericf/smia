@@ -1,0 +1,52 @@
+[#ch-commands]
+== Commands
+
+`clj-book` exposes three entrypoints, all invoked via `clojure -X`.
+
+=== `clj-book.api/validate`
+
+Validates the manuscript without producing output artifacts. Fails hard and descriptively for any missing required input.
+
+[source,shell]
+----
+clojure -X clj-book.api/validate :book-root '"."'
+----
+
+Optional keys:
+
+* `:config-path` — path to the build configuration file (default `book.edn`)
+* `:output-root` — output directory root (default `build`)
+
+=== `clj-book.api/build`
+
+Builds the explicit targets requested by the user. Requires `:targets` with one or more values; there is no default.
+
+[source,shell]
+----
+# Single target
+clojure -X clj-book.api/build :book-root '"."' :targets '[:site]'
+
+# Multiple targets in one run
+clojure -X clj-book.api/build :book-root '"."' :targets '[:site :pdf]'
+----
+
+Supported v1 targets: `:site`, `:pdf`. Multi-target builds run shared prerequisites (config validation, token compilation, manuscript composition) exactly once.
+
+=== `clj-book.api/serve`
+
+Starts a local preview server for the `:site` target.
+
+[source,shell]
+----
+clojure -X clj-book.api/serve :book-root '"."'
+----
+
+Optional keys:
+
+* `:port` — server port (default `3000`)
+
+The server rebuilds pages on each request so edits to chapter sources are picked up live.
+
+=== Return value
+
+`build` returns the artifact manifest map; the same manifest is also written to `build/<book-slug>/artifacts.edn` for downstream tooling.

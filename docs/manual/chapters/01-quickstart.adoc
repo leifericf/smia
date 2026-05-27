@@ -1,0 +1,57 @@
+[#ch-quickstart]
+== Quickstart
+
+`clj-book` is a JVM Clojure publishing engine for technical books. Author input is AsciiDoc; outputs are static HTML+CSS and PDF.
+
+=== Prerequisites
+
+* JDK 17 or later
+* Clojure CLI (`clojure -X`)
+* `asciidoctor` on `PATH` (for the `:site` target's DocBook intermediate)
+* `asciidoctor-pdf` on `PATH` (for the `:pdf` target)
+
+=== Minimal manuscript layout
+
+[source,text]
+----
+my-book/
+  book.adoc            # AsciiDoc document header (authorial metadata)
+  book.edn             # build configuration (open map)
+  styles/tokens.edn    # canonical design tokens
+  chapters/*.adoc      # chapter source files
+----
+
+=== Validate, build, serve
+
+[source,shell]
+----
+clojure -X clj-book.api/validate :book-root '"."'
+
+clojure -X clj-book.api/build \
+  :book-root '"."' \
+  :targets '[:site :pdf]'
+
+clojure -X clj-book.api/serve :book-root '"."'
+----
+
+The `build` command requires explicit `:targets`. There is no default target in v1 alpha.
+
+=== Output layout
+
+Builds emit a deterministic tree:
+
+[source,text]
+----
+build/
+  <book-slug>/
+    intermediate/
+      book.adoc        # composed master with include:: directives
+      book.xml         # DocBook 5 (site path only)
+      tokens/
+        site.css       # CSS custom properties
+        pdf-theme.yml  # Asciidoctor PDF theme YAML
+    site/              # static HTML + CSS (no JavaScript)
+    pdf/
+      <book-slug>.pdf
+    artifacts.edn      # machine-readable artifact manifest
+----

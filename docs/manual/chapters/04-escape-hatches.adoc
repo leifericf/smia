@@ -1,0 +1,36 @@
+[#ch-escape-hatches]
+== Escape Hatches (Tier-3)
+
+When tokens (tier 1) and layout keys (tier 2) cannot express what a manuscript needs, each target has an optional per-target escape hatch.
+
+=== `styles/site.clj` — Garden CSS
+
+A Clojure file that evaluates to a Garden data structure. `clj-book` loads it, renders it with `garden.core/css`, and appends the result *after* the token-derived stylesheet so it can override tokens.
+
+[source,clojure]
+----
+[[:body {:max-width "var(--layout-max-width)"
+         :margin "2rem auto"}]
+ [:a {:color "var(--color-accent)"}]
+ [:code {:background "var(--color-code-bg)"
+         :font-family "monospace"}]]
+----
+
+=== `styles/pdf-theme.edn` — Asciidoctor PDF extras
+
+An EDN map deep-merged on top of the token-derived Asciidoctor PDF theme before YAML emission.
+
+[source,clojure]
+----
+{:base    {:font_color "#1c1c1c"}
+ :heading {:font_color "#2a52be"}
+ :code    {:background_color "#f4f4f4"}}
+----
+
+=== Trade-offs
+
+Using a tier-3 hatch is a per-target intervention by definition. The manuscript forfeits automatic cross-target parity for the affected area: anything you put in `site.clj` does not change the PDF output, and anything you put in `pdf-theme.edn` does not change the site output. Use tier 1 (tokens) wherever possible; reach for tier 3 only when tier 1 and tier 2 don't cover the need.
+
+=== Validation
+
+`clj-book` validates the *existence* of these files when referenced but does not police semantic correctness. A malformed Garden form will surface as a `:clj-book.tokens.css/site-clj-eval-error`. A malformed EDN file will surface as `:clj-book.tokens.pdf/extras-read-error`.
