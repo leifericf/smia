@@ -37,11 +37,13 @@
 
 (defn token-css
   "Render the canonical token-derived CSS string (deterministic) using
-   Garden. The result targets `:root` with custom properties."
+   Garden. The result targets `:root` with custom properties. The
+   selector is a string because Garden treats the `:root` keyword as an
+   element selector rather than the pseudo-class."
   [tokens]
   (let [props (into {} (map (fn [[k v]] [(keyword k) v])
                             (tokens->custom-props tokens)))]
-    (garden/css [:root props])))
+    (garden/css [":root" props])))
 
 (defn- load-site-clj
   "Load `styles/site.clj` (if present) and return its Garden data
