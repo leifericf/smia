@@ -28,13 +28,13 @@
          overrides))
 
 (deftest prepare-loads-config-and-tokens
-  (let [ctx (pipeline/prepare (request "prepare"))]
-    (is (= "tiny-book" (:book/slug (:config ctx))))
-    (is (map? (:tokens ctx)))
-    (is (vector? (:warnings ctx)))
-    (is (str/includes? (:intermediate-dir ctx) "tiny-book/intermediate"))
-    (is (str/includes? (:site-output-dir ctx)  "tiny-book/site"))
-    (is (str/includes? (:pdf-output-dir ctx)   "tiny-book/pdf"))))
+  (let [{:keys [manuscript paths]} (pipeline/prepare (request "prepare"))]
+    (is (= "tiny-book" (:book/slug (:config manuscript))))
+    (is (map? (:tokens manuscript)))
+    (is (vector? (:warnings manuscript)))
+    (is (str/includes? (:intermediate-dir paths) "tiny-book/intermediate"))
+    (is (str/includes? (:site-output-dir paths)  "tiny-book/site"))
+    (is (str/includes? (:pdf-output-dir paths)   "tiny-book/pdf"))))
 
 (deftest validate-returns-ok
   (let [out (pipeline/validate (request "validate"))]

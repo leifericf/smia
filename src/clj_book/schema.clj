@@ -53,6 +53,13 @@
    [:pdf-output-dir :string]
    [:tokens-dir :string]])
 
+(def Prereqs
+  "Shared build prerequisites emitted once before any target runs."
+  [:map
+   [:master-path :string]
+   [:site-css :string]
+   [:theme-yaml :string]])
+
 (defn valid?
   "True when `value` conforms to `schema`."
   [schema value]
