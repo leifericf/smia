@@ -20,6 +20,21 @@ Initial pre-release.
 - Machine-readable artifact manifest at `artifacts.edn`.
 - Structured `ex-info` errors with `:error/type`, `:error/message`, `:error/context`.
 - Synthetic fixture-based test suite plus dogfood `docs/manual/` manuscript.
+- `:dry-run` option for `clj-book.api/build`: prints and returns the build
+  plan without rendering targets or writing artifacts.
+
+### Changed
+
+- Reorganized the platform into bounded contexts with a functional core /
+  imperative shell split. Pure transforms (validation, theme compilation,
+  the DocBook to HTML document model, build planning) are separated from
+  the IO shell. New namespaces: `clj-book.theme.{load,css,pdf}`,
+  `clj-book.document`, `clj-book.build.{plan,execute}`, `clj-book.schema`.
+  The `clj-book.pipeline` and `clj-book.tokens.*` namespaces were retired.
+- Added malli schemas for values that cross context seams; they are
+  checked in the shell, never inside a pure core.
+- Renamed Theme error types from `:clj-book.tokens*` to
+  `:clj-book.theme.load/*` (for example `:clj-book.theme.load/missing`).
 
 ### Excluded (not in v1 alpha)
 

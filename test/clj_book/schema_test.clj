@@ -2,6 +2,7 @@
   (:require
    [clj-book.config :as config]
    [clj-book.error :as error]
+   [clj-book.request :as request]
    [clj-book.schema :as schema]
    [clj-book.theme.load :as theme]
    [clojure.test :refer [deftest is testing]]))
@@ -41,6 +42,15 @@
     (let [m {:book/slug "s" :book/title "t" :book/chapters ["a"]}]
       (is (= m (schema/check schema/Manuscript m
                              :clj-book.schema-test/bad))))))
+
+(deftest normalized-requests-conform-to-request-schema
+  (testing "the Request schema documents the actual normalize output"
+    (let [build-req (request/normalize
+                      {:book-root "b" :targets [:site :pdf]} :build)
+          val-req   (request/normalize {:book-root "b"} :validate)]
+      (is (schema/valid? schema/Request build-req))
+      (is (schema/valid? schema/Request val-req)
+          "validate requests carry nil :targets and still conform"))))
 
 (deftest paths-schema-matches-resolved-paths
   (is (schema/valid? schema/Paths
