@@ -4,7 +4,6 @@
    [clj-book.build.execute :as build]
    [clj-book.compose :as compose]
    [clj-book.docbook :as docbook]
-   [clj-book.document :as document]
    [clj-book.targets.site :as site-target]
    [clojure.java.io :as io]
    [ring.adapter.jetty :as jetty]
@@ -17,23 +16,18 @@
    resulting HTML model goes through the same `document`/`site` path as a
    full build."
   [{:keys [request manuscript paths]}]
-  (let [{:keys [book-root]}       request
-        {:keys [config]}          manuscript
+  (let [{:keys [book-root]}        request
+        {:keys [config]}           manuscript
         {:keys [intermediate-dir]} paths]
     (io/make-parents (io/file intermediate-dir "book.adoc"))
     (let [master-path (compose/write-master! {:book-root        book-root
                                               :config           config
-                                              :intermediate-dir intermediate-dir})
-          _           (docbook/generate-docbook!
-                        {:intermediate-dir intermediate-dir
-                         :master-path      master-path})
-          docbook     (docbook/parse-docbook-file
-                        (str intermediate-dir "/book.xml"))
-          body        (document/->html-model docbook)]
-      (site-target/page-map {:book/title  (:book/title config)
-                             :book/slug   (:book/slug config)
-                             :css-href    "/assets/site.css"
-                             :body-hiccup body}))))
+                                              :intermediate-dir intermediate-dir})]
+      (docbook/generate-docbook! {:intermediate-dir intermediate-dir
+                                  :master-path      master-path})
+      (site-target/render-pages {:intermediate-dir intermediate-dir
+                                 :config           config
+                                 :css-href         "/assets/site.css"}))))
 
 (defn handler
   "Build a Ring handler that serves a freshly-rendered preview of the

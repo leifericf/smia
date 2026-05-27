@@ -72,22 +72,29 @@
                          chapters))]
     (merge {"/index.html" index} ch-pages)))
 
-(defn build!
-  "Build the site target: render the HTML model, write the page map, and
-   emit the compiled CSS. Returns a map of produced artifact paths."
-  [{:keys [intermediate-dir output-dir book-root config tokens]}]
+(defn render-pages
+  "Render the Stasis page map from the generated DocBook. This is the
+   single in-memory rendering path: the full build exports the result to
+   disk, the preview server serves it directly, and both agree on one
+   HTML model. Reads the generated `book.xml`; does not write."
+  [{:keys [intermediate-dir config css-href]}]
   (let [docbook (docbook/parse-docbook-file
                   (str intermediate-dir "/book.xml"))
-        body    (document/->html-model docbook)
+        body    (document/->html-model docbook)]
+    (page-map {:book/title  (:book/title config)
+               :book/slug   (:book/slug config)
+               :css-href    css-href
+               :body-hiccup body})))
+
+(defn build!
+  "Build the site target: render the page map, export it to disk, and
+   emit the compiled CSS. Returns a map of produced artifact paths."
+  [{:keys [intermediate-dir output-dir book-root config tokens]}]
+  (let [pages   (render-pages {:intermediate-dir intermediate-dir
+                               :config           config
+                               :css-href         "assets/site.css"})
         extras  (theme/load-site-extras book-root)
         css     (theme-css/compile-css {:tokens tokens :extras extras})
-        css-href "assets/site.css"
-        slug    (:book/slug config)
-        title   (:book/title config)
-        pages   (page-map {:book/title  title
-                           :book/slug   slug
-                           :css-href    css-href
-                           :body-hiccup body})
         out     (io/file output-dir)
         css-out (io/file out "assets/site.css")]
     (io/make-parents (io/file out "marker"))
