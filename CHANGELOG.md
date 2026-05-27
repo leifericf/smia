@@ -20,6 +20,11 @@ landed on the redesign branch.
 - The DocBook bridge (`clj-book.docbook`, `clj-book.docbook.parse`), the HTML
   document model (`clj-book.document`), the master composer
   (`clj-book.compose`), and the CSS theme compiler (`clj-book.theme.css`).
+- The Asciidoctor PDF target (`clj-book.targets.pdf`), the PDF theme YAML
+  compiler (`clj-book.theme.pdf`), and the subprocess kernel
+  (`clj-book.proc`) — with them the Ruby / asciidoctor toolchain dependency
+  and the `clj-yaml` dependency. The engine no longer shells out to any
+  external process.
 
 ### Retained spine
 

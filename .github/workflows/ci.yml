@@ -34,40 +34,13 @@ jobs:
           key: ${{ runner.os }}-deps-${{ hashFiles('deps.edn') }}
           restore-keys: ${{ runner.os }}-deps-
 
-      - name: Install Ruby (for Asciidoctor)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: false
-
-      - name: Install Asciidoctor and Asciidoctor PDF
-        run: |
-          gem install --no-document asciidoctor asciidoctor-pdf rouge
-
       - name: Pre-resolve deps
         run: clojure -P -A:test
 
       - name: Run unit + integration tests
         run: clojure -M:test
 
-      - name: Build dogfood user manual (site + pdf)
+      - name: Validate dogfood user manual
         run: |
-          clojure -X clj-book.api/build \
-            :book-root '"docs/manual"' \
-            :targets '[:site :pdf]' \
-            :output-root '"build/ci"'
-
-      - name: Verify dogfood artifacts
-        run: |
-          test -f build/ci/clj-book-manual/site/index.html
-          test -f build/ci/clj-book-manual/pdf/clj-book-manual.pdf
-          test -f build/ci/clj-book-manual/artifacts.edn
-          ! grep -RlE '<script' build/ci/clj-book-manual/site/ \
-            || (echo "Found <script> in site output" && exit 1)
-
-      - name: Upload dogfood artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dogfood-manual
-          path: build/ci/clj-book-manual/
-          retention-days: 7
+          clojure -X clj-book.api/validate \
+            :book-root '"docs/manual"'

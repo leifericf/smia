@@ -1,9 +1,8 @@
 (ns clj-book.theme.load
-  "Theme context (shell): read and validate `styles/tokens.edn` and load
-   the tier-3 escape-hatch files (`styles/site.clj`, `styles/pdf-theme.edn`).
+  "Theme context (shell): read and validate `styles/tokens.edn`.
 
-   All Theme IO lives here so the css and pdf compilers stay pure. The
-   pure validation of a parsed token map is exposed as `validate`."
+   All Theme IO lives here so the theme compilers stay pure. The pure
+   validation of a parsed token map is exposed as `validate`."
   (:require
    [clj-book.error :as error]
    [clojure.edn :as edn]
@@ -73,36 +72,3 @@
           tokens (read-edn f)]
       (validate tokens path)
       {:tokens tokens :path path})))
-
-(defn load-site-extras
-  "Load `styles/site.clj` (the tier-3 CSS escape hatch) and return its
-   Garden data structure, or nil when the file is absent.
-
-   TRUST BOUNDARY: this evaluates arbitrary Clojure from the manuscript
-   directory via `load-file`. It is a deliberate deserialization seam;
-   only run it against manuscripts you trust."
-  [book-root]
-  (let [f (io/file book-root "styles" "site.clj")]
-    (when (.exists f)
-      (try
-        (load-file (.getPath f))
-        (catch Exception e
-          (throw (error/ex :clj-book.theme.load/site-clj-eval-error
-                           (str "Failed to evaluate styles/site.clj: "
-                                (.getMessage e))
-                           {:path (.getPath f)})))))))
-
-(defn load-pdf-extras
-  "Load `styles/pdf-theme.edn` (the tier-3 PDF escape hatch) and return
-   its data map, or nil when the file is absent."
-  [book-root]
-  (let [f (io/file book-root "styles" "pdf-theme.edn")]
-    (when (.exists f)
-      (try
-        (with-open [r (PushbackReader. (io/reader f))]
-          (edn/read r))
-        (catch Exception e
-          (throw (error/ex :clj-book.theme.load/pdf-extras-read-error
-                           (str "Failed to read styles/pdf-theme.edn: "
-                                (.getMessage e))
-                           {:path (.getPath f)})))))))

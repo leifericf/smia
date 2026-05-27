@@ -35,7 +35,7 @@
 (def render-internals
   "Rendering-context namespaces the interface must not reach into; it
    routes through clj-book.build.execute instead."
-  ["clj-book.targets" "clj-book.proc" "clj-book.theme.pdf"])
+  ["clj-book.fo.render" "clj-book.book.assemble" "clj-book.book.load"])
 
 (deftest interface-routes-through-build
   (doseq [path interface-nss
@@ -48,8 +48,7 @@
 (def pure-core-nss
   "Source files that are pure cores: transforms with no IO and no
    shelling out, so they are exercisable on in-memory data alone."
-  ["src/clj_book/theme/pdf.clj"
-   "src/clj_book/build/plan.clj"])
+  ["src/clj_book/build/plan.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss
