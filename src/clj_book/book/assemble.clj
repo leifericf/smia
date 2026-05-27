@@ -79,12 +79,16 @@
            [:fo/bookmark-title title]])))
 
 (defn- toc-entry [{:keys [id title]}]
+  ;; text-align-last="justify" pushes the page number flush right; the
+  ;; leader must be free to stretch (maximum 100%) so it absorbs all the
+  ;; slack. A fixed-length leader would instead leave the line short and
+  ;; spill the leftover space into the title's word spacing.
   [:fo/block {:text-align-last "justify" :space-after "4pt"}
    [:fo/basic-link {:internal-destination (name id) :color "#1a0dab"} title]
    [:fo/leader {:leader-pattern         "dots"
                 :leader-length.minimum  "12pt"
-                :leader-length.optimum  "400pt"
-                :leader-length.maximum  "400pt"}]
+                :leader-length.optimum  "12pt"
+                :leader-length.maximum  "100%"}]
    [:fo/page-number-citation {:ref-id (name id)}]])
 
 (defn- front-matter [title author chapters master-ref body-style]

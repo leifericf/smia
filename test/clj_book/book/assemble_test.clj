@@ -44,7 +44,10 @@
         leaders   (find-all :fo/leader out)]
     (is (<= 2 (count leaders)) "a dotted leader per TOC entry")
     (is (some #(= "intro" (:ref-id (second %))) citations))
-    (is (some #(= "config" (:ref-id (second %))) citations))))
+    (is (some #(= "config" (:ref-id (second %))) citations))
+    (testing "leaders stretch to 100% so the page number sits flush right"
+      (is (every? #(= "100%" (:leader-length.maximum (second %))) leaders)
+          "a fixed-length leader would spill slack into the title spacing"))))
 
 (deftest bookmark-tree-lists-chapters
   (let [out (assemble/assemble manuscript the-theme)

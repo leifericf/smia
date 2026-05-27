@@ -82,6 +82,14 @@ static-site direction.
 - The dogfood manual under `docs/manual/` was re-authored from AsciiDoc to
   Hiccup `.clj` chapters and now builds to PDF in CI.
 
+### Fixed
+
+- Table-of-contents leaders now stretch to fill the line
+  (`leader-length.maximum="100%"`), so page numbers sit flush against the
+  right margin and the justification slack no longer spills into a title's
+  word spacing (it had stretched short multi-word titles such as "Error
+  catalog").
+
 ### Retained spine
 
 - `clj-book.api/validate` and `clj-book.api/build` entrypoints.
