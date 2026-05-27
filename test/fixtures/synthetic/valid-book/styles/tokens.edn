@@ -1,0 +1,8 @@
+{:color   {:bg     "#ffffff"
+           :fg     "#111111"
+           :accent "#3050d0"}
+ :type    {:family "Inter"
+           :size   12}
+ :spacing {:margin 18
+           :gap    8}
+ :layout  {:max-width "44rem"}}

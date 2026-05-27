@@ -1,0 +1,3 @@
+{:book/slug     "escape-hatch"
+ :book/title    "Escape Hatch Fixture"
+ :book/chapters ["chapters/01.adoc"]}

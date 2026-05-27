@@ -1,1 +1,9 @@
 .local
+.cpcache/
+.lsp/
+.clj-kondo/
+.nrepl-port
+target/
+build/
+*.log
+.DS_Store

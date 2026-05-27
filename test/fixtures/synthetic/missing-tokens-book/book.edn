@@ -1,0 +1,3 @@
+{:book/slug     "missing-tokens"
+ :book/title    "Missing Tokens Fixture"
+ :book/chapters ["chapters/01.adoc"]}

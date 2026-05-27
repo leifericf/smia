@@ -1,0 +1,4 @@
+= Tiny Synthetic Book
+clj-book contributors
+:doctype: book
+:lang: en

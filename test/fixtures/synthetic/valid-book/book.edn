@@ -1,0 +1,10 @@
+{:book/slug      "tiny-book"
+ :book/title     "Tiny Synthetic Book"
+ :book/chapters  ["chapters/01-intro.adoc"
+                  "chapters/02-body.adoc"]
+ :page-size      :a4
+ :toc-depth      2
+ :chapter-opener :page-break
+ :code-line-numbers true
+ :admonition-style  :icon
+ :custom/extension {:demo true}}
