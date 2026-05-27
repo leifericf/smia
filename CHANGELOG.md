@@ -26,6 +26,18 @@ landed on the redesign branch.
   and the `clj-yaml` dependency. The engine no longer shells out to any
   external process.
 
+### Added
+
+- The L1 renderer core (pure, no IO, no FOP): `clj-book.fo.attrs`
+  (FO attribute name/value mapping, sorted for reproducibility),
+  `clj-book.fo.serialize` (hand-rolled FO-Hiccup -> XSL-FO XML; XML
+  escaping; single `xmlns:fo` on `fo:root`; no pretty-printing so
+  `white-space="pre"` survives), `clj-book.fo.expand` (the three-layer
+  Hiccup superset: HTML sugar + book extensions expand to FO, raw `:fo/*`
+  passes through with nested sugar still expanded, unknown tags are a
+  hard error), and `clj-book.fo.schema` (malli vocabulary with humanized
+  errors; `:fo/*` accepted and left to FOP).
+
 ### Changed
 
 - The build vocabulary moved from format `:targets` (`#{:site :pdf}`) to
