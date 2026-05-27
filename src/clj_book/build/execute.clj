@@ -43,22 +43,17 @@
      :paths      (schema/check schema/Paths paths
                                :clj-book.build.execute/invalid-paths)}))
 
-(defn- emit-shared-prereqs!
-  "Compose the master adoc and the PDF theme YAML. Returns the prereq
-   paths the target adapters need. The site target compiles and writes
-   its own CSS, so none is emitted here."
-  [book-root {:keys [config tokens]} {:keys [intermediate-dir]}]
-  (let [master-path (compose/write-master! {:book-root        book-root
-                                            :config           config
-                                            :intermediate-dir intermediate-dir})
-        theme-yaml  (pdf-target/write-theme-yaml!
-                      {:book-root        book-root
-                       :tokens           tokens
-                       :intermediate-dir intermediate-dir})]
-    (schema/check schema/Prereqs
-                  {:master-path master-path
-                   :theme-yaml  theme-yaml}
-                  :clj-book.build.execute/invalid-prereqs)))
+(defn- emit-master!
+  "Compose and write the master adoc once. Both targets read it, so it is
+   the single shared prerequisite. Each target compiles its own theme
+   (site -> CSS, pdf -> YAML)."
+  [book-root {:keys [config]} {:keys [intermediate-dir]}]
+  (schema/check schema/Prereqs
+                {:master-path (compose/write-master!
+                                {:book-root        book-root
+                                 :config           config
+                                 :intermediate-dir intermediate-dir})}
+                :clj-book.build.execute/invalid-prereqs))
 
 (defn- build-site! [{:keys [book-root manuscript paths prereqs output-dir]}]
   (let [{:keys [config tokens]} manuscript
@@ -72,11 +67,13 @@
                                    :tokens           tokens})]
       {:target :site :path (:html out) :paths out})))
 
-(defn- build-pdf! [{:keys [manuscript prereqs output-dir]}]
-  (let [out (pdf-target/build! {:master-path (:master-path prereqs)
-                                :output-dir  output-dir
-                                :config      (:config manuscript)
-                                :theme-yaml  (:theme-yaml prereqs)})]
+(defn- build-pdf! [{:keys [book-root manuscript paths prereqs output-dir]}]
+  (let [out (pdf-target/build! {:master-path      (:master-path prereqs)
+                                :output-dir       output-dir
+                                :config           (:config manuscript)
+                                :book-root        book-root
+                                :tokens           (:tokens manuscript)
+                                :intermediate-dir (:intermediate-dir paths)})]
     {:target :pdf :path (:pdf out) :paths out}))
 
 (defn- run-step! [base {:keys [target output-dir]}]
@@ -90,7 +87,7 @@
    write the manifest. Returns the manifest map."
   [{:keys [book-root manuscript paths target-steps manifest-skeleton]}]
   (let [started       (Instant/now)
-        prereqs       (emit-shared-prereqs! book-root manuscript paths)
+        prereqs       (emit-master! book-root manuscript paths)
         base          {:book-root  book-root
                        :manuscript manuscript
                        :paths      paths

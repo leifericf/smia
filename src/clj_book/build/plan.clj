@@ -10,11 +10,11 @@
    [clj-book.schema :as schema]))
 
 (defn- prereq-steps
-  "The shared prerequisites emitted once before any target runs, as
-   deterministic descriptors derived purely from the resolved paths."
+  "The shared prerequisite emitted once before any target runs, as a
+   deterministic descriptor derived purely from the resolved paths. Only
+   the master adoc is shared; each target compiles its own theme."
   [{:keys [intermediate-dir]}]
-  [{:kind :master-adoc :path (str intermediate-dir "/book.adoc")}
-   {:kind :pdf-theme   :path (str intermediate-dir "/tokens/pdf-theme.yml")}])
+  [{:kind :master-adoc :path (str intermediate-dir "/book.adoc")}])
 
 (defn- target-step [target paths]
   {:target     target

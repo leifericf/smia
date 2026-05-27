@@ -108,8 +108,7 @@
       (is (= [:site :pdf] (:targets p)))
       (is (= 2 (count (:target-steps p))))
       (is (= "tiny-book" (-> p :manifest-skeleton :book/slug)))
-      (is (= [:master-adoc :pdf-theme]
-             (map :kind (:prereqs p)))))))
+      (is (= [:master-adoc] (map :kind (:prereqs p)))))))
 
 (deftest invalid-target-blocked-by-request-normalization
   ;; This is asserted at the public api/request layer; execute assumes

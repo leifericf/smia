@@ -54,10 +54,10 @@
    [:tokens-dir :string]])
 
 (def Prereqs
-  "Shared build prerequisites emitted once before any target runs."
+  "The shared build prerequisite emitted once before any target runs.
+   Only the master adoc is shared; each target compiles its own theme."
   [:map
-   [:master-path :string]
-   [:theme-yaml :string]])
+   [:master-path :string]])
 
 (def TargetStep
   "A single target's place in the plan: what to build and where it goes."

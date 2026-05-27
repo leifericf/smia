@@ -33,10 +33,14 @@
     (.getPath out)))
 
 (defn build!
-  "Build the PDF target. Returns the produced artifact path."
-  [{:keys [master-path output-dir config theme-yaml]}]
+  "Build the PDF target: compile this target's theme YAML, then invoke
+   asciidoctor-pdf on the master. Returns the produced artifact path."
+  [{:keys [master-path output-dir config book-root tokens intermediate-dir]}]
   (preflight! {:master-path master-path})
-  (let [out (io/file output-dir (str (:book/slug config) ".pdf"))
+  (let [theme-yaml (write-theme-yaml! {:book-root        book-root
+                                       :tokens           tokens
+                                       :intermediate-dir intermediate-dir})
+        out (io/file output-dir (str (:book/slug config) ".pdf"))
         _   (io/make-parents out)
         theme-dir (-> (io/file theme-yaml) .getParent)
         theme-name (-> (io/file theme-yaml) .getName

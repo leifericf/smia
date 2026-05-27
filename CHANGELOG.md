@@ -46,6 +46,9 @@ Initial pre-release.
   error moved from `:clj-book.compose/duplicate-chapter` to
   `:clj-book.config/duplicate-chapter`, and `:clj-book.compose/missing-chapter`
   is gone (use `:clj-book.config/missing-chapter`).
+- Made each target self-contained: it compiles its own theme (site -> CSS,
+  pdf -> YAML). The only shared build prerequisite is now the master adoc,
+  so a site-only build no longer emits a PDF theme (and vice versa).
 
 ### Removed
 
