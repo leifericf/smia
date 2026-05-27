@@ -134,3 +134,22 @@
      :config   (:config-file manuscript)
      :tokens   (:tokens manuscript)
      :warnings (:warnings manuscript)}))
+
+(defn render-site!
+  "Execute the site slice of a prepared build in memory: emit the master
+   adoc and DocBook, then render the Stasis page map without exporting to
+   disk. The preview server calls this so it shares the build's single
+   rendering path. `css-href` is the stylesheet URL to embed."
+  [{:keys [request manuscript paths]} css-href]
+  (let [book-root        (:book-root request)
+        config           (:config manuscript)
+        intermediate-dir (:intermediate-dir paths)
+        master-path      (compose/write-master!
+                           {:book-root        book-root
+                            :config           config
+                            :intermediate-dir intermediate-dir})]
+    (docbook/generate-docbook! {:intermediate-dir intermediate-dir
+                                :master-path      master-path})
+    (site-target/render-pages {:intermediate-dir intermediate-dir
+                               :config           config
+                               :css-href         css-href})))

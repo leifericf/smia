@@ -1,33 +1,22 @@
 (ns clj-book.serve
-  "Local preview server for the :site target."
+  "Local preview server for the :site target. As an interface namespace
+   it routes through clj-book.build.execute and does not reach into the
+   rendering internals (docbook/compose/targets/document) directly."
   (:require
    [clj-book.build.execute :as build]
-   [clj-book.compose :as compose]
-   [clj-book.docbook :as docbook]
-   [clj-book.targets.site :as site-target]
-   [clojure.java.io :as io]
    [ring.adapter.jetty :as jetty]
    [stasis.core :as stasis]))
 
+(def ^:private preview-css-href
+  "Stylesheet URL embedded in preview pages (served at the site root)."
+  "/assets/site.css")
+
 (defn build-preview-pages
-  "Run the shared prerequisites and return the Stasis page map for the
-   site target. Takes the structured value from `build/prepare`.
-   Writes the master adoc and generates DocBook once per call; the
-   resulting HTML model goes through the same `document`/`site` path as a
-   full build."
-  [{:keys [request manuscript paths]}]
-  (let [{:keys [book-root]}        request
-        {:keys [config]}           manuscript
-        {:keys [intermediate-dir]} paths]
-    (io/make-parents (io/file intermediate-dir "book.adoc"))
-    (let [master-path (compose/write-master! {:book-root        book-root
-                                              :config           config
-                                              :intermediate-dir intermediate-dir})]
-      (docbook/generate-docbook! {:intermediate-dir intermediate-dir
-                                  :master-path      master-path})
-      (site-target/render-pages {:intermediate-dir intermediate-dir
-                                 :config           config
-                                 :css-href         "/assets/site.css"}))))
+  "Render the Stasis page map for the site target from a prepared build
+   context (see `build/prepare`). Shares the build's single rendering
+   path. Suitable both for local preview and for tests."
+  [prepared]
+  (build/render-site! prepared preview-css-href))
 
 (defn handler
   "Build a Ring handler that serves a freshly-rendered preview of the
