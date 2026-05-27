@@ -168,7 +168,7 @@
 (defn build!
   "Build the site target: render Hiccup, write the page map, and emit
    the compiled CSS. Returns a map of produced artifact paths."
-  [{:keys [intermediate-dir output-dir book-root config tokens] :as ctx}]
+  [{:keys [intermediate-dir output-dir book-root config tokens]}]
   (let [docbook (docbook/parse-docbook-file
                   (str intermediate-dir "/book.xml"))
         body    (->hiccup docbook)
@@ -182,10 +182,11 @@
                            :body-hiccup body})
         out     (io/file output-dir)
         css-out (io/file out "assets/site.css")]
+    (io/make-parents (io/file out "marker"))
+    (stasis/empty-directory! out)
+    (stasis/export-pages pages (.getPath out))
     (io/make-parents css-out)
     (spit css-out css)
-    (stasis/empty-directory! out {:dirs-to-keep ["assets"]})
-    (stasis/export-pages pages (.getPath out))
     {:html (.getPath (io/file out "index.html"))
      :css  (.getPath css-out)
      :dir  (.getPath out)}))
