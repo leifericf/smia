@@ -43,3 +43,13 @@ namespace and test name that exercises them.
 | Platform tests use synthetic manuscripts            | no third-party text in repo       | `clj-book.boundaries-test/uses-synthetic-fixtures-only`         |
 | User manual built by clj-book as dogfood manuscript | dogfood at docs/manual/           | covered by CI; `clj-book.dogfood-test/manual-fixture-resolves`  |
 | Manuscript repo consumes clj-book as dependency     | public API entrypoints only       | `clj-book.api-test/public-api-surface`                          |
+
+## Non-goal enforcement
+
+| Non-goal                                             | Test                                                          |
+|------------------------------------------------------|---------------------------------------------------------------|
+| No Datomic dependency                                | `clj-book.non-goals-test/no-datomic-dependency`               |
+| No ClojureScript or JS bundler                       | `clj-book.non-goals-test/no-clojurescript-or-bundler`         |
+| No implicit/default target behavior                  | `clj-book.non-goals-test/no-default-target-introduced`        |
+| Site output contains no client-side JavaScript       | `clj-book.targets.site-test/emitted-html-has-no-script-tags`  |
+| EPL 2.0 license present and referenced               | `clj-book.non-goals-test/license-is-epl-2-0` + `/readme-references-license` |
