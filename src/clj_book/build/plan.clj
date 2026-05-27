@@ -12,9 +12,8 @@
 (defn- prereq-steps
   "The shared prerequisites emitted once before any target runs, as
    deterministic descriptors derived purely from the resolved paths."
-  [{:keys [intermediate-dir tokens-dir]}]
+  [{:keys [intermediate-dir]}]
   [{:kind :master-adoc :path (str intermediate-dir "/book.adoc")}
-   {:kind :site-css    :path (str tokens-dir "/site.css")}
    {:kind :pdf-theme   :path (str intermediate-dir "/tokens/pdf-theme.yml")}])
 
 (defn- target-step [target paths]

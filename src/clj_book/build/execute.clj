@@ -14,7 +14,6 @@
    [clj-book.schema :as schema]
    [clj-book.targets.pdf :as pdf-target]
    [clj-book.targets.site :as site-target]
-   [clj-book.theme.css :as theme-css]
    [clj-book.theme.load :as theme]
    [clojure.java.io :as io])
   (:import
@@ -45,24 +44,19 @@
                                :clj-book.build.execute/invalid-paths)}))
 
 (defn- emit-shared-prereqs!
-  "Compose the master adoc, write tier-1+tier-3 CSS, and the PDF theme
-   YAML. Returns the prereq paths the target adapters need."
-  [book-root {:keys [config tokens]} {:keys [intermediate-dir tokens-dir]}]
+  "Compose the master adoc and the PDF theme YAML. Returns the prereq
+   paths the target adapters need. The site target compiles and writes
+   its own CSS, so none is emitted here."
+  [book-root {:keys [config tokens]} {:keys [intermediate-dir]}]
   (let [master-path (compose/write-master! {:book-root        book-root
                                             :config           config
                                             :intermediate-dir intermediate-dir})
-        extras      (theme/load-site-extras book-root)
-        css         (theme-css/compile-css {:tokens tokens :extras extras})
-        css-out     (io/file tokens-dir "site.css")
         theme-yaml  (pdf-target/write-theme-yaml!
                       {:book-root        book-root
                        :tokens           tokens
                        :intermediate-dir intermediate-dir})]
-    (io/make-parents css-out)
-    (spit css-out css)
     (schema/check schema/Prereqs
                   {:master-path master-path
-                   :site-css    (.getPath css-out)
                    :theme-yaml  theme-yaml}
                   :clj-book.build.execute/invalid-prereqs)))
 

@@ -50,6 +50,8 @@ Initial pre-release.
 ### Removed
 
 - The unused `:profile` request field, which was normalized but never read.
+- The unused intermediate `intermediate/tokens/site.css`, which was
+  written but never consumed (the site target compiles its own CSS).
 
 ### Excluded (not in v1 alpha)
 

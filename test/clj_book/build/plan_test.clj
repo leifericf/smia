@@ -32,7 +32,7 @@
 
 (deftest plan-prereqs-are-deterministic-paths
   (let [p (plan/plan prepared)]
-    (is (= [:master-adoc :site-css :pdf-theme]
+    (is (= [:master-adoc :pdf-theme]
            (map :kind (:prereqs p))))
     (is (= "build/x/intermediate/book.adoc"
            (:path (first (:prereqs p)))))))

@@ -108,7 +108,7 @@
       (is (= [:site :pdf] (:targets p)))
       (is (= 2 (count (:target-steps p))))
       (is (= "tiny-book" (-> p :manifest-skeleton :book/slug)))
-      (is (= [:master-adoc :site-css :pdf-theme]
+      (is (= [:master-adoc :pdf-theme]
              (map :kind (:prereqs p)))))))
 
 (deftest invalid-target-blocked-by-request-normalization

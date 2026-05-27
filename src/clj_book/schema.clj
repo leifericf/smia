@@ -57,7 +57,6 @@
   "Shared build prerequisites emitted once before any target runs."
   [:map
    [:master-path :string]
-   [:site-css :string]
    [:theme-yaml :string]])
 
 (def TargetStep
