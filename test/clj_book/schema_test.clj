@@ -46,16 +46,14 @@
 (deftest normalized-requests-conform-to-request-schema
   (testing "the Request schema documents the actual normalize output"
     (let [build-req (request/normalize
-                      {:book-root "b" :targets [:site :pdf]} :build)
+                      {:book-root "b" :profiles [:screen :print]} :build)
           val-req   (request/normalize {:book-root "b"} :validate)]
       (is (schema/valid? schema/Request build-req))
       (is (schema/valid? schema/Request val-req)
-          "validate requests carry nil :targets and still conform"))))
+          "validate requests carry nil :profiles and still conform"))))
 
 (deftest paths-schema-matches-resolved-paths
   (is (schema/valid? schema/Paths
                      {:book-output-dir  "build/x"
                       :intermediate-dir "build/x/intermediate"
-                      :site-output-dir  "build/x/site"
-                      :pdf-output-dir   "build/x/pdf"
-                      :tokens-dir       "build/x/intermediate/tokens"})))
+                      :pdf-output-dir   "build/x/pdf"})))

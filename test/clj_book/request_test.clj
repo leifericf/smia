@@ -16,44 +16,43 @@
   (let [d (catch-error #(request/normalize {} :build))]
     (is (= :clj-book.request/missing-book-root (:error/type d)))))
 
-(deftest missing-targets-is-hard-error
-  (testing "Build command requires :targets"
-    (let [d (catch-error #(request/normalize valid-base :build))]
-      (is (= :clj-book.request/missing-targets (:error/type d))))))
+(deftest build-defaults-to-both-profiles
+  (testing "A build with no :profiles renders both editions"
+    (let [out (request/normalize valid-base :build)]
+      (is (= [:screen :print] (:profiles out))))))
 
-(deftest empty-targets-is-hard-error
-  (let [d (catch-error
-            #(request/normalize (assoc valid-base :targets []) :build))]
-    (is (= :clj-book.request/missing-targets (:error/type d)))))
+(deftest empty-profiles-defaults-to-both
+  (let [out (request/normalize (assoc valid-base :profiles []) :build)]
+    (is (= [:screen :print] (:profiles out)))))
 
-(deftest unknown-target-is-hard-error
+(deftest unknown-profile-is-hard-error
   (let [d (catch-error
-            #(request/normalize (assoc valid-base :targets [:site :wat])
+            #(request/normalize (assoc valid-base :profiles [:screen :wat])
                                 :build))]
-    (is (= :clj-book.request/unknown-target (:error/type d)))
-    (is (= [:wat] (:unknown-targets (:error/context d))))))
+    (is (= :clj-book.request/unknown-profile (:error/type d)))
+    (is (= [:wat] (:unknown-profiles (:error/context d))))))
 
-(deftest non-keyword-target-is-hard-error
+(deftest non-keyword-profile-is-hard-error
   (let [d (catch-error
-            #(request/normalize (assoc valid-base :targets ["site"])
+            #(request/normalize (assoc valid-base :profiles ["screen"])
                                 :build))]
-    (is (= :clj-book.request/invalid-targets (:error/type d)))))
+    (is (= :clj-book.request/invalid-profiles (:error/type d)))))
 
-(deftest valid-single-target-request
-  (let [out (request/normalize (assoc valid-base :targets [:site]) :build)]
-    (is (= [:site] (:targets out)))
+(deftest valid-single-profile-request
+  (let [out (request/normalize (assoc valid-base :profiles [:print]) :build)]
+    (is (= [:print] (:profiles out)))
     (is (= "test/fixtures/synthetic/valid-book" (:book-root out)))
     (is (= "build" (:output-root out)))
     (is (= "book.edn" (:config-path out)))))
 
-(deftest valid-multi-target-request
+(deftest valid-multi-profile-request
   (let [out (request/normalize
-              (assoc valid-base :targets [:site :pdf]) :build)]
-    (is (= [:site :pdf] (:targets out)))))
+              (assoc valid-base :profiles [:screen :print]) :build)]
+    (is (= [:screen :print] (:profiles out)))))
 
-(deftest validate-command-tolerates-missing-targets
+(deftest validate-command-leaves-profiles-nil
   (let [out (request/normalize valid-base :validate)]
-    (is (nil? (:targets out)))))
+    (is (nil? (:profiles out)))))
 
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]

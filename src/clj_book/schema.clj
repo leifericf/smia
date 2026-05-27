@@ -30,55 +30,49 @@
    [:spacing :map]
    [:layout :map]])
 
-(def Target
-  "A build target supported by v1 alpha."
-  [:enum :site :pdf])
+(def Profile
+  "A PDF layout profile clj-book can render."
+  [:enum :screen :print])
 
 (def Request
   "A normalized public request map (see `clj-book.request`)."
   [:map
-   [:command [:enum :validate :build :serve]]
+   [:command [:enum :validate :build]]
    [:book-root :string]
    [:config-path :string]
    [:output-root :string]
    [:dry-run {:optional true} :boolean]
-   [:targets [:maybe [:sequential :keyword]]]])
+   [:profiles [:maybe [:sequential :keyword]]]])
 
 (def Paths
-  "Resolved output paths for a build, derived from the request and slug."
+  "Resolved output directories for a build, derived from the request and
+   slug. Per-profile file paths are computed in the plan."
   [:map
    [:book-output-dir :string]
    [:intermediate-dir :string]
-   [:site-output-dir :string]
-   [:pdf-output-dir :string]
-   [:tokens-dir :string]])
+   [:pdf-output-dir :string]])
 
-(def Prereqs
-  "The shared build prerequisite emitted once before any target runs.
-   Only the master adoc is shared; each target compiles its own theme."
+(def ProfileStep
+  "A single profile's place in the plan: which profile, where its
+   intermediate FO and final PDF are written."
   [:map
-   [:master-path :string]])
-
-(def TargetStep
-  "A single target's place in the plan: what to build and where it goes."
-  [:map
-   [:target Target]
-   [:output-dir :string]])
+   [:profile Profile]
+   [:fo-path :string]
+   [:pdf-path :string]])
 
 (def Plan
-  "An inspectable, pure description of a build: which targets, where each
-   writes, the shared prerequisites to emit, and the manifest skeleton.
-   Produced by clj-book.build.plan; performed by clj-book.build.execute."
+  "An inspectable, pure description of a build: which profiles, where each
+   writes its FO and PDF, and the manifest skeleton. Produced by
+   clj-book.build.plan; performed by clj-book.build.execute."
   [:map
    [:book-root :string]
-   [:targets [:sequential Target]]
+   [:profiles [:sequential Profile]]
    [:manuscript :map]
    [:paths Paths]
-   [:prereqs [:sequential [:map [:kind :keyword] [:path :string]]]]
-   [:target-steps [:sequential TargetStep]]
+   [:profile-steps [:sequential ProfileStep]]
    [:manifest-skeleton [:map
                         [:book/slug :string]
-                        [:build/targets [:sequential Target]]
+                        [:build/profiles [:sequential Profile]]
                         [:metadata :map]]]])
 
 (defn valid?

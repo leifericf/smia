@@ -58,12 +58,3 @@
             #(config/load-config {:book-root valid-root
                                   :config-path "nope.edn"}))]
     (is (= :clj-book.config/missing (:error/type d)))))
-
-(deftest layout-warning-on-unknown-value
-  (let [{:keys [warnings]}
-        (config/load-config {:book-root valid-root
-                             :config-path "book.edn"})]
-    ;; valid-book fixture uses well-known layout values; no unknown.
-    (is (every? #(not= :clj-book.config/unknown-layout-value
-                       (:warning/type %))
-                warnings))))

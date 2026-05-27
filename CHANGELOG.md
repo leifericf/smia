@@ -26,6 +26,17 @@ landed on the redesign branch.
   and the `clj-yaml` dependency. The engine no longer shells out to any
   external process.
 
+### Changed
+
+- The build vocabulary moved from format `:targets` (`#{:site :pdf}`) to
+  layout `:profiles` (`#{:screen :print}`). A build with no `:profiles`
+  now renders both editions by default; a subset may be selected.
+- `book.edn` no longer interprets the AsciiDoc-PDF layout keys
+  (`:page-size`, `:page-margins`, `:chapter-opener`, `:toc-depth`,
+  `:code-line-numbers`, `:admonition-style`); styling comes from
+  `tokens.edn` and the profile instead. Required keys, types, and chapter
+  existence/uniqueness are still enforced; extra keys are preserved.
+
 ### Retained spine
 
 - `clj-book.api/validate` and `clj-book.api/build` entrypoints (`build`

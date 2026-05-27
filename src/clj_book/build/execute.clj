@@ -19,9 +19,7 @@
         root (io/file output-root slug)]
     {:book-output-dir  (.getPath root)
      :intermediate-dir (.getPath (io/file root "intermediate"))
-     :site-output-dir  (.getPath (io/file root "site"))
-     :pdf-output-dir   (.getPath (io/file root "pdf"))
-     :tokens-dir       (.getPath (io/file root "intermediate" "tokens"))}))
+     :pdf-output-dir   (.getPath (io/file root "pdf"))}))
 
 (defn prepare
   "Shell: load and validate the manuscript and resolve output paths.
@@ -53,7 +51,7 @@
       the-plan
       (throw (error/ex :clj-book.build.execute/not-implemented
                        "Rendering is not yet wired in: the Hiccup -> FO -> FOP pipeline is under construction."
-                       {:targets (:targets request)})))))
+                       {:profiles (:profiles request)})))))
 
 (defn validate
   "Run validation only. Returns `{:status :ok :warnings [...]}` or

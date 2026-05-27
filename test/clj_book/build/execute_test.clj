@@ -33,18 +33,19 @@
     (is (= :ok (:status out)))))
 
 (deftest dry-run-returns-plan-without-building
-  (testing "Dry run validates and plans but performs no target render"
-    (let [p (execute/build (request "dry" :targets [:site :pdf] :dry-run true))]
-      (is (= [:site :pdf] (:targets p)))
-      (is (= 2 (count (:target-steps p))))
+  (testing "Dry run validates and plans but performs no profile render"
+    (let [p (execute/build (request "dry" :profiles [:screen :print]
+                                    :dry-run true))]
+      (is (= [:screen :print] (:profiles p)))
+      (is (= 2 (count (:profile-steps p))))
       (is (= "tiny-book" (-> p :manifest-skeleton :book/slug))))))
 
 (deftest real-build-not-yet-implemented
   (testing "Rendering pipeline is under construction"
-    (let [d (catch-data #(execute/build (request "build" :targets [:pdf])))]
+    (let [d (catch-data #(execute/build (request "build" :profiles [:print])))]
       (is (= :clj-book.build.execute/not-implemented (:error/type d))))))
 
-(deftest invalid-target-blocked-by-request-normalization
+(deftest invalid-profile-blocked-by-request-normalization
   ;; This is asserted at the public api/request layer; execute assumes
   ;; the request has been normalized.
   (is true))

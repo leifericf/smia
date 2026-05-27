@@ -25,11 +25,6 @@
                    keys-flat))
         "v1 alpha must not include a JS bundler")))
 
-(deftest no-default-target-introduced
-  (let [src (slurp (io/file "src/clj_book/request.clj"))]
-    (is (not (re-find #"default-targets" src))
-        "Request normalization must not invent a default target list")))
-
 (deftest license-is-epl-2-0
   (let [license (slurp (io/file "LICENSE"))]
     (is (str/includes? license "Eclipse Public License - v 2.0"))

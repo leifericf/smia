@@ -4,9 +4,14 @@
    [clj-book.error :as error]
    [clojure.string :as str]))
 
-(def supported-targets
-  "Targets supported by v1 alpha."
-  #{:site :pdf})
+(def supported-profiles
+  "PDF layout profiles clj-book can render."
+  #{:screen :print})
+
+(def default-profiles
+  "Profiles built when a build request does not name any. Both editions
+   are produced by default; a request may select a subset."
+  [:screen :print])
 
 (def ^:private default-output-root "build")
 (def ^:private default-config-path "book.edn")
@@ -18,34 +23,34 @@
                      {k v})))
   v)
 
-(defn- normalize-targets [targets]
+(defn- normalize-profiles [profiles]
   (cond
-    (nil? targets) nil
-    (sequential? targets) (vec targets)
+    (nil? profiles) nil
+    (sequential? profiles) (vec profiles)
     :else
-    (throw (error/ex :clj-book.request/invalid-targets
-                     ":targets must be a vector of keywords."
-                     {:targets targets}))))
+    (throw (error/ex :clj-book.request/invalid-profiles
+                     ":profiles must be a vector of keywords."
+                     {:profiles profiles}))))
 
-(defn- require-targets [targets]
-  (when (empty? targets)
-    (throw (error/ex :clj-book.request/missing-targets
-                     "Build requires :targets with one or more values."
-                     {:targets targets})))
-  (let [bad (remove keyword? targets)]
+(defn- resolve-profiles
+  "Resolve the profiles to build: default to both editions when none are
+   named, otherwise validate the requested subset."
+  [profiles]
+  (let [profiles (if (empty? profiles) default-profiles profiles)
+        bad      (remove keyword? profiles)]
     (when (seq bad)
-      (throw (error/ex :clj-book.request/invalid-targets
-                       ":targets must contain only keywords."
-                       {:targets targets :non-keywords (vec bad)}))))
-  (let [unknown (remove supported-targets targets)]
-    (when (seq unknown)
-      (throw (error/ex :clj-book.request/unknown-target
-                       (str "Unsupported target(s): "
-                            (str/join ", " (map pr-str unknown)))
-                       {:targets         targets
-                        :unknown-targets (vec unknown)
-                        :supported       (vec (sort supported-targets))}))))
-  targets)
+      (throw (error/ex :clj-book.request/invalid-profiles
+                       ":profiles must contain only keywords."
+                       {:profiles profiles :non-keywords (vec bad)})))
+    (let [unknown (remove supported-profiles profiles)]
+      (when (seq unknown)
+        (throw (error/ex :clj-book.request/unknown-profile
+                         (str "Unsupported profile(s): "
+                              (str/join ", " (map pr-str unknown)))
+                         {:profiles         profiles
+                          :unknown-profiles (vec unknown)
+                          :supported        (vec (sort supported-profiles))}))))
+    (vec profiles)))
 
 (defn- require-book-root [book-root]
   (when (or (nil? book-root) (and (string? book-root) (empty? book-root)))
@@ -56,14 +61,15 @@
 
 (defn normalize
   "Normalize and validate a public request map for the given `command`
-   (`:validate`, `:build`, or `:serve`). Returns a normalized map or
-   throws a structured `ex-info`."
+   (`:validate` or `:build`). Returns a normalized map or throws a
+   structured `ex-info`. A build with no `:profiles` defaults to both
+   editions; a subset may be selected."
   [request-map command]
   (when-not (map? request-map)
     (throw (error/ex :clj-book.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
-  (let [{:keys [book-root config-path targets output-root dry-run]} request-map
+  (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
         normalized {:command     command
                     :book-root   (require-book-root book-root)
                     :config-path (or (string-or-throw :config-path config-path)
@@ -71,6 +77,6 @@
                     :output-root (or (string-or-throw :output-root output-root)
                                      default-output-root)
                     :dry-run     (boolean dry-run)
-                    :targets     (normalize-targets targets)}]
+                    :profiles    (normalize-profiles profiles)}]
     (cond-> normalized
-      (= command :build) (update :targets require-targets))))
+      (= command :build) (update :profiles resolve-profiles))))

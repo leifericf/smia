@@ -7,24 +7,10 @@
    [clojure.string :as str]))
 
 (def required-keys
-  "Required `book.edn` keys for v1 alpha."
+  "Required `book.edn` keys: slug, title, and the ordered chapter list."
   #{:book/slug
     :book/title
     :book/chapters})
-
-(def layout-keys
-  "Tier-2 layout keys translated to both targets."
-  #{:page-size
-    :page-margins
-    :chapter-opener
-    :toc-depth
-    :code-line-numbers
-    :admonition-style})
-
-(def known-layout-values
-  {:page-size         #{:a4 :letter :digest}
-   :chapter-opener    #{:page-break :inline}
-   :admonition-style  #{:icon :label}})
 
 (defn- read-edn [^java.io.File f]
   (try
@@ -89,40 +75,26 @@
                             book-root ": " (str/join ", " missing))
                        {:path path :book-root book-root :missing missing})))))
 
-(defn- value-warnings
-  "Warn about layout keys set to values clj-book does not recognize."
-  [config]
-  (let [layout (select-keys config layout-keys)]
-    (for [[k allowed] known-layout-values
-          :let [v (get layout k)]
-          :when (and (some? v) (not (contains? allowed v)))]
-      {:warning/type    :clj-book.config/unknown-layout-value
-       :warning/key     k
-       :warning/value   v
-       :warning/allowed (vec (sort allowed))})))
-
 (defn- unknown-key-warnings
-  "Warn about top-level keys that are neither `book/*` nor known layout
-   keys. They are preserved verbatim but not interpreted."
+  "Warn about top-level keys outside the `book/*` namespace. They are
+   preserved verbatim (open map) but not interpreted by clj-book."
   [config]
   (let [unknown (->> (keys config)
-                     (remove #(or (= "book" (namespace %))
-                                  (contains? layout-keys %)))
+                     (remove #(= "book" (namespace %)))
                      vec)]
     (when (seq unknown)
       [{:warning/type :clj-book.config/unknown-key
         :warning/keys unknown
         :warning/note "Preserved but not interpreted by clj-book."}])))
 
-(defn- validate-layout
-  "Return the layout warning vector for `config` as a pure value."
+(defn- compute-warnings
+  "Return the warning vector for `config` as a pure value."
   [config]
-  (vec (concat (value-warnings config)
-               (unknown-key-warnings config))))
+  (vec (unknown-key-warnings config)))
 
 (defn validate
   "Pure validation of an already-parsed `book.edn` map. Performs no IO.
-   Throws structured `ex-info` for shape/type errors; returns the layout
+   Throws structured `ex-info` for shape/type errors; returns the
    warning vector otherwise. `path` is used only for error context."
   [config path]
   (when-not (map? config)
@@ -132,7 +104,7 @@
   (check-required-keys config path)
   (check-types config path)
   (check-no-duplicate-chapters config path)
-  (validate-layout config))
+  (compute-warnings config))
 
 (defn load-config
   "Read, parse, and validate the manuscript `book.edn`.
