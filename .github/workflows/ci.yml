@@ -40,6 +40,12 @@ jobs:
       - name: Run unit + integration tests
         run: clojure -M:test
 
+      - name: Validate dogfood manual with code checks
+        run: |
+          clojure -X clj-book.api/validate \
+            :book-root '"docs/manual"' \
+            :validate-code true
+
       - name: Build dogfood user manual (screen + print)
         run: |
           clojure -X clj-book.api/build \

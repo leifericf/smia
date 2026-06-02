@@ -1,0 +1,29 @@
+# Theming and profiles
+
+Styling comes from design **tokens** plus a layout **profile** — never from arbitrary CSS. FOP is not a CSS engine, and clj-book does not pretend it is.
+
+## tokens.edn
+
+Define the theme once in `styles/tokens.edn`, grouped into `:color`, `:type`, `:spacing`, and `:layout`:
+
+```edn
+{:color  {:text "#1c1c1c" :link "#2a52be"}
+ :type   {:body-family "serif" :base-size "11pt"}
+ :spacing {:paragraph "6pt"}
+ :layout {:page-size :a4 :margin-outside "20mm"}}
+```
+
+The tokens compile into the FO properties carried by every block; missing tokens fall back to readable base-14 defaults.
+
+## Profiles
+
+The same manuscript renders into two layout profiles:
+
+- `:screen` — comfortable, symmetric margins for on-screen reading.
+- `:print` — mirrored recto/verso margins with a binding gutter on the inside edge.
+
+Both are built by default; pass `:profiles '[:print]'` to select one. See [the commands chapter](#commands).
+
+## Fonts
+
+The default theme uses the PDF base-14 font families, so output is zero-config and always reproducible. Authors who want their own fonts register them through configuration; clj-book bundles no fonts.
