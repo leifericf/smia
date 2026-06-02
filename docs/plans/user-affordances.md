@@ -117,7 +117,7 @@ Replaces the old three tiers with a simpler, more powerful stack:
 - Chapter files `.edn` (pure data) vs `.clj` (programmable, runs at build).
 - One PDF edition vs two profiles emitted by default.
 - v1 sugar element set + unknown-tag policy.
-- Optional `(markdown "…")` prose front-end.
+- Markdown prose front-end — *promoted*; see `docs/plans/markdown-frontend.md`.
 
 ## BDD Scenarios (Gherkin)
 

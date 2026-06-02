@@ -66,7 +66,8 @@ scenario.
 4. **v1 sugar element set + unknown-tag policy** (warn / error / treat as raw FO).
    Gate for Phase 4.
 5. **Code highlighting** (server-side JVM vs plain monospace). Gate for Phase 6.
-6. **Optional `(markdown "…")` front-end**. Out of scope unless promoted.
+6. **Markdown author front-end** — *promoted*; designed in
+   `docs/plans/markdown-frontend.md`, with its own implementation plan.
 
 ---
 

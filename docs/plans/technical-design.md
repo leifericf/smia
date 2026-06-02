@@ -187,7 +187,9 @@ avoid embedded timestamps, so identical inputs yield identical bytes.
    units, SVG).
 4. **v1 sugar element set + unknown-tag policy** (warn / error / treat as raw FO).
 5. **Code highlighting**: server-side JVM highlighter vs plain monospace for v1.
-6. **Optional Markdown-block front-end** (`(markdown "…")` → hiccup): in or out.
+6. **Markdown author front-end** — *resolved (promoted)*: specified in
+   `docs/plans/markdown-frontend.md` (CommonMark + curated extensions → author
+   Hiccup; Hiccup stays the IR).
 
 ## Risk areas and mitigations
 
