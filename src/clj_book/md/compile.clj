@@ -277,7 +277,11 @@
             nxt  (second ns)
             tbl-attrs (when (= :table (:type nxt)) (table-attrs-paragraph n))]
         (cond
-          (= :footnote-definition (:type n)) (recur (rest ns) acc)
+          ;; Footnote and link/image reference definitions are metadata that
+          ;; resolves at the use site and produces no output of its own.
+          (#{:footnote-definition :link-reference-definition} (:type n))
+          (recur (rest ns) acc)
+
           tbl-attrs (recur (drop 2 ns) (conj acc (compile-table nxt tbl-attrs)))
           :else     (recur (rest ns) (conj acc (compile-node n))))))))
 

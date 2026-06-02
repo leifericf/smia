@@ -27,6 +27,7 @@
                         Link Image ThematicBreak
                         SoftLineBreak HardLineBreak
                         FencedCodeBlock IndentedCodeBlock
+                        LinkReferenceDefinition
                         HtmlBlock HtmlInline)))
 
 ;; --- the :::name {edn} fenced container -----------------------------------
@@ -127,6 +128,8 @@
                                 :literal (.getLiteral ^FencedCodeBlock n))
       IndentedCodeBlock  (assoc base :type :indented-code-block
                                 :literal (.getLiteral ^IndentedCodeBlock n))
+      LinkReferenceDefinition (assoc base :type :link-reference-definition
+                                     :label (.getLabel ^LinkReferenceDefinition n))
       ;; GFM tables
       TableBlock         (assoc base :type :table :children (kids n))
       TableHead          (assoc base :type :table-head :children (kids n))

@@ -118,6 +118,17 @@
   ;; exists; an undefined "[^99]" is left as ordinary text.
   (is (= [[:p "Text.[^99]"]] (md->body "Text.[^99]\n"))))
 
+(deftest reference-style-links-and-images-compile
+  ;; A link/image reference definition is metadata: the reference resolves
+  ;; and the definition itself produces no output.
+  (is (= [[:p "See " [:a {:href "https://example.com"} "the docs"] "."]]
+         (md->body "See [the docs][d].\n\n[d]: https://example.com\n")))
+  (is (= [[:p [:img {:src "img.png" :alt "logo"}]]]
+         (md->body "![logo][l]\n\n[l]: img.png\n")))
+  (is (= [[:p "x"]]
+         (md->body "x\n\n[unused]: https://example.com\n"))
+      "an unused reference definition is dropped, not an error"))
+
 (deftest link-to-anchor-becomes-an-xref
   (is (= [[:p "See " [:xref {:to :theming} "the theming chapter"] "."]]
          (md->body "See [the theming chapter](#theming).\n")))
