@@ -3,8 +3,9 @@
  :book/author   "The clj-book authors"
  :book/chapters ["chapters/01-quickstart.md"
                  "chapters/02-authoring.md"
-                 "chapters/03-configuration.md"
-                 "chapters/04-theming.md"
-                 "chapters/05-commands.md"
-                 "chapters/06-error-catalog.md"
-                 "chapters/07-design.md"]}
+                 "chapters/03-markdown.md"
+                 "chapters/04-configuration.md"
+                 "chapters/05-theming.md"
+                 "chapters/06-commands.md"
+                 "chapters/07-error-catalog.md"
+                 "chapters/08-design.md"]}

@@ -1,6 +1,6 @@
 # Authoring in Hiccup
 
-You can write a chapter two ways. **Markdown** is the prose-first surface: it compiles to the same author Hiccup a `.clj` chapter produces, so everything below describes the vocabulary both front-ends target. **Hiccup** — the HTML-flavored data Clojure developers already produce — is that vocabulary: a true superset with three concentric layers, all in one syntax.
+You can write a chapter two ways. **Markdown** (see [writing in Markdown](#markdown)) is the prose-first surface: it compiles to the same author Hiccup a `.clj` chapter produces, so everything below describes the vocabulary both front-ends target. **Hiccup** — the HTML-flavored data Clojure developers already produce — is that vocabulary: a true superset with three concentric layers, all in one syntax.
 
 ## Layer 1: HTML-flavored sugar
 

@@ -2,6 +2,13 @@
 
 ## Status
 
+**Implemented.** The Markdown front-end and the opt-in code-validation pass
+described here have shipped: `clj-book.md.*` compiles the dialect to author
+Hiccup, `clj-book.eval.*` validates marked blocks (Clojure, Groovy, Java,
+Kotlin), and the dogfood manual under `docs/manual/` is authored in it. This
+document remains the design rationale; the manual's "Writing in Markdown" chapter
+is the user-facing reference.
+
 This document specifies a **prose-first author front-end** for clj-book. It
 promotes the previously deferred "optional Markdown front-end" (open decision in
 `technical-design.md`, `implementation-plan.md`, `user-affordances.md`) from
