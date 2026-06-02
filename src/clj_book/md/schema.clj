@@ -12,8 +12,20 @@
    [:id {:optional true} :keyword]
    [:title {:optional true} :string]])
 
+(def AdmonitionAttrs
+  "The attribute map of a `:::admonition {…}` directive. `:kind` is the
+   admonition flavor (`:note`, `:tip`, `:warning`, …) and must be a keyword."
+  [:map
+   [:kind {:optional true} :keyword]])
+
 (defn check
-  "Return `attrs` when it conforms; otherwise throw a structured error of
-   `error-type` carrying the humanized explanation."
+  "Return `attrs` when it conforms to the chapter front-matter schema;
+   otherwise throw a structured error of `error-type`."
   [attrs error-type]
   (schema/check ChapterAttrs attrs error-type))
+
+(defn check-admonition
+  "Return admonition `attrs` when they conform; otherwise throw a structured
+   error of `error-type`."
+  [attrs error-type]
+  (schema/check AdmonitionAttrs attrs error-type))

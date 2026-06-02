@@ -107,3 +107,20 @@
            (map #(get-in % [1 :id])
                 (load/load-chapters (.getPath dir)
                                     ["chapters/01-intro.clj" "chapters/02-body.md"]))))))
+
+(deftest include-slurps-source-relative-to-book-root
+  (let [dir (tmp-book "include")]
+    (spit-chapter dir "src/sample.clj" "(ns sample)\n(defn add [a b] (+ a b))\n(add 1 2)\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# Inc\n\n```clojure {:include \"src/sample.clj\" :lines [2 2]}\n```\n")
+    (let [[_ _ pre] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= :pre (first pre)))
+      (is (= {:lang :clojure} (second pre)) "include/lines keys are stripped")
+      (is (= "(defn add [a b] (+ a b))" (nth pre 2)) "only the selected line range"))))
+
+(deftest missing-include-is-a-hard-error
+  (let [dir (tmp-book "noinc")]
+    (spit-chapter dir "chapters/01-x.md"
+                  "# X\n\n```clojure {:include \"src/nope.clj\"}\n```\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :clj-book.book.load/missing-include (:error/type d))))))

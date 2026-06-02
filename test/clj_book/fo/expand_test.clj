@@ -19,6 +19,13 @@
   (is (= [:fo/inline {:font-weight "bold"} "x"] (ex [:strong "x"])))
   (is (= [:fo/inline {:font-style "italic"} "x"] (ex [:em "x"]))))
 
+(deftest pre-validation-attrs-are-inert-to-expansion
+  ;; The Markdown front-end tags code blocks with :lang/:test/:include for
+  ;; the opt-in validation pass; those attrs must not affect rendering.
+  (is (= (ex [:pre "code"])
+         (ex [:pre {:lang :clojure :test true} "code"])
+         (ex [:pre {:lang :clojure :include "x.clj"} "code"]))))
+
 (deftest nested-inline-inside-block
   (let [out (ex [:p "a " [:strong "b"] " c"])]
     (is (= :fo/block (first out)))

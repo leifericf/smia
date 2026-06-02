@@ -35,14 +35,49 @@
       (str/replace #"^\d+[-_]" "")
       (keyword)))
 
+(defn- select-lines
+  "Return the inclusive 1-based `[from to]` line range of `text`."
+  [text [from to]]
+  (->> (str/split-lines text)
+       (drop (max 0 (dec from)))
+       (take (inc (- to from)))
+       (str/join "\n")))
+
+(defn- resolve-include
+  "Slurp the source named by a `[:pre {:include …}]` node, returning a
+   `[:pre attrs source]` with the include keys stripped. `:lines [from to]`
+   selects a 1-based inclusive range."
+  [book-root attrs]
+  (let [f (io/file book-root (:include attrs))]
+    (when-not (.exists f)
+      (throw (error/ex :clj-book.book.load/missing-include
+                       (str "Included source file not found: " (.getPath f))
+                       {:book-root book-root :include (:include attrs)})))
+    (let [text (slurp f)
+          text (if-let [lines (:lines attrs)] (select-lines text lines) text)]
+      [:pre (dissoc attrs :include :lines) text])))
+
+(defn- resolve-includes
+  "Walk a chapter Hiccup tree, replacing every body-less
+   `[:pre {:include …}]` with the slurped source."
+  [book-root node]
+  (cond
+    (and (vector? node) (= :pre (first node))
+         (map? (second node)) (:include (second node)))
+    (resolve-include book-root (second node))
+
+    (vector? node) (mapv #(resolve-includes book-root %) node)
+    :else          node))
+
 (defn- load-markdown-chapter
   "Compile a `.md` chapter file into a `[:chapter {…} …]` form."
-  [rel-path ^java.io.File f]
+  [book-root rel-path ^java.io.File f]
   (let [source (slurp f)]
     (try
       (let [{:keys [attrs body]} (md-frontmatter/split source)
             ast                  (md-parse/parse body (.getPath f))
             [_ compiled-attrs & compiled-body] (md-compile/compile ast)
+            compiled-body        (mapv #(resolve-includes book-root %) compiled-body)
             merged (merge {:id (chapter-id-from-path rel-path)}
                           compiled-attrs
                           attrs)]
@@ -87,7 +122,7 @@
                        (str "Chapter file not found: " (.getPath f))
                        {:book-root book-root :path rel-path})))
     (if (str/ends-with? (str/lower-case rel-path) ".md")
-      (load-markdown-chapter rel-path f)
+      (load-markdown-chapter book-root rel-path f)
       (load-clojure-chapter f))))
 
 (defn- duplicate-ids

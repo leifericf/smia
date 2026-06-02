@@ -3,7 +3,9 @@
  :deps {org.clojure/clojure        {:mvn/version "1.12.0"}
         metosin/malli              {:mvn/version "0.16.4"}
         org.apache.xmlgraphics/fop {:mvn/version "2.11"}
-        org.commonmark/commonmark  {:mvn/version "0.24.0"}}
+        org.commonmark/commonmark  {:mvn/version "0.24.0"}
+        org.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.24.0"}
+        org.commonmark/commonmark-ext-footnotes   {:mvn/version "0.24.0"}}
 
  :aliases
  {:test  {:extra-paths ["test" "test/resources"]
