@@ -138,10 +138,13 @@ languages addable later with no architecture change).
 - **Verify, not capture.** The rendered content stays author-fixed; only the
   *check* runs. This preserves determinism — evaluate-and-capture would inject
   nondeterminism (e.g. `(Instant/now)` rendering differently each build).
-- **Shipped now (in-process, no subprocess):** Clojure (SCI), Groovy
-  (`GroovyShell`), Java (JDK compiler API / JShell), Kotlin (embeddable scripting
-  compiler). The dynamic-eval pair (Clojure, Groovy) is cheapest to wire; Kotlin
-  is the heaviest.
+- **Shipped now (in-process, no subprocess):** Clojure (native JVM `eval`),
+  Groovy (`GroovyShell`), Java (JDK compiler API / JShell), Kotlin (embeddable
+  scripting compiler). Each language uses its authentic in-process engine, so a
+  validated sample behaves as it will for a reader running the real toolchain.
+  The dynamic-eval pair (Clojure, Groovy) is cheapest to wire; Kotlin is the
+  heaviest. Clojure needs no extra dependency — it is already on the classpath —
+  so Clojure validation works out of the box.
 - **Designed-for, deferred:** Scala (heavy, version-pinned compiler; in-process
   is possible) and **non-JVM** languages (C, C++, …). Non-JVM requires shelling
   out to an external toolchain — an explicit opt-in tier *outside* the pure-JVM
@@ -151,7 +154,13 @@ languages addable later with no architecture change).
   a plain prose or Clojure-only book still needs nothing but a JVM.
 - **Trust, tiered.** `.md` is read as data (no `load-file`), so a prose book is
   eval-free — the "building runs your code" caveat disappears — until a block
-  opts into `{:test true}`. SCI sandboxes Clojure execution.
+  opts into `{:test true}`. Validation is **not** sandboxed: an opted-in block
+  runs with the full authority of the build JVM (the same trust model as a `.clj`
+  chapter under `load-file`). This was a deliberate choice over a sandboxed
+  interpreter (SCI was considered): authentic host semantics matter for a
+  programming book — a validated sample must behave exactly as it will for the
+  reader — and it keeps Clojure consistent with the Java/Kotlin/Groovy evaluators,
+  which all use their real engines. Only validate manuscripts you trust.
 - **Placement.** Execution is an effectful **shell** pass, never in the pure
   core; `boundaries_test` keeps `md.compile`, `expand`, and `assemble` pure.
 
@@ -189,4 +198,5 @@ current `.clj` build.
 - commonmark-java source-position fidelity (gates the quality of author errors).
 - How to attach an EDN attribute map to a GFM table (the `:cols` case).
 - `:id`-from-filename uniqueness and stability across xref targets.
-- SCI sandbox scope for `{:test true}`; Kotlin scripting startup cost.
+- Native-eval isolation for `{:test true}` (fresh namespace per block to avoid
+  cross-block leakage); Kotlin scripting startup cost.
