@@ -136,7 +136,23 @@
 (defn- row->fo [tr style]
   (into [:fo/table-row] (map #(cell->fo % style) (cells-of tr))))
 
-(defn- table-block [_author children style]
+(defn- column-weights
+  "Per-column proportional weights for a table. With no author `:cols`,
+   every column is weight 1 (equal width). A `:cols` vector overrides the
+   leading columns; any unspecified trailing columns default to 1, and any
+   extra weights are ignored. FOP supports only fixed table layout, so
+   explicit weights are the only way to widen a column for content (such as
+   a long monospace identifier) that cannot wrap."
+  [cols ncols]
+  (when (and (some? cols)
+             (not (and (vector? cols)
+                       (every? #(and (number? %) (pos? %)) cols))))
+    (throw (error/ex :clj-book.fo.expand/invalid-cols
+                     ":table :cols must be a vector of positive numbers, one weight per column."
+                     {:cols cols})))
+  (vec (take ncols (concat cols (repeat 1)))))
+
+(defn- table-block [author children style]
   (let [kids        (flatten-children children)
         find1       (fn [t] (first (filter #(and (vector? %) (= t (first %))) kids)))
         thead       (find1 :thead)
@@ -147,11 +163,13 @@
                           (seq direct-rows) direct-rows
                           :else             [])
         ncols       (apply max 0 (map #(count (cells-of %))
-                                      (concat header-rows body-rows)))]
+                                      (concat header-rows body-rows)))
+        weights     (column-weights (:cols author) ncols)]
     (into [:fo/table (get style :table)]
           (concat
-            (repeat ncols [:fo/table-column
-                           {:column-width "proportional-column-width(1)"}])
+            (map (fn [w] [:fo/table-column
+                          {:column-width (str "proportional-column-width(" w ")")}])
+                 weights)
             (when (seq header-rows)
               [(into [:fo/table-header] (map #(row->fo % style) header-rows))])
             [(into [:fo/table-body] (map #(row->fo % style) body-rows))]))))

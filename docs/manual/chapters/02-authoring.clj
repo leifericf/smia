@@ -15,6 +15,11 @@
         [:code ":a"]]]
   [:li [:p [:code ":table"] " / " [:code ":thead"] " / " [:code ":tbody"]
         " / " [:code ":tr"] " / " [:code ":td"] " / " [:code ":th"]]]]
+ [:p "Table columns are equal width by default. Give " [:code ":table"] " a "
+  [:code ":cols"] " vector of positive numbers — one relative weight per "
+  "column — to size them: " [:code "[:table {:cols [3 1 1]} …]"] " makes the "
+  "first column three times as wide. FOP supports only fixed table layout, so "
+  "weights are how you make room for wide, unbreakable cell content."]
 
  [:h2 {:id :book-extensions} "Layer 2: book extensions"]
  [:p "Some things HTML cannot name. clj-book adds them:"]

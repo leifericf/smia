@@ -64,6 +64,41 @@
     (is (some #(and (vector? %) (= :fo/table-header (first %))) out))
     (is (some #(and (vector? %) (= :fo/table-body (first %))) out))))
 
+(deftest table-columns-default-to-equal-width
+  (let [out  (ex [:table [:tr [:td "a"] [:td "b"] [:td "c"]]])
+        cols (filter #(and (vector? %) (= :fo/table-column (first %))) out)]
+    (is (= 3 (count cols)))
+    (is (every? #(= "proportional-column-width(1)" (:column-width (second %)))
+                cols)
+        "with no :cols, every column is equal width")))
+
+(deftest table-cols-set-proportional-widths
+  (let [out  (ex [:table {:cols [3 2 1]}
+                  [:tr [:td "a"] [:td "b"] [:td "c"]]])
+        cols (mapv #(:column-width (second %))
+                   (filter #(and (vector? %) (= :fo/table-column (first %))) out))]
+    (is (= ["proportional-column-width(3)"
+            "proportional-column-width(2)"
+            "proportional-column-width(1)"]
+           cols))))
+
+(deftest table-cols-pads-missing-columns-with-one
+  (let [out  (ex [:table {:cols [3]}
+                  [:tr [:td "a"] [:td "b"] [:td "c"]]])
+        cols (mapv #(:column-width (second %))
+                   (filter #(and (vector? %) (= :fo/table-column (first %))) out))]
+    (is (= ["proportional-column-width(3)"
+            "proportional-column-width(1)"
+            "proportional-column-width(1)"]
+           cols)
+        "unspecified trailing columns default to weight 1")))
+
+(deftest table-cols-rejects-non-numeric-weights
+  (is (= :clj-book.fo.expand/invalid-cols
+         (:error/type
+          (catch-data #(ex [:table {:cols [3 "wide"]}
+                            [:tr [:td "a"] [:td "b"]]]))))))
+
 (deftest admonition-expands-to-bordered-block-with-label
   (let [out (ex [:admonition {:kind :warning} [:p "careful"]])
         attrs (second out)]
