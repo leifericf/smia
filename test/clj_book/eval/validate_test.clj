@@ -1,0 +1,39 @@
+(ns clj-book.eval.validate-test
+  (:require
+   [clj-book.error :as error]
+   [clj-book.eval.validate :as validate]
+   [clojure.test :refer [deftest is]]))
+
+(defn- catch-data [f] (try (f) nil (catch Exception e (error/data e))))
+
+(deftest passing-blocks-validate-ok
+  (let [ch [:chapter {:id :x :title "X"}
+            [:pre {:lang :clojure :test true} "(+ 1 2)"]
+            [:pre {:lang :clojure :test true} "(map inc [1 2 3])"]]
+        r  (validate/validate-chapters! [ch])]
+    (is (= :ok (:status r)))
+    (is (= 2 (:validated r)))))
+
+(deftest a-failing-block-aborts-with-aggregated-error
+  (let [ch [:chapter {:id :x :title "X"}
+            [:pre {:lang :clojure :test true} "(+ 1 2)"]
+            [:pre {:lang :clojure :test true} "(/ 1 0)"]]
+        d  (catch-data #(validate/validate-chapters! [ch]))]
+    (is (= :clj-book.eval/validation-failed (:error/type d)))
+    (is (= 1 (count (get-in d [:error/context :failures]))))))
+
+(deftest unsupported-language-is-a-clear-error
+  (let [ch [:chapter {} [:pre {:lang :ruby :test true} "puts 1"]]
+        d  (catch-data #(validate/validate-chapters! [ch]))]
+    (is (= :clj-book.eval/unsupported-language (:error/type d)))))
+
+(deftest test-block-without-a-language-is-an-error
+  (let [ch [:chapter {} [:pre {:test true} "(+ 1 2)"]]
+        d  (catch-data #(validate/validate-chapters! [ch]))]
+    (is (= :clj-book.eval/missing-language (:error/type d)))))
+
+(deftest nothing-to-validate-is-ok
+  (let [ch [:chapter {:id :x :title "X"} [:p "prose only"]]
+        r  (validate/validate-chapters! [ch])]
+    (is (= :ok (:status r)))
+    (is (= 0 (:validated r)))))

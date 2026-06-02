@@ -42,6 +42,7 @@
    [:config-path :string]
    [:output-root :string]
    [:dry-run {:optional true} :boolean]
+   [:validate-code {:optional true} :boolean]
    [:profiles [:maybe [:sequential :keyword]]]])
 
 (def Paths
@@ -73,7 +74,8 @@
    [:manifest-skeleton [:map
                         [:book/slug :string]
                         [:build/profiles [:sequential Profile]]
-                        [:metadata :map]]]])
+                        [:metadata :map]]]
+   [:validation {:optional true} :map]])
 
 (defn valid?
   "True when `value` conforms to `schema`."

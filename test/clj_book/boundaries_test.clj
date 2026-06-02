@@ -34,7 +34,8 @@
 (def render-internals
   "Rendering-context namespaces the interface must not reach into; it
    routes through clj-book.build.execute instead."
-  ["clj-book.fo.render" "clj-book.book.assemble" "clj-book.book.load"])
+  ["clj-book.fo.render" "clj-book.book.assemble" "clj-book.book.load"
+   "clj-book.md." "clj-book.eval."])
 
 (deftest interface-routes-through-build
   (doseq [path interface-nss
@@ -55,7 +56,8 @@
    "src/clj_book/book/theme.clj"
    "src/clj_book/book/assemble.clj"
    "src/clj_book/md/compile.clj"
-   "src/clj_book/md/schema.clj"])
+   "src/clj_book/md/schema.clj"
+   "src/clj_book/eval/registry.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss

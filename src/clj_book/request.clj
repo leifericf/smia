@@ -77,6 +77,7 @@
                     :output-root (or (string-or-throw :output-root output-root)
                                      default-output-root)
                     :dry-run     (boolean dry-run)
+                    :validate-code (boolean (:validate-code request-map))
                     :profiles    (normalize-profiles profiles)}]
     (cond-> normalized
       (= command :build) (update :profiles resolve-profiles))))

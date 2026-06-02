@@ -14,6 +14,8 @@
    [clj-book.book.theme :as book-theme]
    [clj-book.build.plan :as plan]
    [clj-book.config :as config]
+   [clj-book.eval.registry :as eval-registry]
+   [clj-book.eval.validate :as eval-validate]
    [clj-book.fo.expand :as expand]
    [clj-book.fo.render :as render]
    [clj-book.fo.schema :as fo-schema]
@@ -77,10 +79,14 @@
 
 (defn execute!
   "Perform a Plan: load the book once, render each profile, and write the
-   manifest. Returns the manifest map."
-  [{:keys [book-root manuscript paths profile-steps manifest-skeleton]}]
+   manifest. Returns the manifest map. When the plan enables code
+   validation, the `:test` blocks are checked after loading and before
+   assembly — a failing block aborts the build."
+  [{:keys [book-root manuscript paths profile-steps manifest-skeleton validation]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
+        _             (when (:enabled validation)
+                        (eval-validate/validate-chapters! (:chapters book)))
         base          {:book-root book-root :book book :tokens (:tokens manuscript)}
         artifacts-out (mapv #(render-profile! base %) profile-steps)
         finished      (Instant/now)]
@@ -101,9 +107,17 @@
    value instead of performing the build: the manuscript is still loaded
    and validated, but nothing is rendered and no artifacts are written."
   [request]
-  (let [the-plan (-> request prepare plan/plan)]
+  (let [prepared (prepare request)
+        the-plan (plan/plan prepared)]
     (if (:dry-run request)
-      the-plan
+      ;; Surface the validation plan (block counts per language) by loading
+      ;; the book; nothing is rendered or evaluated.
+      (cond-> the-plan
+        (get-in the-plan [:validation :enabled])
+        (assoc-in [:validation :plan]
+                  (eval-registry/plan-validation
+                   (:chapters (load-book (:book-root (:request prepared))
+                                         (:manuscript prepared))))))
       (execute! the-plan))))
 
 (defn validate
@@ -121,7 +135,11 @@
             :let    [[_ _ & body] chapter]
             form    body]
       (fo-schema/check form :clj-book.build.execute/invalid-chapter-content))
-    {:status   :ok
-     :config   (:config-file manuscript)
-     :tokens   (:tokens manuscript)
-     :warnings (:warnings manuscript)}))
+    ;; Opt-in: validate marked code blocks (runs author code; see eval.*).
+    (let [validation (when (:validate-code request)
+                       (eval-validate/validate-chapters! (:chapters book)))]
+      {:status     :ok
+       :config     (:config-file manuscript)
+       :tokens     (:tokens manuscript)
+       :warnings   (:warnings manuscript)
+       :validation validation})))

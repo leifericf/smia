@@ -31,5 +31,6 @@
        :profile-steps     (mapv #(profile-step % slug paths) profiles)
        :manifest-skeleton {:book/slug      slug
                            :build/profiles profiles
-                           :metadata       {:warnings warnings}}}
+                           :metadata       {:warnings warnings}}
+       :validation        {:enabled (boolean (:validate-code request))}}
       :clj-book.build.plan/invalid-plan)))
