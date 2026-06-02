@@ -56,3 +56,54 @@
     (spit-chapter dir "chapters/01.clj" "(this is (not valid")
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01.clj"))]
       (is (= :clj-book.book.load/chapter-eval-error (:error/type d))))))
+
+;; --- Markdown front-end ---------------------------------------------------
+
+(deftest loads-a-markdown-chapter
+  (testing "id from filename (NN- prefix stripped), title from first H1"
+    (let [dir (tmp-book "md")]
+      (spit-chapter dir "chapters/02-authoring.md"
+                    "# Authoring\n\nWrite **prose**.\n")
+      (is (= [:chapter {:id :authoring :title "Authoring"}
+              [:p "Write " [:strong "prose"] "."]]
+             (load/load-chapter (.getPath dir) "chapters/02-authoring.md"))))))
+
+(deftest frontmatter-overrides-id-and-title
+  (let [dir (tmp-book "md-fm")]
+    (spit-chapter dir "chapters/01-x.md"
+                  "{:id :custom :title \"Custom\" :draft true}\n# Ignored\n\nHi\n")
+    (let [[_ attrs] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= :custom (:id attrs)))
+      (is (= "Custom" (:title attrs)))
+      (is (true? (:draft attrs)) "extra front-matter keys are preserved"))))
+
+(deftest markdown-without-a-title-is-an-error
+  (let [dir (tmp-book "md-notitle")]
+    (spit-chapter dir "chapters/01-x.md" "Just prose, no heading.\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :clj-book.book.load/missing-title (:error/type d))))))
+
+(deftest markdown-frontmatter-type-error-is-surfaced
+  (let [dir (tmp-book "md-badfm")]
+    (spit-chapter dir "chapters/01-x.md" "{:id \"not-a-keyword\"}\n# T\n\nHi\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :clj-book.book.load/invalid-front-matter (:error/type d))))))
+
+(deftest duplicate-chapter-ids-are-a-hard-error
+  (let [dir (tmp-book "dupe")]
+    (spit-chapter dir "chapters/01.clj" "[:chapter {:id :same :title \"A\"}]")
+    (spit-chapter dir "chapters/02.md" "{:id :same}\n# B\n\nhi\n")
+    (let [d (catch-data #(load/load-chapters (.getPath dir)
+                                             ["chapters/01.clj" "chapters/02.md"]))]
+      (is (= :clj-book.book.load/duplicate-chapter-id (:error/type d)))
+      (is (= [:same] (get-in d [:error/context :duplicate-ids]))))))
+
+(deftest clj-and-md-chapters-mix
+  (let [dir (tmp-book "mixed")]
+    (spit-chapter dir "chapters/01-intro.clj"
+                  "[:chapter {:id :intro :title \"Intro\"} [:p \"a\"]]")
+    (spit-chapter dir "chapters/02-body.md" "# Body\n\nb\n")
+    (is (= [:intro :body]
+           (map #(get-in % [1 :id])
+                (load/load-chapters (.getPath dir)
+                                    ["chapters/01-intro.clj" "chapters/02-body.md"]))))))
