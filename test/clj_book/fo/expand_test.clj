@@ -26,6 +26,30 @@
          (ex [:pre {:lang :clojure :test true} "code"])
          (ex [:pre {:lang :clojure :include "x.clj"} "code"]))))
 
+(defn- tag-children [tag out]
+  (filter #(and (vector? %) (= tag (first %))) out))
+
+(deftest header-only-table-promotes-header-to-body
+  ;; A valid GFM header-only table has no body rows; FO requires a
+  ;; non-empty fo:table-body, so the header is rendered as the body rather
+  ;; than emitting an empty body that FOP rejects.
+  (let [out    (ex [:table [:thead [:tr [:th "A"] [:th "B"]]]])
+        bodies (tag-children :fo/table-body out)]
+    (is (= 1 (count bodies)))
+    (is (seq (tag-children :fo/table-row (first bodies)))
+        "the table-body has at least one row")
+    (is (empty? (tag-children :fo/table-header out))
+        "no separate, empty header remains")))
+
+(deftest table-with-body-keeps-its-header
+  (let [out (ex [:table [:thead [:tr [:th "A"]]] [:tbody [:tr [:td "1"]]]])]
+    (is (= 1 (count (tag-children :fo/table-header out))))
+    (is (= 1 (count (tag-children :fo/table-body out))))))
+
+(deftest table-with-no-rows-is-a-clean-error
+  (let [d (catch-data #(ex [:table]))]
+    (is (= :clj-book.fo.expand/empty-table (:error/type d)))))
+
 (deftest nested-inline-inside-block
   (let [out (ex [:p "a " [:strong "b"] " c"])]
     (is (= :fo/block (first out)))

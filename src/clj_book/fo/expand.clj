@@ -164,7 +164,17 @@
                           :else             [])
         ncols       (apply max 0 (map #(count (cells-of %))
                                       (concat header-rows body-rows)))
-        weights     (column-weights (:cols author) ncols)]
+        weights     (column-weights (:cols author) ncols)
+        ;; FOP requires a non-empty fo:table-body. A valid header-only table
+        ;; (e.g. a GFM table with no data rows) has no body rows, so render
+        ;; its header as the body rather than emit an empty body FOP rejects.
+        [header-rows body-rows] (if (seq body-rows)
+                                  [header-rows (vec body-rows)]
+                                  [nil (vec header-rows)])]
+    (when (empty? body-rows)
+      (throw (error/ex :clj-book.fo.expand/empty-table
+                       "A :table needs at least one row."
+                       {:table (into [:table] children)})))
     (into [:fo/table (get style :table)]
           (concat
             (map (fn [w] [:fo/table-column
