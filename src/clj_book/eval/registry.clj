@@ -18,7 +18,46 @@
    naming the optional dependency to add when the namespace cannot load."
   {:clojure {:evaluate   'clj-book.eval.clojure/evaluate
              :requires   nil
+             :in-process true}
+   :groovy  {:evaluate   'clj-book.eval.groovy/evaluate
+             :requires   'org.apache.groovy/groovy
+             :in-process true}
+   :java    {:evaluate   'clj-book.eval.java/evaluate
+             :requires   nil
+             :in-process true}
+   :kotlin  {:evaluate   'clj-book.eval.kotlin/evaluate
+             :requires   'org.jetbrains.kotlin/kotlin-scripting-jsr223
              :in-process true}})
+
+;; --- evaluator result constructors ----------------------------------------
+;; The shared shape every evaluator returns, so the four in-process JVM
+;; evaluators stay consistent. Pure data; no engine is referenced here.
+
+(defn parsed
+  "A successful parse-only result."
+  [] {:status :parsed})
+
+(defn ran
+  "A successful run result carrying the last value."
+  [value] {:status :ran :value value})
+
+(defn matched
+  "A successful assertion result (the block evaluated to a truthy value)."
+  [value] {:status :matched :value value})
+
+(defn failed
+  "A failure result. `diagnostics` is a seq of message strings or maps."
+  [diagnostics]
+  {:status      :failed
+   :diagnostics (mapv #(if (map? %) % {:message (str %)}) diagnostics)})
+
+(defn from-value
+  "Shape an evaluated `value` for the requested `level`: `:assert` requires
+   truthiness; anything else is a plain run."
+  [level value]
+  (if (= :assert level)
+    (if value (matched value) (failed ["Assertion block evaluated to a falsey value."]))
+    (ran value)))
 
 (defn supported?
   "True when a language has a registered evaluator."

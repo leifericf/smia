@@ -22,4 +22,12 @@
           :exec-args {}}
 
   :validate {:exec-fn   clj-book.api/validate
-             :exec-args {}}}}
+             :exec-args {}}
+
+  ;; Optional code-validation evaluators. A book pulls in only the
+  ;; languages it validates; Clojure needs nothing extra, and Java uses the
+  ;; in-JDK JShell. Compose with :validate / :build, e.g.
+  ;; `clojure -X:validate:eval-groovy :validate-code true`.
+  :eval-groovy {:extra-deps {org.apache.groovy/groovy {:mvn/version "4.0.24"}}}
+  :eval-kotlin {:extra-deps {org.jetbrains.kotlin/kotlin-scripting-jsr223
+                             {:mvn/version "2.0.21"}}}}}

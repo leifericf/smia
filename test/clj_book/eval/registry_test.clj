@@ -8,6 +8,23 @@
   (is (symbol? (get-in registry/evaluators [:clojure :evaluate])))
   (is (not (registry/supported? :brainfuck))))
 
+(deftest all-shipped-jvm-languages-are-addressable-as-data
+  ;; Adding a language is adding a data entry, not editing a cond.
+  (doseq [lang [:clojure :groovy :java :kotlin]]
+    (is (registry/supported? lang) (str lang " has a registry entry"))
+    (is (qualified-symbol? (get-in registry/evaluators [lang :evaluate]))
+        (str lang " names its evaluate fn as a fully-qualified symbol"))))
+
+(deftest result-constructors-shape-the-shared-contract
+  (is (= {:status :parsed} (registry/parsed)))
+  (is (= {:status :ran :value 9} (registry/ran 9)))
+  (is (= {:status :matched :value true} (registry/matched true)))
+  (is (= :failed (:status (registry/failed ["boom"]))))
+  (is (= [{:message "boom"}] (:diagnostics (registry/failed ["boom"]))))
+  (is (= :matched (:status (registry/from-value :assert true))))
+  (is (= :failed (:status (registry/from-value :assert nil))))
+  (is (= :ran (:status (registry/from-value :run 42)))))
+
 (deftest collect-finds-only-test-marked-pre-blocks
   (let [ch [:chapter {:id :x :title "X"}
             [:p "prose"]
