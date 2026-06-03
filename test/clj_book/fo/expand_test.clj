@@ -170,6 +170,15 @@
   (let [d (catch-data #(ex [:xref {} "x"]))]
     (is (= :clj-book.fo.expand/invalid-xref (:error/type d)))))
 
+(deftest page-break-forces-a-break-before
+  (is (= [:fo/block {:break-before "page"}] (ex [:page-break]))))
+
+(deftest keep-together-wraps-its-body
+  (let [out (ex [:keep-together [:p "a"] [:p "b"]])]
+    (is (= :fo/block (first out)))
+    (is (= "always" (:keep-together.within-page (second out))))
+    (is (= 2 (count (filter #(and (vector? %) (= :fo/block (first %))) out))))))
+
 (deftest unknown-tag-is-structured-error
   (let [d (catch-data #(ex [:marquee "no"]))]
     (is (= :clj-book.fo.expand/unknown-tag (:error/type d)))

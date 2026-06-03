@@ -273,7 +273,13 @@
      :th         (fn [a c s] (styled-block :p a c s {}))
      :admonition (fn [a c s] (admonition-block a c s))
      :footnote   (fn [a c s] (footnote a c s))
-     :xref       (fn [a c s] (xref a c s))}))
+     :xref       (fn [a c s] (xref a c s))
+     :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
+     :keep-together
+     (fn [a c s]
+       (into [:fo/block (cond-> {:keep-together.within-page "always"}
+                          (:id a) (assoc :id (as-id (:id a))))]
+             (expand-all c s)))}))
 
 ;; --- the public transform -------------------------------------------------
 

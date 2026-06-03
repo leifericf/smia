@@ -17,7 +17,8 @@
     :strong :em :code :pre :a :br
     :blockquote :img :hr
     :table :thead :tbody :tr :td :th
-    :admonition :footnote :xref})
+    :admonition :footnote :xref
+    :page-break :keep-together})
 
 (defn fo-tag?
   "True for a raw FO tag: a keyword in the `fo` namespace, e.g. `:fo/block`."

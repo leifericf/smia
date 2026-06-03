@@ -208,6 +208,13 @@
     (let [attrs (schema/check-admonition (directive-attrs node)
                                          :clj-book.md.compile/invalid-admonition)]
       (into [:admonition attrs] (compile-block-seq (:children node))))
+
+    "keep-together"
+    (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node)))
+
+    "page-break"
+    [:page-break]
+
     (err :clj-book.md.compile/unknown-directive
          (str "Unknown directive: :::" (:name node)) {:name (:name node)} node)))
 

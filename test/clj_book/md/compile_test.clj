@@ -29,6 +29,13 @@
   (is (= [[:h2 "Two"] [:h3 "Three"]]
          (md->body "## Two\n\n### Three\n"))))
 
+(deftest page-mechanics-directives-compile
+  (testing ":::page-break compiles to the page-break element"
+    (is (= [[:page-break]] (md->body ":::page-break\n:::\n"))))
+  (testing ":::keep-together wraps its block content"
+    (is (= [[:keep-together {} [:p "a"] [:p "b"]]]
+           (md->body ":::keep-together\na\n\nb\n:::\n")))))
+
 (deftest heading-trailing-edn-map-becomes-attributes
   (testing "a trailing bare EDN map on a heading line is pulled out as attrs"
     (is (= [[:h2 {:id :setup} "Setup"]]
