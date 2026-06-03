@@ -102,14 +102,17 @@
   (let [base (cond-> {} (pos n) (assoc :pos (pos n)))]
     (condp instance? n
       Document           (assoc base :type :document :children (kids n))
-      Heading            (assoc base :type :heading :level (.getLevel ^Heading n) :children (kids n))
+      Heading            (assoc base :type :heading
+                                :level (.getLevel ^Heading n) :children (kids n))
       Paragraph          (assoc base :type :paragraph :children (kids n))
       Text               (assoc base :type :text :literal (.getLiteral ^Text n))
       StrongEmphasis     (assoc base :type :strong :children (kids n))
       Emphasis           (assoc base :type :emphasis :children (kids n))
       Code               (assoc base :type :code :literal (.getLiteral ^Code n))
-      BulletList         (assoc base :type :bullet-list :tight (.isTight ^ListBlock n) :children (kids n))
-      OrderedList        (assoc base :type :ordered-list :tight (.isTight ^ListBlock n) :children (kids n))
+      BulletList         (assoc base :type :bullet-list
+                                :tight (.isTight ^ListBlock n) :children (kids n))
+      OrderedList        (assoc base :type :ordered-list
+                                :tight (.isTight ^ListBlock n) :children (kids n))
       ListItem           (assoc base :type :list-item :children (kids n))
       BlockQuote         (assoc base :type :block-quote :children (kids n))
       Link               (assoc base :type :link
@@ -140,8 +143,11 @@
                                 :alignment (alignment->kw (.getAlignment ^TableCell n))
                                 :children (kids n))
       ;; Footnotes
-      FootnoteReference  (assoc base :type :footnote-reference :label (.getLabel ^FootnoteReference n))
-      FootnoteDefinition (assoc base :type :footnote-definition :label (.getLabel ^FootnoteDefinition n) :children (kids n))
+      FootnoteReference  (assoc base :type :footnote-reference
+                                :label (.getLabel ^FootnoteReference n))
+      FootnoteDefinition (assoc base :type :footnote-definition
+                                :label (.getLabel ^FootnoteDefinition n)
+                                :children (kids n))
       InlineFootnote     (assoc base :type :inline-footnote :children (kids n))
       ;; The :::name {edn} fenced container
       CustomBlock        (let [{:keys [name attrs-string]} (get directive-meta n)]

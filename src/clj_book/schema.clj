@@ -12,9 +12,13 @@
    [malli.core :as m]
    [malli.error :as me]))
 
+(def ^:private non-empty
+  "Malli predicate fragment: the collection must be non-empty."
+  [:fn {:error/message "should be non-empty"} seq])
+
 (def NonEmptyStrings
   "A non-empty sequence of strings."
-  [:and [:sequential :string] [:fn {:error/message "should be non-empty"} seq]])
+  [:and [:sequential :string] non-empty])
 
 (def Part
   "A part: a title plus the chapters it groups."
@@ -38,8 +42,7 @@
    [:book/slug :string]
    [:book/title :string]
    [:book/chapters {:optional true} NonEmptyStrings]
-   [:book/parts {:optional true} [:and [:sequential Part]
-                                  [:fn {:error/message "should be non-empty"} seq]]]
+   [:book/parts {:optional true} [:and [:sequential Part] non-empty]]
    [:book/front-matter {:optional true} [:sequential MatterSection]]
    [:book/back-matter {:optional true} [:sequential MatterSection]]
    [:book/appendices {:optional true} [:sequential :string]]

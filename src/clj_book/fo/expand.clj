@@ -337,6 +337,17 @@
     {}
     (map-indexed vector annotations)))
 
+(defn- code-line-block
+  "One per-line `:fo/block`: an optional right-aligned line-number gutter of
+   `width` digits, the highlighted `line`, and an optional trailing
+   annotation `mark`."
+  [lang line width n gutter? mark style]
+  (cond-> (into (cond-> [:fo/block {:white-space "pre"}]
+                  gutter? (conj [:fo/inline {:color "#999999"}
+                                 (str (format (str "%" width "d") n) "  ")]))
+                (code-content lang line style))
+    mark (conj (annotation-mark mark style))))
+
 (defn- code-lines-block
   "Render code as one block per line. `gutter?` prefixes each line with a
    muted right-aligned line number; `marks` (a `{line -> ordinal}` map)
@@ -349,11 +360,7 @@
           (map-indexed
             (fn [i line]
               (let [n (inc i)]
-                (cond-> (into (cond-> [:fo/block {:white-space "pre"}]
-                                gutter? (conj [:fo/inline {:color "#999999"}
-                                               (str (format (str "%" width "d") n) "  ")]))
-                              (code-content lang line style))
-                  (get marks n) (conj (annotation-mark (get marks n) style)))))
+                (code-line-block lang line width n gutter? (get marks n) style)))
             lines))))
 
 (defn- render-code

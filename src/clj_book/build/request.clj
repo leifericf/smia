@@ -29,16 +29,17 @@
     (throw (error/ex :clj-book.build.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
-  (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
-        normalized {:command     command
-                    :book-root   (resolve-book-root book-root)
-                    :config-path (or (string-or-throw :config-path config-path)
-                                     default-config-path)
-                    :output-root (or (string-or-throw :output-root output-root)
-                                     default-output-root)
-                    :dry-run     (boolean dry-run)
-                    :validate-code (boolean (:validate-code request-map))
-                    :profiles    (normalize-profiles profiles)}]
+  (let [{:keys [book-root config-path profiles output-root dry-run
+                validate-code]} request-map
+        normalized {:command       command
+                    :book-root     (resolve-book-root book-root)
+                    :config-path   (or (string-or-throw :config-path config-path)
+                                       default-config-path)
+                    :output-root   (or (string-or-throw :output-root output-root)
+                                       default-output-root)
+                    :dry-run       (boolean dry-run)
+                    :validate-code (boolean validate-code)
+                    :profiles      (normalize-profiles profiles)}]
     (cond-> normalized
       (= command :build) (update :profiles resolve-profiles))))
 
