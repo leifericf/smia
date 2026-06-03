@@ -32,34 +32,18 @@
    :sections         false
    :start-chapters-on :any})
 
-(defn- matter-spec [matter m]
-  (cond-> {:kind :matter :matter matter :role (:role m)}
-    (:file m)        (assoc :file (:file m))
-    (:title m)       (assoc :title (:title m))
-    (not (:file m))  (assoc :generated true)))
+(def ^:private role-titles
+  "Explicit human titles for generated roles, so the multi-word lists read
+   naturally (e.g. \"List of Figures\", not the title-cased \"List Of
+   Figures\"). An author `:title` still overrides these downstream."
+  {:bibliography      "Bibliography"
+   :index             "Index"
+   :list-of-figures   "List of Figures"
+   :list-of-tables    "List of Tables"
+   :list-of-listings  "List of Listings"})
 
-(defn- front-sections [config]
-  (mapv #(matter-spec :front %) (:book/front-matter config)))
-
-(defn- back-sections [config]
-  (mapv #(matter-spec :back %) (:book/back-matter config)))
-
-(defn- part-sections [parts]
-  (vec (apply concat
-              (map-indexed
-               (fn [i {:part/keys [title chapters]}]
-                 (cons {:kind :part :title title :index i}
-                       (map (fn [f] {:kind :chapter :file f :part i}) chapters)))
-               parts))))
-
-(defn- body-sections [config]
-  (if-let [parts (:book/parts config)]
-    (part-sections parts)
-    (mapv (fn [f] {:kind :chapter :file f :part nil})
-          (:book/chapters config))))
-
-(defn- appendix-sections [config]
-  (mapv (fn [f] {:kind :appendix :file f}) (:book/appendices config)))
+(declare matter-spec front-sections back-sections part-sections
+         body-sections appendix-sections)
 
 (defn normalize
   "Normalize a `book.edn` config map into `{:numbering <policy>
@@ -103,16 +87,6 @@
                :list-of-figures :list-of-tables :list-of-listings}
              role))
 
-(def ^:private role-titles
-  "Explicit human titles for generated roles, so the multi-word lists read
-   naturally (e.g. \"List of Figures\", not the title-cased \"List Of
-   Figures\"). An author `:title` still overrides these downstream."
-  {:bibliography      "Bibliography"
-   :index             "Index"
-   :list-of-figures   "List of Figures"
-   :list-of-tables    "List of Tables"
-   :list-of-listings  "List of Listings"})
-
 (defn role-title
   "A human title for a generated matter `role` (e.g. `:bibliography` ->
    \"Bibliography\"). Known generated roles have curated titles; any other
@@ -122,3 +96,34 @@
       (->> (str/split (name role) #"-")
            (map str/capitalize)
            (str/join " "))))
+
+;; --- private helpers -------------------------------------------------------
+
+(defn- matter-spec [matter m]
+  (cond-> {:kind :matter :matter matter :role (:role m)}
+    (:file m)        (assoc :file (:file m))
+    (:title m)       (assoc :title (:title m))
+    (not (:file m))  (assoc :generated true)))
+
+(defn- front-sections [config]
+  (mapv #(matter-spec :front %) (:book/front-matter config)))
+
+(defn- back-sections [config]
+  (mapv #(matter-spec :back %) (:book/back-matter config)))
+
+(defn- part-sections [parts]
+  (vec (apply concat
+              (map-indexed
+               (fn [i {:part/keys [title chapters]}]
+                 (cons {:kind :part :title title :index i}
+                       (map (fn [f] {:kind :chapter :file f :part i}) chapters)))
+               parts))))
+
+(defn- body-sections [config]
+  (if-let [parts (:book/parts config)]
+    (part-sections parts)
+    (mapv (fn [f] {:kind :chapter :file f :part nil})
+          (:book/chapters config))))
+
+(defn- appendix-sections [config]
+  (mapv (fn [f] {:kind :appendix :file f}) (:book/appendices config)))

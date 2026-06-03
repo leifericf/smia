@@ -14,6 +14,61 @@
   #{:book/slug
     :book/title})
 
+(def ^:private type-checks
+  "Always-present type contracts as data: `[key predicate message]`."
+  [[:book/slug  string? ":book/slug must be a string."]
+   [:book/title string? ":book/title must be a string."]])
+
+(declare read-edn check-required-keys non-empty-string-seq? invalid-type!
+         check-types check-body-present check-unambiguous-body check-chapters
+         valid-part? check-parts valid-matter? check-matter check-appendices
+         check-numbering check-no-duplicate-files check-files-exist
+         unknown-key-warnings compute-warnings)
+
+(defn validate
+  "Pure validation of an already-parsed `book.edn` map. Performs no IO.
+   Throws structured `ex-info` for shape/type errors; returns the
+   warning vector otherwise. `path` is used only for error context."
+  [config path]
+  (when-not (map? config)
+    (throw (error/ex :clj-book.book.config/invalid-shape
+                     "Top-level value of book.edn must be a map."
+                     {:path path :value config})))
+  (check-required-keys config path)
+  (check-types config path)
+  (check-body-present config path)
+  (check-unambiguous-body config path)
+  (check-chapters config path)
+  (check-parts config path)
+  (check-matter config path :book/front-matter)
+  (check-matter config path :book/back-matter)
+  (check-appendices config path)
+  (check-numbering config path)
+  (check-no-duplicate-files config path)
+  (compute-warnings config))
+
+(defn load-config
+  "Read, parse, and validate the manuscript `book.edn`.
+
+   Returns `{:config <preserved-map> :path <abs-path> :warnings [..]}`.
+   Throws structured `ex-info` for malformed/invalid inputs."
+  [{:keys [book-root config-path]}]
+  (let [f (io/file book-root config-path)]
+    (when-not (.exists f)
+      (throw (error/ex :clj-book.book.config/missing
+                       (str "Configuration file not found: "
+                            (.getPath f))
+                       {:book-root book-root :config-path config-path})))
+    (let [path     (.getPath f)
+          config   (read-edn f)
+          warnings (validate config path)]
+      (check-files-exist config book-root path)
+      {:config   config
+       :path     path
+       :warnings warnings})))
+
+;; --- private helpers -------------------------------------------------------
+
 (defn- read-edn [^java.io.File f]
   (try
     (with-open [r (java.io.PushbackReader. (io/reader f))]
@@ -37,11 +92,6 @@
 
 (defn- non-empty-string-seq? [v]
   (and (sequential? v) (seq v) (every? string? v)))
-
-(def ^:private type-checks
-  "Always-present type contracts as data: `[key predicate message]`."
-  [[:book/slug  string? ":book/slug must be a string."]
-   [:book/title string? ":book/title must be a string."]])
 
 (defn- invalid-type! [path k value msg]
   (throw (error/ex :clj-book.book.config/invalid-type msg
@@ -151,45 +201,3 @@
   "Return the warning vector for `config` as a pure value."
   [config]
   (vec (unknown-key-warnings config)))
-
-(defn validate
-  "Pure validation of an already-parsed `book.edn` map. Performs no IO.
-   Throws structured `ex-info` for shape/type errors; returns the
-   warning vector otherwise. `path` is used only for error context."
-  [config path]
-  (when-not (map? config)
-    (throw (error/ex :clj-book.book.config/invalid-shape
-                     "Top-level value of book.edn must be a map."
-                     {:path path :value config})))
-  (check-required-keys config path)
-  (check-types config path)
-  (check-body-present config path)
-  (check-unambiguous-body config path)
-  (check-chapters config path)
-  (check-parts config path)
-  (check-matter config path :book/front-matter)
-  (check-matter config path :book/back-matter)
-  (check-appendices config path)
-  (check-numbering config path)
-  (check-no-duplicate-files config path)
-  (compute-warnings config))
-
-(defn load-config
-  "Read, parse, and validate the manuscript `book.edn`.
-
-   Returns `{:config <preserved-map> :path <abs-path> :warnings [..]}`.
-   Throws structured `ex-info` for malformed/invalid inputs."
-  [{:keys [book-root config-path]}]
-  (let [f (io/file book-root config-path)]
-    (when-not (.exists f)
-      (throw (error/ex :clj-book.book.config/missing
-                       (str "Configuration file not found: "
-                            (.getPath f))
-                       {:book-root book-root :config-path config-path})))
-    (let [path     (.getPath f)
-          config   (read-edn f)
-          warnings (validate config path)]
-      (check-files-exist config book-root path)
-      {:config   config
-       :path     path
-       :warnings warnings})))

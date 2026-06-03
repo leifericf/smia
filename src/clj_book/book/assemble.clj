@@ -15,6 +15,44 @@
    [clj-book.book.structure :as structure]
    [clojure.string :as str]))
 
+(declare book-sections bookmark-tree toc-furniture section-sequences
+         default-running-heads)
+
+;; --- assembly -------------------------------------------------------------
+
+(defn assemble
+  "Assemble a typed `manuscript` and a compiled `theme` (from
+   `clj-book.theme.compile/compile-theme`) into one `:fo/root` tree.
+
+   The manuscript is the typed value from `book.load/load-manuscript`
+   (`{:title :author :numbering :sections …}`). Chapter bodies remain
+   authored sugar for the later expansion pass."
+  [book theme]
+  (let [{:keys [title author]} book
+        {:keys [style master-reference masters profile]} theme
+        numbering  (or (:numbering book) structure/default-numbering)
+        prepared   (book-sections book)
+        recto?     (and (= profile :print)
+                        (= :recto (:start-chapters-on numbering)))
+        ctx        {:theme         theme
+                    :master-ref    master-reference
+                    :recto?        recto?
+                    :book-title    title
+                    :references    (:references book)
+                    :index         (:index book)
+                    :floats        (:floats book)
+                    :running-heads (merge-with merge default-running-heads
+                                               (:running-heads book))}
+        body-style (get style :body)]
+    (into [:fo/root {:font-family (:font-family body-style)
+                     :font-size   (:font-size body-style)
+                     :line-height (:line-height body-style)}]
+          (concat
+            [(into [:fo/layout-master-set] masters)]
+            [(bookmark-tree prepared)]
+            [(toc-furniture title author prepared ctx)]
+            (section-sequences prepared ctx)))))
+
 ;; --- chapter parsing ------------------------------------------------------
 
 (defn- parse-chapter
@@ -430,38 +468,3 @@
             (recur (rest ns) true
                    (conj acc (body-sequence parsed ctx
                                             (body-page-attrs (not seen-body?) recto?))))))))))
-
-;; --- assembly -------------------------------------------------------------
-
-(defn assemble
-  "Assemble a typed `manuscript` and a compiled `theme` (from
-   `clj-book.theme.compile/compile-theme`) into one `:fo/root` tree.
-
-   The manuscript is the typed value from `book.load/load-manuscript`
-   (`{:title :author :numbering :sections …}`). Chapter bodies remain
-   authored sugar for the later expansion pass."
-  [book theme]
-  (let [{:keys [title author]} book
-        {:keys [style master-reference masters profile]} theme
-        numbering  (or (:numbering book) structure/default-numbering)
-        prepared   (book-sections book)
-        recto?     (and (= profile :print)
-                        (= :recto (:start-chapters-on numbering)))
-        ctx        {:theme         theme
-                    :master-ref    master-reference
-                    :recto?        recto?
-                    :book-title    title
-                    :references    (:references book)
-                    :index         (:index book)
-                    :floats        (:floats book)
-                    :running-heads (merge-with merge default-running-heads
-                                               (:running-heads book))}
-        body-style (get style :body)]
-    (into [:fo/root {:font-family (:font-family body-style)
-                     :font-size   (:font-size body-style)
-                     :line-height (:line-height body-style)}]
-          (concat
-            [(into [:fo/layout-master-set] masters)]
-            [(bookmark-tree prepared)]
-            [(toc-furniture title author prepared ctx)]
-            (section-sequences prepared ctx)))))

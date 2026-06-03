@@ -26,6 +26,67 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
+(declare chapter-id-from-path select-lines include-pre? include-paths
+         substitute-includes read-include resolve-includes check-chapter-shape
+         load-markdown-chapter load-clojure-chapter duplicate-ids
+         check-no-duplicate-ids load-references)
+
+(defn load-chapter
+  "Read one chapter file at `book-root`/`rel-path`, returning its Hiccup
+   value. Dispatches on extension: `.md` via the Markdown front-end, every
+   other extension via `load-file`. Throws a structured error if the file
+   is missing or cannot be read/parsed."
+  [book-root rel-path]
+  (let [f (io/file book-root rel-path)]
+    (when-not (.exists f)
+      (throw (error/ex :clj-book.book.load/missing-chapter
+                       (str "Chapter file not found: " (.getPath f))
+                       {:book-root book-root :path rel-path})))
+    (if (str/ends-with? (str/lower-case rel-path) ".md")
+      (load-markdown-chapter book-root rel-path f)
+      (load-clojure-chapter f))))
+
+(defn load-chapters
+  "Load `rel-paths` (relative to `book-root`) in order, returning a vector
+   of Hiccup chapter forms. A duplicate chapter `:id` is a hard error
+   (assembly would otherwise silently collapse cross-reference targets)."
+  [book-root rel-paths]
+  (let [chapters (mapv #(load-chapter book-root %) rel-paths)]
+    (check-no-duplicate-ids chapters)
+    chapters))
+
+(defn load-manuscript
+  "Shell: normalize `config` into a typed document structure and load every
+   file-backed section into its `[:chapter …]` Hiccup, returning the typed
+   manuscript value:
+
+     `{:title :author :numbering <policy> :sections [<spec+content> …]
+       :chapters [<loaded-hiccup> …]}`
+
+   `:sections` carries the structure (parts, matter, appendices) with each
+   file-backed entry's loaded `:content`; `:chapters` is every loaded form in
+   document order (used by the vocabulary and code-validation passes). A flat
+   `:book/chapters` book yields a body of chapters with no parts. A duplicate
+   chapter `:id` anywhere in the book is a hard error."
+  [book-root config]
+  (let [{:keys [numbering sections]} (structure/normalize config)
+        loaded   (mapv (fn [s]
+                         (if-let [f (:file s)]
+                           (assoc s :content (load-chapter book-root f))
+                           s))
+                       sections)
+        chapters (vec (keep :content loaded))]
+    (check-no-duplicate-ids chapters)
+    {:title         (:book/title config)
+     :author        (:book/author config)
+     :numbering     numbering
+     :running-heads (:book/running-heads config)
+     :references    (load-references book-root config)
+     :sections      loaded
+     :chapters      chapters}))
+
+;; --- private helpers -------------------------------------------------------
+
 (defn- chapter-id-from-path
   "Derive a chapter `:id` keyword from a chapter file path: basename, minus
    extension and a leading `NN-`/`NN_` ordering prefix. e.g.
@@ -160,21 +221,6 @@
                                   {:path (.getPath f) :cause (.getMessage e)}))))]
     (check-chapter-shape form (.getPath f))))
 
-(defn load-chapter
-  "Read one chapter file at `book-root`/`rel-path`, returning its Hiccup
-   value. Dispatches on extension: `.md` via the Markdown front-end, every
-   other extension via `load-file`. Throws a structured error if the file
-   is missing or cannot be read/parsed."
-  [book-root rel-path]
-  (let [f (io/file book-root rel-path)]
-    (when-not (.exists f)
-      (throw (error/ex :clj-book.book.load/missing-chapter
-                       (str "Chapter file not found: " (.getPath f))
-                       {:book-root book-root :path rel-path})))
-    (if (str/ends-with? (str/lower-case rel-path) ".md")
-      (load-markdown-chapter book-root rel-path f)
-      (load-clojure-chapter f))))
-
 (defn- duplicate-ids
   "Chapter `:id`s that occur more than once, sorted."
   [chapters]
@@ -191,15 +237,6 @@
                        (str "Duplicate chapter :id(s): "
                             (str/join ", " (map str dupes)))
                        {:duplicate-ids dupes})))))
-
-(defn load-chapters
-  "Load `rel-paths` (relative to `book-root`) in order, returning a vector
-   of Hiccup chapter forms. A duplicate chapter `:id` is a hard error
-   (assembly would otherwise silently collapse cross-reference targets)."
-  [book-root rel-paths]
-  (let [chapters (mapv #(load-chapter book-root %) rel-paths)]
-    (check-no-duplicate-ids chapters)
-    chapters))
 
 (defn- load-references
   "Read the optional `:book/references` EDN file (key -> bibliography entry
@@ -218,33 +255,3 @@
                            "References file must be an EDN map of key -> entry."
                            {:path (.getPath f)})))
         refs))))
-
-(defn load-manuscript
-  "Shell: normalize `config` into a typed document structure and load every
-   file-backed section into its `[:chapter …]` Hiccup, returning the typed
-   manuscript value:
-
-     `{:title :author :numbering <policy> :sections [<spec+content> …]
-       :chapters [<loaded-hiccup> …]}`
-
-   `:sections` carries the structure (parts, matter, appendices) with each
-   file-backed entry's loaded `:content`; `:chapters` is every loaded form in
-   document order (used by the vocabulary and code-validation passes). A flat
-   `:book/chapters` book yields a body of chapters with no parts. A duplicate
-   chapter `:id` anywhere in the book is a hard error."
-  [book-root config]
-  (let [{:keys [numbering sections]} (structure/normalize config)
-        loaded   (mapv (fn [s]
-                         (if-let [f (:file s)]
-                           (assoc s :content (load-chapter book-root f))
-                           s))
-                       sections)
-        chapters (vec (keep :content loaded))]
-    (check-no-duplicate-ids chapters)
-    {:title         (:book/title config)
-     :author        (:book/author config)
-     :numbering     numbering
-     :running-heads (:book/running-heads config)
-     :references    (load-references book-root config)
-     :sections      loaded
-     :chapters      chapters}))

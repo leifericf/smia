@@ -24,6 +24,33 @@
    [clj-book.error :as error]
    [clojure.string :as str]))
 
+(declare number-sections rewrite-section)
+
+;; --- public transform -----------------------------------------------------
+
+(defn assign
+  "Number `manuscript`'s targets, resolve cross-references and citations, and
+   collect index marks. Returns `{:manuscript <annotated manuscript with
+   :index term->ids> :registry <id → entry>}`. Bibliography lookups use the
+   manuscript's `:references` map."
+  [manuscript]
+  (let [policy     (:numbering manuscript)
+        references (:references manuscript)
+        {:keys [sections registry index floats]}
+        (number-sections (:sections manuscript) policy)
+        sections   (mapv #(rewrite-section % registry references) sections)]
+    {:manuscript (assoc manuscript :sections sections :index index :floats floats)
+     :registry   registry}))
+
+(defn counts
+  "Per-kind counts of numbered targets, for the dry-run plan."
+  [{:keys [registry]}]
+  (let [by (frequencies (map :kind (vals registry)))]
+    (cond-> {}
+      (:part by)      (assoc :parts (:part by))
+      (:chapter by)   (assoc :chapters (:chapter by))
+      (:appendix by)  (assoc :appendices (:appendix by)))))
+
 ;; --- number formats -------------------------------------------------------
 
 (defn- ->roman [n]
@@ -309,28 +336,3 @@
   (if (:content section)
     (assoc section :content (rewrite-refs (:content section) registry references))
     section))
-
-;; --- public transform -----------------------------------------------------
-
-(defn assign
-  "Number `manuscript`'s targets, resolve cross-references and citations, and
-   collect index marks. Returns `{:manuscript <annotated manuscript with
-   :index term->ids> :registry <id → entry>}`. Bibliography lookups use the
-   manuscript's `:references` map."
-  [manuscript]
-  (let [policy     (:numbering manuscript)
-        references (:references manuscript)
-        {:keys [sections registry index floats]}
-        (number-sections (:sections manuscript) policy)
-        sections   (mapv #(rewrite-section % registry references) sections)]
-    {:manuscript (assoc manuscript :sections sections :index index :floats floats)
-     :registry   registry}))
-
-(defn counts
-  "Per-kind counts of numbered targets, for the dry-run plan."
-  [{:keys [registry]}]
-  (let [by (frequencies (map :kind (vals registry)))]
-    (cond-> {}
-      (:part by)      (assoc :parts (:part by))
-      (:chapter by)   (assoc :chapters (:chapter by))
-      (:appendix by)  (assoc :appendices (:appendix by)))))
