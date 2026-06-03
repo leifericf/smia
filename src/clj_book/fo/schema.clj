@@ -18,7 +18,7 @@
     :strong :em :code :pre :a :br
     :blockquote :img :hr :figure
     :table :thead :tbody :tr :td :th
-    :admonition :sidebar :epigraph :footnote :xref :cite :index
+    :admonition :sidebar :overview :epigraph :footnote :xref :cite :index
     :page-break :keep-together})
 
 (defn fo-tag?

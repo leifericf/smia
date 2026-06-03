@@ -54,6 +54,17 @@
   (is (= [[:epigraph {:attribution "A. Hacker"} [:p "Make it work."]]]
          (md->body ":::epigraph {:attribution \"A. Hacker\"}\nMake it work.\n:::\n"))))
 
+(deftest overview-directive-compiles
+  (is (= [[:overview {} [:ul [:li "a"] [:li "b"]]]]
+         (md->body ":::overview\n- a\n- b\n:::\n")))
+  (testing ":title is carried through"
+    (is (= [[:overview {:title "In brief"} [:p "Summary."]]]
+           (md->body ":::overview {:title \"In brief\"}\nSummary.\n:::\n")))))
+
+(deftest overview-title-must-be-a-string
+  (let [d (catch-data #(md->body ":::overview {:title 5}\nhi\n:::\n"))]
+    (is (= :clj-book.md.compile/invalid-overview (:error/type d)))))
+
 (deftest deflist-directive-pairs-terms-and-definitions
   (testing "a paragraph that is a lone strong span is a term; the next block its definition"
     (is (= [[:dl {}

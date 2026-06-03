@@ -18,6 +18,12 @@
   [:map
    [:kind {:optional true} :keyword]])
 
+(def OverviewAttrs
+  "The attribute map of a `:::overview {…}` directive. `:title` overrides
+   the default \"Overview\" label and must be a string when present."
+  [:map
+   [:title {:optional true} :string]])
+
 (defn check
   "Return `attrs` when it conforms to the chapter front-matter schema;
    otherwise throw a structured error of `error-type`."
@@ -29,3 +35,9 @@
    error of `error-type`."
   [attrs error-type]
   (schema/check AdmonitionAttrs attrs error-type))
+
+(defn check-overview
+  "Return overview `attrs` when they conform; otherwise throw a structured
+   error of `error-type`."
+  [attrs error-type]
+  (schema/check OverviewAttrs attrs error-type))

@@ -257,6 +257,11 @@
     "deflist"
     (into [:dl (directive-attrs node)] (compile-deflist (:children node)))
 
+    "overview"
+    (let [attrs (schema/check-overview (directive-attrs node)
+                                       :clj-book.md.compile/invalid-overview)]
+      (into [:overview attrs] (compile-block-seq (:children node))))
+
     "epigraph"
     (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node)))
 

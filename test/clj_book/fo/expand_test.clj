@@ -254,6 +254,23 @@
 (deftest index-mark-is-an-anchor-with-its-id
   (is (= [:fo/inline {:id "idx-3"}] (ex [:index {:term "Determinism" :id "idx-3"}]))))
 
+(deftest overview-renders-a-labeled-panel
+  (let [out (ex [:overview [:ul [:li "The pipeline"] [:li "Where to start"]]])]
+    (is (= :fo/block (first out)))
+    (testing "a default bold 'Overview' label leads the panel"
+      (is (some #(and (vector? %) (= "bold" (:font-weight (second %)))
+                      (= "Overview" (last %)))
+                out)))
+    (testing "the body is expanded into the panel"
+      (is (some #(and (vector? %) (= :fo/list-block (first %)))
+                (tree-seq vector? seq out))))))
+
+(deftest overview-title-overrides-the-label
+  (let [out (ex [:overview {:title "In this chapter"} [:p "Stuff."]])]
+    (is (some #(and (vector? %) (= "In this chapter" (last %))) out))
+    (is (not (some #(= "Overview" (last %)) (filter vector? out)))
+        "the default label is replaced, not duplicated")))
+
 (deftest description-list-renders-terms-and-definitions
   (let [out (ex [:dl
                  [:dt "Manuscript"] [:dd "The normalized document structure."]

@@ -83,6 +83,9 @@
    :admonition {:border "0.75pt solid #999999" :padding "6pt"
                 :space-before "8pt" :space-after "8pt"
                 :background-color "#f7f7f7"}
+   :overview   {:border-left "3pt solid #999999" :padding "8pt 10pt"
+                :background-color "#f7f7f7" :space-before "8pt"
+                :space-after "12pt"}
    :table      {:table-layout "fixed" :width "100%" :border-collapse "collapse"
                 :space-before "6pt" :space-after "8pt"}
    :table-cell {:border "0.5pt solid #cccccc" :padding "4pt"}
@@ -334,6 +337,19 @@
                 (if icon (str icon " " title) title)]])
             (expand-all children style)))))
 
+(defn- overview-block
+  "A chapter-opening panel summarizing what the chapter covers: a bold label
+   bar (default \"Overview\", overridable via `:title`; an explicit `:title
+   nil` drops it) above a rich body."
+  [author children style]
+  (let [title (get author :title "Overview")]
+    (into [:fo/block (cond-> (get style :overview)
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (concat
+            (when title
+              [[:fo/block {:font-weight "bold" :space-after "4pt"} title]])
+            (expand-all children style)))))
+
 (defn- epigraph-block
   "A chapter/part opening quotation: the quote in italic, with an optional
    right-aligned attribution beneath it."
@@ -448,6 +464,7 @@
      :th         (fn [a c s] (styled-block :p a c s {}))
      :admonition (fn [a c s] (sidebar-block (update a :kind #(or % :note)) c s))
      :sidebar    (fn [a c s] (sidebar-block a c s))
+     :overview   (fn [a c s] (overview-block a c s))
      :epigraph   (fn [a c s] (epigraph-block a c s))
      :footnote   (fn [a c s] (footnote a c s))
      :xref       (fn [a c s] (xref a c s))
