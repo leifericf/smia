@@ -68,9 +68,25 @@
 
 ;; --- counters --------------------------------------------------------------
 
-(defn- swap-count [counters k] (get (swap! counters update k (fnil inc 0)) k))
+;; The numbering walk threads a single accumulator value — a plain map
+;;
+;;     {:registry {} :counters {} :index {} :idx-counter 0 :floats []}
+;;
+;; — left-to-right through the tree. Each walker takes the accumulator and a
+;; node and returns `[acc' node']`: no atoms, no escaping mutable state. A
+;; transient `:sec` key holds the per-chapter section counter while a body is
+;; walked and is dropped again on the way out.
+
+(defn- bump
+  "Increment the `k` counter in `acc`, returning `[acc' n]` with the new
+   count."
+  [acc k]
+  (let [acc (update-in acc [:counters k] (fnil inc 0))]
+    [acc (get-in acc [:counters k])]))
 
 ;; --- body sections (headings) ---------------------------------------------
+
+(declare walk walk-seq number-float mark-index)
 
 (defn- numberable-kind
   "The numbered kind of a body block, or nil. Figures always number;
@@ -82,126 +98,159 @@
     :pre    (when (:caption (attrs-of node)) :listing)
     nil))
 
+(defn- walk-seq
+  "Walk `nodes` left-to-right, threading `acc`. Returns `[acc' nodes']`."
+  [ctx acc nodes]
+  (reduce (fn [[acc out] node]
+            (let [[acc node'] (walk ctx acc node)]
+              [acc (conj out node')]))
+          [acc []]
+          nodes))
+
+(defn- number-float
+  "Number a figure/table/listing `node` of `kind`: bump the book-wide
+   counter, register it, record it in `:floats`, and stamp its attrs."
+  [ctx acc node kind]
+  (let [a         (or (attrs-of node) {})
+        [acc n]   (bump acc kind)
+        num       (str n)
+        label     (str (kind-words kind) " " num)
+        author-id (:id a)
+        id        (if author-id (name author-id)
+                      (str (float-id-prefixes kind) "-" num))
+        entry     {:kind kind :id id :number num :label label
+                   :title (:caption a)}
+        acc       (-> acc
+                      (update :registry assoc id (dissoc entry :id))
+                      (update :floats conj entry))
+        [acc kids] (walk-seq ctx acc (children-of node))]
+    [acc (into [(first node)
+                (cond-> (assoc a :number num :label label)
+                  (not author-id) (assoc :id id))]
+               kids)]))
+
+(defn- mark-index
+  "Stamp an `:index` mark with a unique anchor id, collecting `term -> [ids]`
+   in `acc`."
+  [ctx acc node]
+  (let [a   (or (attrs-of node) {})
+        n   (inc (:idx-counter acc))
+        id  (str "idx-" n)
+        acc (cond-> (assoc acc :idx-counter n)
+              (:term a) (update :index update (:term a) (fnil conj []) id))
+        [acc kids] (walk-seq ctx acc (children-of node))]
+    [acc (into [:index (assoc a :id id)] kids)]))
+
+(defn- walk
+  "Walk one body `node` with the read-only `ctx` (`:policy`,
+   `:chapter-number`), threading `acc`. Returns `[acc' node']`: collects
+   `:id` headings into the registry, numbers `:h2` sections decimally within
+   the chapter when enabled, numbers floats, and marks index entries."
+  [ctx acc node]
+  (let [{:keys [policy chapter-number]} ctx]
+    (cond
+      (heading? node)
+      (let [a (attrs-of node)]
+        (if-let [id (:id a)]
+          (let [title (node-text node)]
+            (if (and (:sections policy) chapter-number (= :h2 (first node)))
+              (let [sec (inc (:sec acc))
+                    n   (str chapter-number "." sec)
+                    acc (-> acc
+                            (assoc :sec sec)
+                            (update :registry assoc (name id)
+                                    {:kind :section :number n :title title}))]
+                [acc (into [(first node) a (str n " ")] (children-of node))])
+              [(update acc :registry assoc (name id)
+                       {:kind :section :title title})
+               node]))
+          [acc node]))
+
+      (and (vector? node) (= :index (first node)))
+      (mark-index ctx acc node)
+
+      (and (vector? node) (numberable-kind node))
+      (number-float ctx acc node (numberable-kind node))
+
+      (vector? node) (walk-seq ctx acc node)
+      :else          [acc node])))
+
 (defn- number-body
-  "Walk a chapter body with the numbering `ctx` (`:policy :registry
-   :counters :index :idx-counter`, all atoms but `:policy`): collect every
-   `:id` heading into the registry; number top-level (`:h2`) sections
-   decimally within `chapter-number` when enabled; number figures, captioned
-   tables, and listings book-wide; and stamp each `:index` mark with a unique
-   anchor id, collecting `term -> [ids]`."
-  [body ctx chapter-number]
-  (let [{:keys [policy registry counters index idx-counter floats]} ctx
-        ;; `sec` is a call-local section counter for this one chapter body; like
-        ;; the ctx atoms it never escapes the walk below.
-        sec (volatile! 0)]
-    (letfn [(number-float [node kind]
-              (let [a         (or (attrs-of node) {})
-                    num       (str (swap-count counters kind))
-                    label     (str (kind-words kind) " " num)
-                    author-id (:id a)
-                    id        (if author-id (name author-id)
-                                  (str (float-id-prefixes kind) "-" num))
-                    entry     {:kind kind :id id :number num :label label
-                               :title (:caption a)}]
-                (swap! registry assoc id (dissoc entry :id))
-                (swap! floats conj entry)
-                (into [(first node)
-                       (cond-> (assoc a :number num :label label)
-                         (not author-id) (assoc :id id))]
-                      (map walk (children-of node)))))
-            (mark-index [node]
-              (let [a  (or (attrs-of node) {})
-                    id (str "idx-" (swap! idx-counter inc))]
-                (when (:term a)
-                  (swap! index update (:term a) (fnil conj []) id))
-                (into [:index (assoc a :id id)] (map walk (children-of node)))))
-            (walk [node]
-              (cond
-                (heading? node)
-                (let [a (attrs-of node)]
-                  (if-let [id (:id a)]
-                    (let [title (node-text node)]
-                      (if (and (:sections policy) chapter-number (= :h2 (first node)))
-                        (let [n (str chapter-number "." (vswap! sec inc))]
-                          (swap! registry assoc (name id)
-                                 {:kind :section :number n :title title})
-                          (into [(first node) a (str n " ")] (children-of node)))
-                        (do (swap! registry assoc (name id)
-                                   {:kind :section :title title})
-                            node)))
-                    node))
-
-                (and (vector? node) (= :index (first node)))
-                (mark-index node)
-
-                (and (vector? node) (numberable-kind node))
-                (number-float node (numberable-kind node))
-
-                (vector? node) (mapv walk node)
-                :else          node))]
-      (mapv walk body))))
+  "Walk a chapter `body` threading `acc`, numbering its sections within
+   `chapter-number` (nil to disable) under `policy`. Returns `[acc' body']`.
+   The per-chapter section counter lives in a transient `:sec` key that does
+   not escape this call."
+  [acc body policy chapter-number]
+  (let [ctx          {:policy policy :chapter-number chapter-number}
+        [acc body']  (walk-seq ctx (assoc acc :sec 0) body)]
+    [(dissoc acc :sec) body']))
 
 ;; --- structural sections --------------------------------------------------
 
 (defn- number-chapter-like
   "Number a `:chapter` or `:appendix` section: increment its counter (unless
    the policy disables that kind), label it, annotate the chapter attrs, and
-   number its body sections."
-  [section {:keys [policy registry counters] :as ctx}]
-  (let [k        (:kind section)
-        fmt-key  (if (= k :appendix) (:appendices policy) (:chapters policy))
+   number its body sections. Returns `[acc' section']`."
+  [acc section policy]
+  (let [k         (:kind section)
+        fmt-key   (if (= k :appendix) (:appendices policy) (:chapters policy))
         numbered? (boolean fmt-key)
-        n        (when numbered? (swap-count counters k))
-        num      (when numbered? (fmt fmt-key n))
-        label    (when num (str (kind-words k) " " num))
+        [acc n]   (if numbered? (bump acc k) [acc nil])
+        num       (when numbered? (fmt fmt-key n))
+        label     (when num (str (kind-words k) " " num))
         [_ a & body] (:content section)
-        body'    (number-body (vec body) ctx num)
-        a'       (cond-> a num (assoc :number num :label label :kind k))]
-    (swap! registry assoc (name (:id a))
-           (cond-> {:kind k :title (:title a)}
-             num (assoc :number num :label label)))
-    (assoc section :content (into [:chapter a'] body') :number num :label label)))
+        [acc body'] (number-body acc (vec body) policy num)
+        a'        (cond-> a num (assoc :number num :label label :kind k))
+        acc       (update acc :registry assoc (name (:id a))
+                          (cond-> {:kind k :title (:title a)}
+                            num (assoc :number num :label label)))]
+    [acc (assoc section :content (into [:chapter a'] body')
+                :number num :label label)]))
 
-(defn- number-part [section {:keys [policy registry counters]}]
-  (let [n     (swap-count counters :part)
-        num   (fmt (:parts policy) n)
-        label (str (kind-words :part) " " num)]
-    (swap! registry assoc (str "part-" (:index section))
-           {:kind :part :number num :label label :title (:title section)})
-    (assoc section :number num :label label)))
+(defn- number-part
+  "Number a `:part` section. Returns `[acc' section']`."
+  [acc section policy]
+  (let [[acc n] (bump acc :part)
+        num     (fmt (:parts policy) n)
+        label   (str (kind-words :part) " " num)
+        acc     (update acc :registry assoc (str "part-" (:index section))
+                        {:kind :part :number num :label label
+                         :title (:title section)})]
+    [acc (assoc section :number num :label label)]))
 
-(defn- number-matter [section {:keys [registry] :as ctx}]
+(defn- number-matter
+  "Register a matter section (front/back matter) and number any body it
+   carries. Returns `[acc' section']`."
+  [acc section policy]
   (if-let [content (:content section)]
     (let [[_ a & body] content
-          body' (number-body (vec body) ctx nil)]
-      (swap! registry assoc (name (:id a)) {:kind :matter :title (:title a)})
-      (assoc section :content (into [:chapter a] body')))
-    (do (swap! registry assoc (name (:role section))
-               {:kind :matter
-                :title (or (:title section) (structure/role-title (:role section)))})
-        section)))
+          [acc body'] (number-body acc (vec body) policy nil)
+          acc (update acc :registry assoc (name (:id a))
+                      {:kind :matter :title (:title a)})]
+      [acc (assoc section :content (into [:chapter a] body'))])
+    [(update acc :registry assoc (name (:role section))
+             {:kind :matter
+              :title (or (:title section)
+                         (structure/role-title (:role section)))})
+     section]))
 
-(defn- number-sections [sections policy]
-  ;; The atoms below are call-local accumulators: created fresh on every
-  ;; `number-sections` call and never escaping it — only their derefed values
-  ;; do (the map returned at the foot of this fn). Threading five accumulators
-  ;; through the recursive walk would be more code and less clear; local
-  ;; mutable accumulation keeps `number-sections`/`number-body` pure in effect.
-  (let [ctx {:policy      policy
-             :registry    (atom {})
-             :counters    (atom {})
-             :index       (atom {})
-             :idx-counter (atom 0)
-             :floats      (atom [])}
-        out (mapv (fn [s]
-                    (case (:kind s)
-                      :part                (number-part s ctx)
-                      (:chapter :appendix) (number-chapter-like s ctx)
-                      :matter              (number-matter s ctx)
-                      s))
-                  sections)]
-    {:sections out :registry @(:registry ctx) :index @(:index ctx)
-     :floats @(:floats ctx)}))
+(defn- number-sections
+  "Number every top-level `section` under `policy`, threading the numbering
+   accumulator left-to-right. Returns `{:sections :registry :index :floats}`."
+  [sections policy]
+  (let [init {:registry {} :counters {} :index {} :idx-counter 0 :floats []}
+        [acc out]
+        (reduce (fn [[acc out] s]
+                  (let [[acc s'] (case (:kind s)
+                                   :part                (number-part acc s policy)
+                                   (:chapter :appendix) (number-chapter-like acc s policy)
+                                   :matter              (number-matter acc s policy)
+                                   [acc s])]
+                    [acc (conj out s')]))
+                [init []]
+                sections)]
+    {:sections out :registry (:registry acc) :index (:index acc)
+     :floats (:floats acc)}))
 
 ;; --- cross-reference rewriting --------------------------------------------
 
