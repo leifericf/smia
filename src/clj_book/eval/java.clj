@@ -42,7 +42,7 @@
             srcs (snippets sca source)]
         (if (= :parse level)
           (registry/parsed)
-          (let [events   (reduce (fn [evs src] (into evs (.eval js src))) [] srcs)
+          (let [events   (into [] (mapcat #(.eval js %)) srcs)
                 rejected (filter #(= Snippet$Status/REJECTED (.status ^SnippetEvent %)) events)
                 thrown   (keep #(.exception ^SnippetEvent %) events)
                 last-val (some-> ^SnippetEvent (last events) (.value))]
@@ -57,8 +57,9 @@
               (= :assert level)
               (if (= "true" last-val)
                 (registry/matched last-val)
-                (registry/failed [(str "Assertion did not evaluate to true (was "
-                                       (pr-str last-val) ").")]))
+                (registry/failed
+                  [{:message (str "Assertion did not evaluate to true (was "
+                                  (pr-str last-val) ").")}]))
 
               :else (registry/ran last-val)))))
       (catch Throwable e

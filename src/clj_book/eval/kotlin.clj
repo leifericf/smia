@@ -8,13 +8,19 @@
    TRUST BOUNDARY: a `{:test true}` block runs with full JVM authority; only
    validate manuscripts you trust."
   (:require
+   [clj-book.error :as error]
    [clj-book.eval.registry :as registry])
   (:import
    (javax.script ScriptEngineManager)))
 
-(defn- engine []
+(defn- engine
+  "Construct the Kotlin JSR-223 engine, or throw a structured error when the
+   optional Kotlin scripting dependency is absent."
+  []
   (or (.getEngineByName (ScriptEngineManager.) "kotlin")
-      (throw (ex-info "No Kotlin JSR-223 script engine on the classpath." {}))))
+      (throw (error/ex :clj-book.eval.kotlin/no-engine
+                       "No Kotlin JSR-223 script engine on the classpath."
+                       {:lang :kotlin}))))
 
 (defn evaluate
   "Validate one Kotlin block. Returns the shared evaluator result map and
