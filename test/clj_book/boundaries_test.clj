@@ -61,6 +61,7 @@
    "src/clj_book/html/assemble.clj"
    "src/clj_book/theme/compile.clj"
    "src/clj_book/theme/css.clj"
+   "src/clj_book/site/assemble.clj"
    "src/clj_book/book/structure.clj"
    "src/clj_book/book/number.clj"
    "src/clj_book/book/assemble.clj"
