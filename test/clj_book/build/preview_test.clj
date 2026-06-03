@@ -37,3 +37,54 @@
     (testing "anything under an excluded root (the build output) is not"
       (is (not (preview/relevant? ctx "/book/build/slug/pdf/x.pdf")))
       (is (not (preview/relevant? ctx "/book/build"))))))
+
+;; --- the polling loop, driven by scripted snapshots (no threads, no timing)
+
+(defn- run-script
+  "Run `poll-loop!` over a scripted vector of snapshots: the first seeds the
+   loop, the rest arrive one per tick, and the script's exhaustion raises
+   the stop flag. Returns [rebuild-count loop-result]."
+  [script & {:keys [throw?]}]
+  (let [remaining (atom script)
+        rebuilds  (atom 0)
+        stop?     (atom false)
+        snapshot! (fn []
+                    (let [[s & more] @remaining]
+                      (if (seq more)
+                        (reset! remaining (vec more))
+                        (reset! stop? true))
+                      s))
+        rebuild!  (fn []
+                    (swap! rebuilds inc)
+                    (when throw? (throw (RuntimeException. "boom"))))
+        result    (binding [*err* (java.io.StringWriter.)]
+                    (preview/poll-loop! {:snapshot! snapshot!
+                                         :rebuild!  rebuild!
+                                         :sleep!    (fn [])
+                                         :stop?     stop?}))]
+    [@rebuilds result]))
+
+(deftest poll-loop-rebuilds-once-per-changed-snapshot
+  (testing "a changed snapshot triggers exactly one rebuild"
+    (is (= [1 :stopped] (run-script [{"a" 1} {"a" 2} {"a" 2}]))))
+  (testing "unchanged ticks trigger none"
+    (is (= [0 :stopped] (run-script [{"a" 1} {"a" 1} {"a" 1}])))))
+
+(deftest poll-loop-survives-a-throwing-rebuild
+  (is (= [1 :stopped] (run-script [{"a" 1} {"a" 2} {"a" 2}] :throw? true))
+    "the loop reports the error and keeps running"))
+
+(deftest poll-loop-stops-on-the-stop-flag
+  (is (= [0 :stopped] (run-script [{"a" 1}]))
+      "a pre-exhausted script stops the loop before any tick"))
+
+;; --- the real tree snapshot, smoke-tested on the synthetic fixture
+
+(deftest snapshot-walks-the-fixture-tree
+  (let [fixture (.getCanonicalPath (java.io.File. "test/fixtures/synthetic/valid-book"))
+        snap    (preview/snapshot! {:book-root fixture :excluded-roots []})]
+    (is (some #(.endsWith ^String % "book.edn") (keys snap)))
+    (is (some #(.endsWith ^String % "01-intro.clj") (keys snap)))
+    (is (every? number? (vals snap)))
+    (is (not-any? #(preview/ignored-name? (.getName (java.io.File. ^String %)))
+                  (keys snap)))))

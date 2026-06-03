@@ -10,11 +10,49 @@
    `:screen` edition only.
 
    The pure decisions (what to ignore, how to diff, what is relevant) sit
-   at the top; the polling loop and the rebuild side effects follow."
+   at the top of the namespace; the polling loop and the rebuild side
+   effects follow."
   (:require
+   [clj-book.api :as api]
+   [clj-book.build.request :as request]
+   [clj-book.error :as error]
+   [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
-   (java.io File)))
+   (java.io File)
+   (java.time LocalTime)
+   (java.time.format DateTimeFormatter)))
+
+(declare poll-loop! snapshot! watch-ctx rebuild!)
+
+(defn preview!
+  "Start a live preview for `request-map` (the public request shape; the
+   profile defaults to `[:screen]` for a fast loop). Builds once
+   synchronously — a failure propagates to the caller — then polls the
+   book tree every 250 ms in a daemon thread, rebuilding on any change and
+   reporting a failed rebuild without stopping. Returns
+   `{:stop! <idempotent fn> :thread <Thread>}`; call `(:stop! handle)` to
+   end the session (REPL workflow: `(def h (preview! {:book-root \"manual\"}))`
+   … `((:stop! h))`)."
+  [request-map]
+  (let [request (cond-> request-map
+                  (nil? (:profiles request-map)) (assoc :profiles [:screen]))
+        ctx     (watch-ctx (request/normalize request :build))
+        stop?   (atom false)]
+    (rebuild! request)
+    (let [thread (doto (Thread.
+                        #(poll-loop! {:snapshot! (fn [] (snapshot! ctx))
+                                      :rebuild!  (fn [] (rebuild! request))
+                                      :sleep!    (fn [] (Thread/sleep 250))
+                                      :stop?     stop?})
+                        "clj-book-preview")
+                   (.setDaemon true)
+                   (.start))]
+      {:stop!  (fn []
+                 (reset! stop? true)
+                 (.join thread 2000)
+                 :stopped)
+       :thread thread})))
 
 ;; --- pure decisions ---------------------------------------------------------
 
@@ -51,3 +89,66 @@
                     (when (not= mtime (get old path)) path)))
             new)
       (into (remove #(contains? new %)) (keys old))))
+
+;; --- the polling loop -------------------------------------------------------
+
+(defn poll-loop!
+  "Drive rebuilds until `@stop?` is true. Each tick sleeps via `sleep!`,
+   takes a fresh snapshot via `snapshot!` (a 0-arg fn returning
+   `{path mtime}`), and calls `rebuild!` when anything changed since the
+   previous one; after a rebuild the loop continues from a *post-rebuild*
+   snapshot so its own writes never echo. A throwing `rebuild!` is
+   reported and the loop continues — a broken save must not end the
+   session. All collaborators are injected so tests drive the loop with
+   scripted snapshots. Returns `:stopped`."
+  [{:keys [snapshot! rebuild! sleep! stop?]}]
+  (loop [prev (snapshot!)]
+    (if @stop?
+      :stopped
+      (do (sleep!)
+          (let [now (snapshot!)]
+            (if (seq (changes prev now))
+              (do (try
+                    (rebuild!)
+                    (catch Throwable t
+                      (binding [*out* *err*]
+                        (run! println (error/report-lines t)))))
+                  (recur (snapshot!)))
+              (recur now)))))))
+
+(defn snapshot!
+  "Walk the book tree and return `{path mtime}` for every relevant file,
+   pruning ignored names and excluded roots (the build output) as it
+   walks."
+  [{:keys [book-root excluded-roots]}]
+  (letfn [(walk [acc ^File f]
+            (cond
+              (ignored-name? (.getName f)) acc
+              (some #(under-root? % (.getPath f)) excluded-roots) acc
+              (.isDirectory f) (reduce walk acc (.listFiles f))
+              (.isFile f) (assoc acc (.getPath f) (.lastModified f))
+              :else acc))]
+    (walk {} (io/file book-root))))
+
+;; --- the rebuild ------------------------------------------------------------
+
+(defn- watch-ctx
+  "The watch context for a normalized request: the canonical book root and
+   the canonical output root to exclude (harmless when it lies outside)."
+  [normalized]
+  {:book-root      (.getCanonicalPath (io/file (:book-root normalized)))
+   :excluded-roots [(.getCanonicalPath (io/file (:output-root normalized)))]})
+
+(defn- rebuild!
+  "Build `request` and print one line per artifact:
+   `HH:mm:ss  built screen in 142ms  build/<slug>/pdf/<slug>-screen.pdf`.
+   Failures propagate to the caller (the loop reports and continues; the
+   initial build lets them reach the front door)."
+  [request]
+  (let [t0       (System/nanoTime)
+        manifest (api/build request)
+        ms       (Math/round (/ (- (System/nanoTime) t0) 1000000.0))
+        stamp    (.format (LocalTime/now) (DateTimeFormatter/ofPattern "HH:mm:ss"))]
+    (doseq [artifact (:artifacts manifest)]
+      (println (format "%s  built %s in %dms  %s"
+                       stamp (name (:profile artifact)) ms (:path artifact))))))
