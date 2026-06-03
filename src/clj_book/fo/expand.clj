@@ -427,11 +427,13 @@
 (defn- sidebar-block
   "A bordered callout with an optional bold title bar (with optional icon)
    and a rich body. Generalizes the admonition: `:admonition` is the
-   kind-titled special case, `:sidebar` adds an arbitrary `:title`."
+   kind-titled special case, `:sidebar` adds an arbitrary `:title`. The box
+   is kept on one page so its title bar cannot strand at a page foot."
   [author children style]
   (let [title (sidebar-title author)
         icon  (:icon author)]
-    (into [:fo/block (cond-> (get style :admonition)
+    (into [:fo/block (cond-> (assoc (get style :admonition)
+                                    :keep-together.within-page "always")
                        (:id author) (assoc :id (as-id (:id author))))]
           (concat
             (when title
@@ -442,10 +444,12 @@
 (defn- overview-block
   "A chapter-opening panel summarizing what the chapter covers: a bold label
    bar (default \"Overview\", overridable via `:title`; an explicit `:title
-   nil` drops it) above a rich body."
+   nil` drops it) above a rich body. Kept on one page like the other
+   callout boxes."
   [author children style]
   (let [title (get author :title "Overview")]
-    (into [:fo/block (cond-> (get style :overview)
+    (into [:fo/block (cond-> (assoc (get style :overview)
+                                    :keep-together.within-page "always")
                        (:id author) (assoc :id (as-id (:id author))))]
           (concat
             (when title

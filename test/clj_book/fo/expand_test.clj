@@ -138,6 +138,19 @@
     (is (some #(= "Warning" (last %)) (filter vector? out))
         "the admonition kind becomes a label")))
 
+(deftest callout-boxes-keep-together-on-one-page
+  ;; A bordered callout must not break across a page boundary — splitting
+  ;; strands the title bar at the foot of one page and the body on the next.
+  (testing "admonitions keep together"
+    (is (= "always" (:keep-together.within-page
+                     (second (ex [:admonition {:kind :note} [:p "x"]]))))))
+  (testing "sidebars keep together"
+    (is (= "always" (:keep-together.within-page
+                     (second (ex [:sidebar {:title "T"} [:p "x"]]))))))
+  (testing "overview panels keep together"
+    (is (= "always" (:keep-together.within-page
+                     (second (ex [:overview [:p "x"]])))))))
+
 (deftest xref-without-body-emits-page-number-citation
   (is (= [:fo/basic-link {:internal-destination "ch-config" :color "#1a0dab"}
           [:fo/page-number-citation {:ref-id "ch-config"}]]
