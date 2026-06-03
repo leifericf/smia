@@ -3,24 +3,31 @@
    FOP, in-process. This is the only namespace that touches FOP or an
    output stream.
 
-   FOP runs through an identity `Transformer` that streams the FO XML
-   into FOP's SAX handler. Document metadata (producer, creator, creation
-   date, optional title/author) is pinned so output is structurally
-   reproducible across runs. FOP events are collected: warnings are
-   returned, while ERROR/FATAL events (and any transform exception) are
-   surfaced as structured `clj-book.error` values."
+   FOP is driven by a dedicated SAX `XMLReader` that streams the FO XML
+   into FOP's SAX handler. We parse with our own reader rather than an
+   identity `Transformer` deliberately: finishing a page makes FOP lazily
+   load its event model through a *second* XML parse, from inside the
+   outer parse's `endElement`. The identity-transformer path reused the
+   in-progress parser for that nested parse, which a non-reentrant JAXP
+   parser rejects with \"FWK005 parse may not be called while parsing\";
+   a reader we own keeps the two parses independent.
+
+   Document metadata (producer, creator, creation date, optional
+   title/author) is pinned so output is structurally reproducible across
+   runs. FOP events are collected: warnings are returned, while
+   ERROR/FATAL events (and any parse exception) are surfaced as structured
+   `clj-book.error` values."
   (:require
    [clj-book.error :as error])
   (:import
    (java.io File OutputStream StringReader)
    (java.util Date)
    (javax.xml XMLConstants)
-   (javax.xml.transform TransformerFactory)
-   (javax.xml.transform.sax SAXResult)
-   (javax.xml.transform.stream StreamSource)
+   (javax.xml.parsers SAXParserFactory)
    (org.apache.fop.apps FopFactoryBuilder MimeConstants)
    (org.apache.fop.events EventFormatter EventListener)
-   (org.apache.fop.events.model EventSeverity)))
+   (org.apache.fop.events.model EventSeverity)
+   (org.xml.sax InputSource)))
 
 (def ^:private pinned-creation-date
   "Fixed creation date (the Unix epoch) so PDF metadata does not vary run
@@ -52,7 +59,7 @@
    - `:title` / `:author` pinned into PDF metadata.
 
    Returns `{:warnings [{:level :warn :message ...} ...]}`. Throws a
-   structured error on FOP ERROR/FATAL events or a transform failure. The
+   structured error on FOP ERROR/FATAL events or a parse failure. The
    caller is responsible for closing `out`."
   [^String fo-xml ^OutputStream out {:keys [base-dir title author]}]
   (let [events      (atom [])
@@ -65,14 +72,14 @@
     (when title (.setTitle ua title))
     (when author (.setAuthor ua author))
     (.addEventListener (.getEventBroadcaster ua) (collecting-listener events))
-    (let [fop         (.newFop fop-factory MimeConstants/MIME_PDF ua out)
-          tf          (doto (TransformerFactory/newInstance)
-                        (.setFeature XMLConstants/FEATURE_SECURE_PROCESSING true))
-          transformer (.newTransformer tf)
-          src         (StreamSource. (StringReader. fo-xml))
-          res         (SAXResult. (.getDefaultHandler fop))]
+    (let [fop    (.newFop fop-factory MimeConstants/MIME_PDF ua out)
+          spf    (doto (SAXParserFactory/newInstance)
+                   (.setNamespaceAware true)
+                   (.setFeature XMLConstants/FEATURE_SECURE_PROCESSING true))
+          reader (.getXMLReader (.newSAXParser spf))]
+      (.setContentHandler reader (.getDefaultHandler fop))
       (try
-        (.transform transformer src res)
+        (.parse reader (InputSource. (StringReader. fo-xml)))
         (catch Exception e
           (throw (error/ex :clj-book.fo.render/render-failed
                            (str "FOP failed to render PDF: " (.getMessage e))

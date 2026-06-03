@@ -48,6 +48,20 @@
       (is (= 1 (pdf-pages bytes)))
       (is (str/includes? (pdf-text bytes) "Hello from FOP")))))
 
+(deftest ^:integration rendering-does-not-reenter-the-xml-parser
+  ;; Regression: finishing a page makes FOP lazily load its event model
+  ;; through a second XML parse, from inside the outer FO parse's
+  ;; endElement. Driving FOP with an identity Transformer reused the
+  ;; in-progress parser, so that nested parse aborted with
+  ;; "FWK005 parse may not be called while parsing" and no page ever
+  ;; rendered. Rendering must drive FOP with its own reader.
+  (let [out   (ByteArrayOutputStream.)
+        res   (render/render-pdf! (minimal-fo [:fo/block "page one"]) out {})
+        bytes (.toByteArray out)]
+    (is (str/starts-with? (String. bytes 0 5) "%PDF-"))
+    (is (= 1 (pdf-pages bytes)) "the page finished without a nested-parse failure")
+    (is (vector? (:warnings res)))))
+
 (deftest ^:integration multi-page-content-paginates
   (let [blocks (for [i (range 80)]
                  [:fo/block {:space-after "6pt"} (str "Paragraph number " i)])
