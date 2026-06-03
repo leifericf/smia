@@ -40,27 +40,32 @@
    `:chrome`     — `{:page-wrap (fn [ctx title main] page-hiccup)
                      :nav (fn [ctx] nav-hiccup-or-nil)}`, merged over the
                    defaults; `ctx` carries `:book-title :author :page
-                   :prev :next :contents :resolve :nav-hiccup`.
+                   :prev :next :contents :resolve :home-file :nav-hiccup`.
+   `:extension`  — page file extension (default \"html\"; EPUB content
+                   documents pass \"xhtml\").
    `:highlight?` — enable syntax-highlight token spans."
   ([book] (assemble book {}))
   ([book opts]
-   (let [chrome   (merge default-chrome (:chrome opts))
-         items    (section-items book)
-         specs    (page-items items)
-         _        (let [dupes (->> (cons "index.html" (map :file specs))
-                                   frequencies
-                                   (keep (fn [[f n]] (when (< 1 n) f))))]
-                    (when (seq dupes)
-                      (throw (error/ex :clj-book.html.assemble/duplicate-page
-                                       (str "Two sections assemble to the same "
-                                            "page: " (str/join ", " dupes))
-                                       {:files (vec dupes)}))))
-         contents (contents-entries items)
-         resolver (links/resolver (links-table items specs))
-         base-ctx {:book-title (:title book)
-                   :author     (:author book)
-                   :contents   contents
-                   :highlight? (boolean (:highlight? opts))}]
+   (let [chrome    (merge default-chrome (:chrome opts))
+         extension (or (:extension opts) "html")
+         home-file (str "index." extension)
+         items     (section-items book extension)
+         specs     (page-items items)
+         _         (let [dupes (->> (cons home-file (map :file specs))
+                                    frequencies
+                                    (keep (fn [[f n]] (when (< 1 n) f))))]
+                     (when (seq dupes)
+                       (throw (error/ex :clj-book.html.assemble/duplicate-page
+                                        (str "Two sections assemble to the same "
+                                             "page: " (str/join ", " dupes))
+                                        {:files (vec dupes)}))))
+         contents  (contents-entries items)
+         resolver  (links/resolver (links-table items specs home-file))
+         base-ctx  {:book-title (:title book)
+                    :author     (:author book)
+                    :contents   contents
+                    :home-file  home-file
+                    :highlight? (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
                          (fn [i spec]
@@ -104,7 +109,7 @@
   "The page a non-part section assembles to: its slug, display meta,
    anchor id, and either the authored `:body` or a `:generate-role` for
    the roleful back matter the assembler writes itself."
-  [section book]
+  [section book extension]
   (-> (case (:kind section)
         (:chapter :appendix)
         (let [parsed (parse-chapter (:content section))]
@@ -134,17 +139,17 @@
              :extra-ids     (when (= :bibliography role)
                               (mapv #(str "ref-" (name %))
                                     (keys (:references book))))})))
-      (as-> spec (assoc spec :file (str (:slug spec) ".html")))))
+      (as-> spec (assoc spec :file (str (:slug spec) "." extension)))))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
    (no page of their own) and `{:type :page :spec …}` for everything
    else."
-  [book]
+  [book extension]
   (mapv (fn [s]
           (if (= :part (:kind s))
             {:type :part :section s}
-            {:type :page :spec (page-spec s book)}))
+            {:type :page :spec (page-spec s book extension)}))
         (:sections book)))
 
 (defn- page-items [items]
@@ -196,9 +201,9 @@
   "The `{anchor-id → file}` table over every assembled page: part anchors
    live on the home page; each section page contributes its authored
    anchors, its own id, and any generated anchors (`ref-*`)."
-  [items specs]
+  [items specs home-file]
   (links/table
-    (cons {:file "index.html"
+    (cons {:file home-file
            :ids  (keep #(when (= :part (:type %))
                           (str "part-" (:index (:section %))))
                        items)}
@@ -338,7 +343,7 @@
   (when-not (= :home (:kind (:page ctx)))
     (into [:nav {:class "page-nav"}]
           (concat
-            [[:a {:href "index.html"} "Contents"]]
+            [[:a {:href (:home-file ctx)} "Contents"]]
             (when-let [p (:prev ctx)]
               [[:a {:rel "prev" :href (:file p)} (:title p)]])
             (when-let [n (:next ctx)]
@@ -372,11 +377,12 @@
     ((:page-wrap chrome) ctx title main)))
 
 (defn- home-page [book contents chrome base-ctx resolver]
-  (let [spec {:file "index.html" :slug "index" :kind :home
+  (let [home-file (:home-file base-ctx)
+        spec {:file home-file :slug "index" :kind :home
               :title (:title book)}
         ctx  (assoc base-ctx
                     :page spec
-                    :resolve #(resolver % "index.html"))]
+                    :resolve #(resolver % home-file))]
     (assoc spec :hiccup
            (wrap-page chrome ctx (:title book)
                       [(book-header book) (toc-nav contents)]))))

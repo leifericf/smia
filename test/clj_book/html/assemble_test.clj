@@ -120,6 +120,14 @@
            (first (nodes (:hiccup (second (rest (:pages r))))
                          #(= :h1 (first %))))))))
 
+(deftest extension-option-renames-pages-and-links
+  (let [r (html-assemble/assemble book {:extension "xhtml"})]
+    (is (= "index.xhtml" (:file (first (:pages r)))))
+    (is (some #(= "chapter-01.xhtml" (:file %)) (:pages r)))
+    (testing "cross-file hrefs follow the extension"
+      (is (contains? (hrefs (:hiccup (nth (:pages r) 2)))
+                     "chapter-02.xhtml#sec-b")))))
+
 (deftest parts-anchor-on-the-home-page
   (let [parted {:title "P" :author nil
                 :numbering structure/default-numbering
