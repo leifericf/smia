@@ -1,4 +1,4 @@
-(ns clj-book.book.theme
+(ns clj-book.theme.compile
   "Pure core: compile design tokens plus a layout profile into the FO
    styling the book layer needs.
 

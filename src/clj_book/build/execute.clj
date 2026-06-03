@@ -12,7 +12,6 @@
    [clj-book.book.assemble :as assemble]
    [clj-book.book.load :as book-load]
    [clj-book.book.number :as number]
-   [clj-book.book.theme :as book-theme]
    [clj-book.build.plan :as plan]
    [clj-book.config :as config]
    [clj-book.eval.registry :as eval-registry]
@@ -22,6 +21,7 @@
    [clj-book.fo.schema :as fo-schema]
    [clj-book.fo.serialize :as serialize]
    [clj-book.schema :as schema]
+   [clj-book.theme.compile :as theme-compile]
    [clj-book.theme.load :as theme]
    [clojure.java.io :as io])
   (:import
@@ -59,7 +59,7 @@
   "Assemble -> expand -> serialize -> FOP for one profile. Writes the
    intermediate FO and the final PDF; returns the artifact entry."
   [{:keys [book-root book tokens]} {:keys [profile fo-path pdf-path]}]
-  (let [the-theme (book-theme/compile-theme tokens profile)
+  (let [the-theme (theme-compile/compile-theme tokens profile)
         fo-xml    (-> (assemble/assemble book the-theme)
                       (expand/expand (:style the-theme))
                       (serialize/serialize))]
@@ -128,7 +128,7 @@
   (let [{:keys [manuscript request]} (prepare request)
         book      (load-book (:book-root request) manuscript)
         numbered  (:manuscript (number/assign book))
-        the-theme (book-theme/compile-theme (:tokens manuscript) :screen)]
+        the-theme (theme-compile/compile-theme (:tokens manuscript) :screen)]
     ;; Structural check: numbering resolves every cross-reference and
     ;; citation (a hard error otherwise); assembly then builds the tree.
     (assemble/assemble numbered the-theme)

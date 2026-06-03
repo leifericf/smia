@@ -1,6 +1,6 @@
-(ns clj-book.book.theme-test
+(ns clj-book.theme.compile-test
   (:require
-   [clj-book.book.theme :as theme]
+   [clj-book.theme.compile :as theme]
    [clojure.test :refer [deftest is testing]]))
 
 (def tokens

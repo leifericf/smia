@@ -435,7 +435,7 @@
 
 (defn assemble
   "Assemble a typed `manuscript` and a compiled `theme` (from
-   `clj-book.book.theme/compile-theme`) into one `:fo/root` tree.
+   `clj-book.theme.compile/compile-theme`) into one `:fo/root` tree.
 
    The manuscript is the typed value from `book.load/load-manuscript`
    (`{:title :author :numbering :sections …}`). Chapter bodies remain

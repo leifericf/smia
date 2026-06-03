@@ -3,9 +3,9 @@
    [clj-book.book.assemble :as assemble]
    [clj-book.book.number :as number]
    [clj-book.book.structure :as structure]
-   [clj-book.book.theme :as theme]
    [clj-book.fo.expand :as expand]
    [clj-book.fo.serialize :as ser]
+   [clj-book.theme.compile :as theme]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
 

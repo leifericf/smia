@@ -53,7 +53,7 @@
    "src/clj_book/fo/serialize.clj"
    "src/clj_book/fo/expand.clj"
    "src/clj_book/fo/schema.clj"
-   "src/clj_book/book/theme.clj"
+   "src/clj_book/theme/compile.clj"
    "src/clj_book/book/structure.clj"
    "src/clj_book/book/number.clj"
    "src/clj_book/book/assemble.clj"
