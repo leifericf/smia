@@ -115,9 +115,16 @@
         (cond-> (or attrs {})
           (seq lang) (assoc :lang (keyword lang)))))))
 
+(defn- strip-trailing-newline
+  "Drop the single newline a fence places before its closing delimiter; it
+   is not part of the sample, and would otherwise render a trailing blank
+   line. Internal blank lines are preserved."
+  [s]
+  (if (str/ends-with? s "\n") (subs s 0 (dec (count s))) s))
+
 (defn- compile-fenced-code [node]
   (let [{:keys [raw] :as attrs} (parse-fence-info (:info node) node)
-        literal (:literal node)]
+        literal (strip-trailing-newline (:literal node))]
     (cond
       (= raw :hiccup) (read-edn-1 literal :clj-book.md.compile/invalid-raw-escape
                                   "{=hiccup} block is not readable EDN" node)
@@ -216,12 +223,14 @@
 ;; --- lists ------------------------------------------------------------------
 
 (defn- compile-list-item
-  "A list item with a single paragraph child is tight: inline that
-   paragraph's content. Otherwise (loose item or nested list) keep blocks."
-  [node]
+  "Compile a list item. In a `tight` list a single-paragraph item is
+   inlined (no inner `[:p]`); in a loose list, or when the item holds more
+   than one block, the blocks (paragraphs included) are kept — matching
+   hand-written `[:li [:p …]]` Hiccup and CommonMark's tight/loose rule."
+  [node tight]
   (let [kids (:children node)]
     (into [:li]
-          (if (and (= 1 (count kids)) (= :paragraph (:type (first kids))))
+          (if (and tight (= 1 (count kids)) (= :paragraph (:type (first kids))))
             (compile-inline-seq (:children (first kids)))
             (compile-block-seq kids)))))
 
@@ -239,14 +248,14 @@
    :soft-line-break     (fn [_] " ")
    :hard-line-break     (fn [_] [:br])
    :thematic-break      (fn [_] [:hr])
-   :bullet-list         (fn [n] (into [:ul] (map compile-node (:children n))))
-   :ordered-list        (fn [n] (into [:ol] (map compile-node (:children n))))
-   :list-item           compile-list-item
+   :bullet-list         (fn [n] (into [:ul] (map #(compile-list-item % (:tight n)) (:children n))))
+   :ordered-list        (fn [n] (into [:ol] (map #(compile-list-item % (:tight n)) (:children n))))
+   :list-item           (fn [n] (compile-list-item n true))
    :block-quote         (fn [n] (into [:blockquote] (compile-block-seq (:children n))))
    :link                compile-link
    :image               compile-image
    :fenced-code-block   compile-fenced-code
-   :indented-code-block (fn [n] [:pre {} (:literal n)])
+   :indented-code-block (fn [n] [:pre {} (strip-trailing-newline (:literal n))])
    :table               (fn [n] (compile-table n {}))
    :directive           compile-directive
    :footnote-reference  compile-footnote-reference

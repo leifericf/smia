@@ -23,7 +23,7 @@
    (org.commonmark.node Node SourceSpan CustomBlock
                         Document Heading Paragraph Text
                         StrongEmphasis Emphasis Code
-                        BulletList OrderedList ListItem BlockQuote
+                        ListBlock BulletList OrderedList ListItem BlockQuote
                         Link Image ThematicBreak
                         SoftLineBreak HardLineBreak
                         FencedCodeBlock IndentedCodeBlock
@@ -108,8 +108,8 @@
       StrongEmphasis     (assoc base :type :strong :children (kids n))
       Emphasis           (assoc base :type :emphasis :children (kids n))
       Code               (assoc base :type :code :literal (.getLiteral ^Code n))
-      BulletList         (assoc base :type :bullet-list :children (kids n))
-      OrderedList        (assoc base :type :ordered-list :children (kids n))
+      BulletList         (assoc base :type :bullet-list :tight (.isTight ^ListBlock n) :children (kids n))
+      OrderedList        (assoc base :type :ordered-list :tight (.isTight ^ListBlock n) :children (kids n))
       ListItem           (assoc base :type :list-item :children (kids n))
       BlockQuote         (assoc base :type :block-quote :children (kids n))
       Link               (assoc base :type :link

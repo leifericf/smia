@@ -33,6 +33,24 @@
   (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n")))
   (is (= [[:ol [:li "one"] [:li "two"]]] (md->body "1. one\n2. two\n"))))
 
+(deftest tight-lists-inline-their-items
+  ;; No blank lines between items -> a CommonMark "tight" list -> items
+  ;; render inline, with no inner paragraph block.
+  (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n"))))
+
+(deftest loose-lists-wrap-items-in-paragraphs
+  ;; Blank lines between items -> a "loose" list -> each item keeps its
+  ;; paragraph, matching hand-written [:li [:p …]] Hiccup.
+  (is (= [[:ul [:li [:p "a"]] [:li [:p "b"]]]] (md->body "- a\n\n- b\n")))
+  (is (= [[:ol [:li [:p "one"]] [:li [:p "two"]]]] (md->body "1. one\n\n2. two\n"))))
+
+(deftest fenced-code-strips-the-fences-trailing-newline
+  ;; The newline before the closing fence is not part of the sample, so it
+  ;; is dropped (no spurious trailing blank line in the rendered block).
+  (is (= [[:pre {:lang :clojure} "(+ 1 2)"]] (md->body "```clojure\n(+ 1 2)\n```\n")))
+  (is (= [[:pre {} "a\n\nb"]] (md->body "```\na\n\nb\n```\n"))
+      "internal blank lines are preserved; only the final fence newline is dropped"))
+
 (deftest nested-lists-keep-block-structure
   (let [[ul] (md->body "- a\n    - b\n")]
     (is (= :ul (first ul)))
@@ -136,9 +154,9 @@
          (md->body "[ext](https://e.com)\n"))))
 
 (deftest fenced-code-info-splits-into-lang-and-edn-attrs
-  (is (= [[:pre {:lang :clojure} "(+ 1 2)\n"]]
+  (is (= [[:pre {:lang :clojure} "(+ 1 2)"]]
          (md->body "```clojure\n(+ 1 2)\n```\n")))
-  (is (= [[:pre {:test true :lang :clojure} "(+ 1 2)\n"]]
+  (is (= [[:pre {:test true :lang :clojure} "(+ 1 2)"]]
          (md->body "```clojure {:test true}\n(+ 1 2)\n```\n"))))
 
 (deftest include-fence-is-body-less
