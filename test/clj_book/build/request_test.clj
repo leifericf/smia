@@ -1,7 +1,7 @@
-(ns clj-book.request-test
+(ns clj-book.build.request-test
   (:require
    [clj-book.error :as error]
-   [clj-book.request :as request]
+   [clj-book.build.request :as request]
    [clojure.test :refer [deftest is testing]]))
 
 (def valid-base
@@ -24,7 +24,7 @@
 (deftest non-string-book-root-is-hard-error
   (testing "A present non-string :book-root is rejected (no coercion on -X)"
     (let [d (catch-error #(request/normalize {:book-root 'docs/manual} :build))]
-      (is (= :clj-book.request/invalid-value (:error/type d))))))
+      (is (= :clj-book.build.request/invalid-value (:error/type d))))))
 
 (deftest build-defaults-to-both-profiles
   (testing "A build with no :profiles renders both editions"
@@ -39,14 +39,14 @@
   (let [d (catch-error
             #(request/normalize (assoc valid-base :profiles [:screen :wat])
                                 :build))]
-    (is (= :clj-book.request/unknown-profile (:error/type d)))
+    (is (= :clj-book.build.request/unknown-profile (:error/type d)))
     (is (= [:wat] (:unknown-profiles (:error/context d))))))
 
 (deftest non-keyword-profile-is-hard-error
   (let [d (catch-error
             #(request/normalize (assoc valid-base :profiles ["screen"])
                                 :build))]
-    (is (= :clj-book.request/invalid-profiles (:error/type d)))))
+    (is (= :clj-book.build.request/invalid-profiles (:error/type d)))))
 
 (deftest valid-single-profile-request
   (let [out (request/normalize (assoc valid-base :profiles [:print]) :build)]
@@ -66,4 +66,4 @@
 
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]
-    (is (= :clj-book.request/invalid-request (:error/type d)))))
+    (is (= :clj-book.build.request/invalid-request (:error/type d)))))

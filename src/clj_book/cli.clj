@@ -1,9 +1,9 @@
 (ns clj-book.cli
   "Human-facing command-line front-end, invoked via `clojure -M:run`.
-   Parses argv into the same request map consumed by `clj-book.request`
+   Parses argv into the same request map consumed by `clj-book.build.request`
    and delegates to `clj-book.api`. The `-X` map API (`clj-book.api`)
    remains for programmatic callers; both front-ends share the single
-   `clj-book.request/normalize` seam, which owns all defaults and
+   `clj-book.build.request/normalize` seam, which owns all defaults and
    validation. This namespace only translates strings to that map and
    renders results, exit codes, and errors for a human."
   (:require
@@ -46,7 +46,7 @@
 
 (defn- args->request
   "Translate the positional book-root and parsed options into the request
-   map `clj-book.request/normalize` expects. Only keys the user actually
+   map `clj-book.build.request/normalize` expects. Only keys the user actually
    supplied are set, so normalize applies its own defaults — this is the
    contract that keeps the `-M` and `-X` front-ends in sync."
   [book-root {:keys [profile config-path output-root dry-run validate-code]}]

@@ -1,7 +1,7 @@
 (ns clj-book.cli-test
   (:require
    [clj-book.cli :as cli]
-   [clj-book.request :as request]
+   [clj-book.build.request :as request]
    [clojure.test :refer [deftest is testing]]))
 
 (def ^:private fixture "test/fixtures/synthetic/valid-book")

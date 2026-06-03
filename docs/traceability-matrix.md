@@ -7,8 +7,8 @@ namespace and test name that exercises them.
 
 | Scenario                              | Requirement                         | Test                                                       |
 |---------------------------------------|-------------------------------------|------------------------------------------------------------|
-| Build fails when targets are missing  | `:targets` is required              | `clj-book.request-test/missing-targets-is-hard-error`      |
-| Build fails when target is unknown    | unsupported targets rejected        | `clj-book.request-test/unknown-target-is-hard-error`       |
+| Build fails when targets are missing  | `:targets` is required              | `clj-book.build.request-test/missing-targets-is-hard-error`      |
+| Build fails when target is unknown    | unsupported targets rejected        | `clj-book.build.request-test/unknown-target-is-hard-error`       |
 | Build succeeds for one valid target   | single-target build emits artifacts | `clj-book.build.execute-test/single-target-site-build`     |
 | Build succeeds for multiple targets   | multi-target run emits all artifacts | `clj-book.build.execute-test/multi-target-build-shares-prereqs` |
 

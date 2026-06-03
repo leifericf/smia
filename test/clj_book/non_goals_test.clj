@@ -51,7 +51,7 @@
           (str "PDF-first build must not depend on " banned)))))
 
 (deftest profiles-are-pdf-layouts-not-formats
-  (let [src (slurp (io/file "src/clj_book/request.clj"))]
+  (let [src (slurp (io/file "src/clj_book/build/request.clj"))]
     (is (str/includes? src "#{:screen :print}")
         "the supported profiles are the two PDF layouts")
     (is (not (re-find #":site|:epub" src))

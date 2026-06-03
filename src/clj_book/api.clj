@@ -2,7 +2,7 @@
   "Public entrypoints invoked via `clojure -X`."
   (:require
    [clj-book.build.execute :as build]
-   [clj-book.request :as request]
+   [clj-book.build.request :as request]
    [clojure.pprint :as pp]))
 
 (defn validate

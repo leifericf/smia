@@ -2,7 +2,7 @@
   (:require
    [clj-book.book.config :as config]
    [clj-book.error :as error]
-   [clj-book.request :as request]
+   [clj-book.build.request :as request]
    [clj-book.schema :as schema]
    [clj-book.theme.load :as theme]
    [clojure.test :refer [deftest is testing]]))

@@ -29,7 +29,7 @@
 (def interface-nss
   "Interface-layer source files: the only entry points to the system."
   ["src/clj_book/api.clj"
-   "src/clj_book/request.clj"])
+   "src/clj_book/build/request.clj"])
 
 (def render-internals
   "Rendering-context namespaces the interface must not reach into; it

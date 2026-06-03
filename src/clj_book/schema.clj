@@ -58,7 +58,7 @@
   [:enum :screen :print])
 
 (def Request
-  "A normalized public request map (see `clj-book.request`)."
+  "A normalized public request map (see `clj-book.build.request`)."
   [:map
    [:command [:enum :validate :build]]
    [:book-root :string]

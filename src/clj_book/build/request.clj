@@ -1,4 +1,4 @@
-(ns clj-book.request
+(ns clj-book.build.request
   "Normalization and validation of public request maps."
   (:require
    [clj-book.error :as error]
@@ -19,7 +19,7 @@
 
 (defn- string-or-throw [k v]
   (when (and (some? v) (not (string? v)))
-    (throw (error/ex :clj-book.request/invalid-value
+    (throw (error/ex :clj-book.build.request/invalid-value
                      (str k " must be a string when provided.")
                      {k v})))
   v)
@@ -29,7 +29,7 @@
     (nil? profiles) nil
     (sequential? profiles) (vec profiles)
     :else
-    (throw (error/ex :clj-book.request/invalid-profiles
+    (throw (error/ex :clj-book.build.request/invalid-profiles
                      ":profiles must be a vector of keywords."
                      {:profiles profiles}))))
 
@@ -40,12 +40,12 @@
   (let [profiles (if (empty? profiles) default-profiles profiles)
         bad      (remove keyword? profiles)]
     (when (seq bad)
-      (throw (error/ex :clj-book.request/invalid-profiles
+      (throw (error/ex :clj-book.build.request/invalid-profiles
                        ":profiles must contain only keywords."
                        {:profiles profiles :non-keywords (vec bad)})))
     (let [unknown (remove supported-profiles profiles)]
       (when (seq unknown)
-        (throw (error/ex :clj-book.request/unknown-profile
+        (throw (error/ex :clj-book.build.request/unknown-profile
                          (str "Unsupported profile(s): "
                               (str/join ", " (map pr-str unknown)))
                          {:profiles         profiles
@@ -69,7 +69,7 @@
    editions; a subset may be selected."
   [request-map command]
   (when-not (map? request-map)
-    (throw (error/ex :clj-book.request/invalid-request
+    (throw (error/ex :clj-book.build.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
   (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
