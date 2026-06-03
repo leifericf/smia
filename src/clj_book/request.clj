@@ -15,6 +15,7 @@
 
 (def ^:private default-output-root "build")
 (def ^:private default-config-path "book.edn")
+(def ^:private default-book-root ".")
 
 (defn- string-or-throw [k v]
   (when (and (some? v) (not (string? v)))
@@ -52,12 +53,14 @@
                           :supported        (vec (sort supported-profiles))}))))
     (vec profiles)))
 
-(defn- require-book-root [book-root]
-  (when (or (nil? book-root) (and (string? book-root) (empty? book-root)))
-    (throw (error/ex :clj-book.request/missing-book-root
-                     ":book-root is required."
-                     {:book-root book-root})))
-  (string-or-throw :book-root book-root))
+(defn- resolve-book-root
+  "Resolve `:book-root` to a directory path. A missing or blank value
+   defaults to the current directory; a present non-string is rejected."
+  [book-root]
+  (if (or (nil? book-root)
+          (and (string? book-root) (str/blank? book-root)))
+    default-book-root
+    (string-or-throw :book-root book-root)))
 
 (defn normalize
   "Normalize and validate a public request map for the given `command`
@@ -71,7 +74,7 @@
                      {:request request-map})))
   (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
         normalized {:command     command
-                    :book-root   (require-book-root book-root)
+                    :book-root   (resolve-book-root book-root)
                     :config-path (or (string-or-throw :config-path config-path)
                                      default-config-path)
                     :output-root (or (string-or-throw :output-root output-root)

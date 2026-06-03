@@ -12,9 +12,19 @@
        (catch Exception e
          (error/data e))))
 
-(deftest missing-book-root-is-hard-error
-  (let [d (catch-error #(request/normalize {} :build))]
-    (is (= :clj-book.request/missing-book-root (:error/type d)))))
+(deftest absent-book-root-defaults-to-current-dir
+  (testing "A request with no :book-root builds the current directory"
+    (is (= "." (:book-root (request/normalize {} :build))))))
+
+(deftest blank-book-root-defaults-to-current-dir
+  (testing "A blank or whitespace :book-root falls back to \".\""
+    (is (= "." (:book-root (request/normalize {:book-root ""} :build))))
+    (is (= "." (:book-root (request/normalize {:book-root "   "} :build))))))
+
+(deftest non-string-book-root-is-hard-error
+  (testing "A present non-string :book-root is rejected (no coercion on -X)"
+    (let [d (catch-error #(request/normalize {:book-root 'docs/manual} :build))]
+      (is (= :clj-book.request/invalid-value (:error/type d))))))
 
 (deftest build-defaults-to-both-profiles
   (testing "A build with no :profiles renders both editions"
