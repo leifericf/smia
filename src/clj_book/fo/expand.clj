@@ -344,13 +344,14 @@
 (defn- code-line-block
   "One per-line `:fo/block`: an optional right-aligned line-number gutter of
    `width` digits, the highlighted `line`, and an optional trailing
-   annotation `mark`."
+   annotation `mark`, set off from the code by a gap matching the badge's
+   own inner padding."
   [lang line width n gutter? mark style]
   (cond-> (into (cond-> [:fo/block {:white-space "pre" :wrap-option "wrap"}]
                   gutter? (conj [:fo/inline {:color "#999999"}
                                  (str (format (str "%" width "d") n) "  ")]))
                 (code-content lang line style))
-    mark (conj (annotation-mark mark style))))
+    mark (conj (assoc-in (annotation-mark mark style) [1 :space-start] "2pt"))))
 
 (defn- code-lines-block
   "Render code as one block per line. `gutter?` prefixes each line with a

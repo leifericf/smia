@@ -26,6 +26,19 @@
          (ex [:pre {:lang :clojure :test true} "code"])
          (ex [:pre {:lang :clojure :include "x.clj"} "code"]))))
 
+(deftest line-end-annotation-mark-is-set-off-from-the-code
+  ;; The mark at a line's end carries a small gap (matching its own inner
+  ;; padding) so it does not collide with the last code glyph; the copy in
+  ;; the note list below takes its spacing from the list geometry instead.
+  (let [out   (ex [:pre {:annotations [{:line 1 :note "n"}]} "(+ 1 2)"])
+        marks (->> (tree-seq vector? seq out)
+                   (filter #(and (vector? %) (= :fo/inline (first %))
+                                 (map? (second %))
+                                 (:background-color (second %)))))]
+    (is (= 2 (count marks)) "one mark at the line end, one in the list")
+    (is (= 1 (count (filter #(= "2pt" (:space-start (second %))) marks)))
+        "only the line-end mark is set off from the code")))
+
 (deftest code-blocks-soft-wrap-overlong-lines
   ;; `white-space "pre"` alone implies no-wrap, letting a long line run past
   ;; the column edge; an explicit wrap-option soft-wraps it instead.
