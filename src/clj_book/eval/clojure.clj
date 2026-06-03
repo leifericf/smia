@@ -28,7 +28,7 @@
         (let [form (read {:eof eof :read-cond :allow} reader)]
           (if (identical? form eof) acc (recur (conj acc form))))))))
 
-(defn- eval-in-fresh-ns
+(defn- eval-in-fresh-ns!
   "Evaluate `forms` in a fresh namespace, returning the last value. The
    namespace is removed afterward."
   [forms]
@@ -52,7 +52,7 @@
           :parse (registry/parsed)
           ;; :assert requires truthiness; :compile and :run both evaluate
           ;; (Clojure compiles as it evals) — `from-value` shapes each.
-          (registry/from-value level (eval-in-fresh-ns forms))))
+          (registry/from-value level (eval-in-fresh-ns! forms))))
       (catch Throwable e
         (registry/failed [{:message   (or (.getMessage e) (str e))
                            :exception (.getName (class e))}])))))

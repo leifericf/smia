@@ -34,7 +34,7 @@
                          (str "Evaluator symbol did not resolve: " evaluate)
                          {:lang lang :symbol evaluate})))))
 
-(defn validate-blocks
+(defn validate-blocks!
   "Run every block in `blocks` (each `{:lang :source :attrs}`). Returns
    `{:status :ok :validated n :results [...]}`, or throws
    `:clj-book.eval/validation-failed` carrying every failure."
@@ -57,4 +57,4 @@
 (defn validate-chapters!
   "Collect and validate every `:test` code block across `chapters`."
   [chapters]
-  (validate-blocks (into [] (mapcat registry/collect-test-blocks) chapters)))
+  (validate-blocks! (into [] (mapcat registry/collect-test-blocks) chapters)))
