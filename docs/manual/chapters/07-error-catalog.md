@@ -5,7 +5,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 
 ## Request
 
-- `:clj-book.request/missing-book-root` — no `:book-root` was given.
+- `:clj-book.request/invalid-value` — `:book-root`, `:config-path`, or `:output-root` was given as a non-string. A missing or blank `:book-root` is not an error: it defaults to `.`, the current directory, and a non-existent book then surfaces as `:clj-book.config/missing`.
 - `:clj-book.request/unknown-profile` — a profile other than `:screen` or `:print` was requested.
 - `:clj-book.request/invalid-profiles` — `:profiles` was not a vector of keywords.
 

@@ -40,7 +40,7 @@ The `{=hiccup}` escape is strictly more powerful than `{=fo}`: spliced author Hi
 For a programming book, a code sample should actually work. Mark a fenced block `{:test true}` and run a build or `validate` with `:validate-code true`:
 
 ```
-clojure -X clj-book.api/validate :book-root '"docs/manual"' :validate-code true
+clojure -M:run validate docs/manual --validate-code
 ```
 
 clj-book then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation is **verify, not capture**: the rendered text stays exactly as written — only the check runs — so output stays deterministic. The assertion below, for instance, is checked at build time when validation is on:
@@ -60,7 +60,7 @@ An optional `:level` in the block's EDN map selects how far to go: `:parse`, `:c
 | Java | JShell (part of the JDK) | none |
 | Kotlin | JSR-223 scripting | the `:eval-kotlin` alias |
 
-A book pulls in only the evaluators it uses; compose the aliases with the command, for example `clojure -X:eval-groovy clj-book.api/validate … :validate-code true`. Scala and non-JVM languages are designed for — the registry accepts them as data — but not yet shipped; non-JVM validation would need an external toolchain, stepping outside the pure-JVM, hermetic guarantee.
+A book pulls in only the evaluators it uses; compose the aliases with the command, for example `clojure -M:run:eval-groovy validate docs/manual --validate-code`. Scala and non-JVM languages are designed for — the registry accepts them as data — but not yet shipped; non-JVM validation would need an external toolchain, stepping outside the pure-JVM, hermetic guarantee.
 
 :::admonition {:kind :warning}
 Validation is **not** sandboxed: a `{:test true}` block runs with the full authority of the build JVM — the same trust model as a `.clj` chapter. This is deliberate, so a validated sample behaves exactly as it will for a reader. Only validate manuscripts you trust.

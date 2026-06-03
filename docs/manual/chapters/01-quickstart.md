@@ -37,10 +37,10 @@ The equivalent Clojure chapter evaluates to a `[:chapter …]` form:
 Run the build with the Clojure CLI:
 
 ```
-clojure -X clj-book.api/build :book-root '"my-book"'
+clojure -M:run build my-book
 ```
 
-With no `:profiles` given, both the screen and print editions are produced under `build/my-book/pdf/`, alongside a machine-readable `artifacts.edn` manifest.
+With no `--profile` given, both the screen and print editions are produced under `build/my-book/pdf/`, alongside a machine-readable `artifacts.edn` manifest. Run it from inside the book directory and you can drop the path entirely: `clojure -M:run build`.
 
 :::admonition {:kind :note}
 Read [the authoring chapter](#authoring) next to learn both front-ends: the Markdown surface and the Hiccup vocabulary it compiles to.

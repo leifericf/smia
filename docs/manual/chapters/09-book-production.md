@@ -69,9 +69,9 @@ syntax-highlighted when the theme enables it, and `:line-numbers true` adds a
 gutter. [](#lst-build) builds a book from the command line:
 
 ```bash {:id :lst-build :file "build.sh" :caption "Building both editions" :line-numbers true}
-clojure -X clj-book.api/build \
-  :book-root '"."' \
-  :profiles '[:screen :print]'
+clojure -M:run build my-book \
+  --profile screen \
+  --profile print
 ```
 
 Highlighting is a pure, in-process tokenizer — no subprocess — so builds stay
