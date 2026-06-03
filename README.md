@@ -34,6 +34,21 @@ edition and then rebuilds it on every save in the same warm JVM — around 150 m
 a save. A save that fails prints the error and keeps watching; stop with
 Ctrl-C.
 
+## Editions
+
+The same manuscript builds into several deliverable forms, selected with the
+repeatable `--edition` flag:
+
+- `screen` — a PDF with symmetric margins for on-screen reading (default).
+- `print` — a PDF with mirrored recto/verso margins and a binding gutter (default).
+- `site` — a static HTML site under `build/<slug>/site/`: a table-of-contents
+  home page, one page per chapter, a stylesheet generated from the same
+  `theme.edn`, and copies of referenced images. Cross-references become links,
+  footnotes collect at each chapter's end, and the output needs no server.
+
+Numbering and cross-reference resolution run once, before any format-specific
+rendering, so every edition agrees on the book's structure.
+
 ## Documentation
 
 The manual is itself a clj-book manuscript, under `manual/`. Build it (the

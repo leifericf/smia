@@ -42,12 +42,12 @@ The manuscript, the theme, and the XSL-FO document are all ordinary Clojure data
 
 Because the FO tree is data, it can be assembled, transformed, and inspected with the same tools you use for any other Clojure value.
 
-## A superset, not a subset
+## A superset per format, not a subset
 
-Most engines give you a fixed vocabulary plus an escape hatch. clj-book inverts that: the author vocabulary is a true superset of XSL-FO. Since any `:fo/*` tag passes straight through, every XSL-FO construct is reachable by construction — the sugar in [the authoring chapter](#authoring) is convenience layered on top, not a ceiling.
+Most engines give you a fixed vocabulary plus an escape hatch. clj-book inverts that: for each output format the author vocabulary is a true superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable by construction; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition — convenience layered on top, not a ceiling. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable by construction.
 
 :::admonition {:kind :note}
-Sugar nested inside raw FO still expands, so the two layers compose freely in the same tree.
+Sugar nested inside a raw `:fo/*` or `:html/*` element still expands, so the layers compose freely in the same tree.
 :::
 
 ## Functional core, imperative shell

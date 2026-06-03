@@ -56,6 +56,45 @@
           (is (str/includes? text "Bibliography") "the generated bibliography")
           (is (str/includes? text "Index")       "the generated index"))))))
 
+(deftest ^:integration manual-builds-the-site-edition
+  (let [man (build! [:site])
+        art (first (:artifacts man))
+        dir (io/file (:path art))]
+    (is (= [:site] (:build/editions man)))
+    (testing "the home page exists and carries the contents"
+      (let [index (slurp (io/file dir "index.html"))]
+        (is (str/includes? index "Contents"))
+        (is (str/includes? index "The clj-book Manual"))))
+    (testing "every page the contents links to exists on disk"
+      (let [index (slurp (io/file dir "index.html"))
+            hrefs (map second (re-seq #"href=\"([^\"#]+\.html)" index))]
+        (is (seq hrefs))
+        (doseq [h hrefs]
+          (is (.exists (io/file dir h)) (str h " is linked from the TOC")))))
+    (testing "every internal link lands on a real file and anchor"
+      (let [pages  (filter #(str/ends-with? (.getName ^java.io.File %) ".html")
+                           (.listFiles dir))
+            ids    (into {}
+                         (map (fn [^java.io.File f]
+                                [(.getName f)
+                                 (set (map second (re-seq #"id=\"([^\"]+)\""
+                                                          (slurp f))))]))
+                         pages)]
+        (doseq [^java.io.File f pages
+                [_ href] (re-seq #"href=\"([^\"]+)\"" (slurp f))
+                :when (not (re-find #"^[a-z]+:" href))
+                :when (not (str/ends-with? href ".css"))]
+          (let [[file frag] (str/split href #"#" 2)
+                target      (if (str/blank? file) (.getName f) file)]
+            (is (contains? ids target)
+                (str href " in " (.getName f) " names a real page"))
+            (when frag
+              (is (contains? (get ids target) frag)
+                  (str href " in " (.getName f) " lands on a real anchor")))))))
+    (testing "the stylesheet and referenced images are emitted"
+      (is (.exists (io/file dir "styles.css")))
+      (is (.exists (io/file dir "images/pipeline.svg"))))))
+
 (deftest ^:integration manual-build-is-structurally-reproducible
   (testing "two builds of the same manuscript agree on pages and text"
     (let [a (artifact-path (build! [:screen]) :screen)

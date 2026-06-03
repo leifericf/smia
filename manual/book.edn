@@ -18,7 +18,8 @@
                    "chapters/05-theming.md"
                    "chapters/06-commands.md"]}
   {:part/title    "Producing a Book"
-   :part/chapters ["chapters/09-book-production.md"
+   :part/chapters ["chapters/10-editions.md"
+                   "chapters/09-book-production.md"
                    "chapters/08-design.md"]}]
 
  :book/appendices ["chapters/07-error-catalog.md"]

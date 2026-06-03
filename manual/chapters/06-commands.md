@@ -20,7 +20,7 @@ Build the requested editions. With no `--edition`, both PDF editions build:
 clojure -M:run build manual --edition screen --edition print
 ```
 
-Outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, plus an `artifacts.edn` manifest listing the editions, paths, and build metadata. See `clojure -M:run build --help` for the full option list.
+PDF outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`; `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
 
 ## preview
 
