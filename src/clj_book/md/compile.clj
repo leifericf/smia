@@ -25,7 +25,8 @@
    [clojure.edn :as edn]
    [clojure.string :as str]))
 
-(declare compile-node compile-inline-seq compile-block-seq)
+(declare compile-node compile-inline-seq compile-block-seq
+         collect-footnote-defs clean-heading-text inline-text)
 
 (def ^:dynamic *footnote-defs*
   "Label -> footnote-definition node: the read-only compile-time environment
