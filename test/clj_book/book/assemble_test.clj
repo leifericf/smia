@@ -1,6 +1,7 @@
 (ns clj-book.book.assemble-test
   (:require
    [clj-book.book.assemble :as assemble]
+   [clj-book.book.structure :as structure]
    [clj-book.book.theme :as theme]
    [clj-book.error :as error]
    [clj-book.fo.expand :as expand]
@@ -103,3 +104,93 @@
       (is (str/includes? xml "Introduction"))
       (is (str/includes? xml "internal-destination=\"config\"")
           "the xref expanded to a link to the config chapter"))))
+
+;; --- typed document structure (parts, matter, appendices) -----------------
+
+(defn- chapter [id title & body]
+  (into [:chapter {:id id :title title}] body))
+
+(def structured
+  {:title    "A Structured Book"
+   :author   "An Author"
+   :numbering structure/default-numbering
+   :sections [{:kind :matter :matter :front :role :preface
+               :content (chapter :preface "Preface" [:p "Before we begin."])}
+              {:kind :part :title "Foundations" :index 0}
+              {:kind :chapter :part 0
+               :content (chapter :intro "Introduction" [:p "Hi."])}
+              {:kind :chapter :part 0
+               :content (chapter :model "The Model" [:p "Data."])}
+              {:kind :part :title "Practice" :index 1}
+              {:kind :chapter :part 1
+               :content (chapter :build "Building" [:p "Go."])}
+              {:kind :appendix
+               :content (chapter :glossary "Glossary" [:p "Terms."])}
+              {:kind :matter :matter :back :role :bibliography :generated true}]})
+
+(defn- page-sequences [out] (find-all :fo/page-sequence out))
+
+(deftest typed-structure-emits-a-sequence-per-section
+  (let [out  (assemble/assemble structured the-theme)
+        seqs (page-sequences out)]
+    ;; title+TOC furniture, preface, 2 part dividers, 3 chapters,
+    ;; appendix, bibliography = 9
+    (is (= 9 (count seqs)))))
+
+(deftest part-dividers-show-their-titles
+  (let [out    (assemble/assemble structured the-theme)
+        blocks (find-all :fo/block out)
+        ids    (set (keep #(:id (second %)) blocks))]
+    (is (contains? ids "part-0"))
+    (is (contains? ids "part-1"))
+    (is (some #(= "Foundations" (last %)) blocks))
+    (is (some #(= "Practice" (last %)) blocks))))
+
+(deftest front-matter-is-roman-and-the-body-resets-to-arabic
+  (let [out  (assemble/assemble structured the-theme)
+        seqs (page-sequences out)
+        attrs (map second seqs)]
+    (testing "a front-matter section is numbered in roman"
+      (is (some #(= "i" (:format %)) attrs)))
+    (testing "the first body section resets to arabic page 1"
+      (is (some #(and (= "1" (:format %)) (= "1" (:initial-page-number %))) attrs)))))
+
+(deftest bookmark-tree-nests-chapters-under-parts
+  (let [out  (assemble/assemble structured the-theme)
+        tree (first (find-all :fo/bookmark-tree out))
+        ;; top-level bookmarks are the direct children of the tree
+        tops (filter (tag= :fo/bookmark) (rest tree))
+        part0 (first (filter #(= "part-0" (:internal-destination (second %))) tops))]
+    (is (some? part0))
+    (let [child-bms (filter (tag= :fo/bookmark) (rest part0))]
+      (is (= #{"intro" "model"}
+             (set (map #(:internal-destination (second %)) child-bms)))
+          "the part's chapters nest beneath it"))
+    (testing "the preface and appendix are top-level bookmarks"
+      (is (contains? (set (map #(:internal-destination (second %)) tops))
+                     "preface"))
+      (is (contains? (set (map #(:internal-destination (second %)) tops))
+                     "glossary")))))
+
+(deftest recto-parity-starts-body-sections-on-an-odd-page-in-print
+  (let [out  (assemble/assemble
+              (assoc structured :numbering
+                     (assoc structure/default-numbering :start-chapters-on :recto))
+              the-theme)
+        attrs (map second (page-sequences out))]
+    (is (some #(= "auto-odd" (:initial-page-number %)) attrs)))
+  (testing "screen profile inserts no parity blanks"
+    (let [screen (theme/compile-theme {:color {} :type {} :spacing {} :layout {}} :screen)
+          out    (assemble/assemble
+                  (assoc structured :numbering
+                         (assoc structure/default-numbering :start-chapters-on :recto))
+                  screen)
+          attrs  (map second (page-sequences out))]
+      (is (not-any? #(= "auto-odd" (:initial-page-number %)) attrs)))))
+
+(deftest generated-back-matter-renders-a-titled-placeholder
+  (let [out    (assemble/assemble structured the-theme)
+        blocks (find-all :fo/block out)
+        ids    (set (keep #(:id (second %)) blocks))]
+    (is (contains? ids "bibliography"))
+    (is (some #(= "Bibliography" (last %)) blocks))))

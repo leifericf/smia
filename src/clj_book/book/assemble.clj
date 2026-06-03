@@ -11,6 +11,7 @@
    turns that sugar into FO. Cross-references are resolved here: an
    `[:xref {:to id}]` to an unknown id is a hard error. No IO."
   (:require
+   [clj-book.book.structure :as structure]
    [clj-book.error :as error]
    [clojure.string :as str]))
 
@@ -70,13 +71,73 @@
                             (str/join ", " missing))
                        {:missing missing :defined (vec (sort defined))})))))
 
+;; --- sections -------------------------------------------------------------
+
+(defn- generated-parsed
+  "The synthetic `{:id :title :body}` for a generated matter section (the
+   bibliography or index), which has no source file."
+  [section]
+  {:id (:role section) :title (structure/role-title (:role section)) :body []})
+
+(defn- section->parsed
+  "The parsed `{:id :title :body}` a section contributes — its loaded
+   chapter, or a generated placeholder for roleful matter."
+  [section]
+  (or (:chapter section) (generated-parsed section)))
+
+(defn- prepare-sections
+  "Attach a parsed `:chapter` to every file-backed section; leave part
+   dividers and generated matter untouched."
+  [sections]
+  (mapv (fn [s] (if (:content s) (assoc s :chapter (parse-chapter (:content s))) s))
+        sections))
+
+(defn- legacy-sections
+  "Wrap a flat `:chapters` list as body chapter sections, so a manuscript
+   that predates the typed model assembles through the same walk and yields
+   byte-identical output."
+  [chapters]
+  (mapv (fn [c] {:kind :chapter :part nil :content c}) chapters))
+
+(defn- book-sections [{:keys [sections chapters]}]
+  (prepare-sections (or sections (legacy-sections chapters))))
+
+(defn- body-chapters
+  "Parsed body chapters (kind `:chapter`), in order — the TOC's entries."
+  [prepared]
+  (->> prepared (filter #(= :chapter (:kind %))) (map :chapter)))
+
 ;; --- fragments ------------------------------------------------------------
 
-(defn- bookmark-tree [chapters]
+(defn- bookmark
+  "A `fo:bookmark` to `id` titled `title`, with optional nested children."
+  [id title children]
+  (into [:fo/bookmark {:internal-destination (name id)}
+         [:fo/bookmark-title title]]
+        children))
+
+(defn- bookmark-tree
+  "A nested PDF bookmark tree: parts contain their chapters; every other
+   section is a top-level bookmark. A flat book (no parts) yields the same
+   flat list as before."
+  [prepared]
   (into [:fo/bookmark-tree]
-        (for [{:keys [id title]} chapters]
-          [:fo/bookmark {:internal-destination (name id)}
-           [:fo/bookmark-title title]])))
+        (loop [ss prepared, acc []]
+          (if (empty? ss)
+            acc
+            (let [s (first ss)]
+              (if (= :part (:kind s))
+                (let [idx (:index s)
+                      [kids more] (split-with #(and (= :chapter (:kind %))
+                                                    (= idx (:part %)))
+                                              (rest ss))
+                      child-bms (map #(bookmark (:id (:chapter %))
+                                                (:title (:chapter %)) nil)
+                                     kids)]
+                  (recur more (conj acc (bookmark (str "part-" idx)
+                                                  (:title s) child-bms))))
+                (let [{:keys [id title]} (section->parsed s)]
+                  (recur (rest ss) (conj acc (bookmark id title nil))))))))))
 
 (defn- toc-entry [{:keys [id title]} link-color]
   ;; text-align-last="justify" pushes the page number flush right; the
@@ -99,7 +160,7 @@
    (when author
      [:fo/block {:font-size "13pt" :color muted-color} author])])
 
-(defn- front-matter [title author chapters master-ref theme]
+(defn- toc-furniture [title author chapters master-ref theme]
   (let [{:keys [style link-color rule-color muted-color]} theme
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
@@ -128,11 +189,15 @@
    [:fo/marker {:marker-class-name "chapter-title"} title]
    title])
 
-(defn- chapter-sequence [{:keys [id title body]} master-ref theme first?]
+(defn- body-sequence
+  "A page-sequence for one parsed chapter (or matter/appendix section):
+   running head, page number, the chapter heading, and the body. `page-attrs`
+   carries the per-section page-numbering (roman front matter, the arabic
+   reset on the first body section, recto parity)."
+  [{:keys [id title body]} master-ref theme page-attrs]
   (let [{:keys [style rule-color muted-color]} theme
         body-style (:body style)]
-    [:fo/page-sequence (cond-> {:master-reference master-ref}
-                         first? (assoc :initial-page-number "1" :format "1"))
+    [:fo/page-sequence (merge {:master-reference master-ref} page-attrs)
      [:fo/static-content {:flow-name "xsl-region-before"}
       [:fo/block {:text-align "center" :font-size "9pt" :color muted-color
                   :border-bottom (str "0.25pt solid " rule-color)
@@ -144,26 +209,89 @@
      (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
            (cons (chapter-heading id title style rule-color) body))]))
 
+(defn- part-sequence
+  "A part-divider page-sequence: the part title, centered and large, on its
+   own page. Its `:id` (`part-N`) is the bookmark/cross-reference target."
+  [section master-ref theme page-attrs]
+  (let [{:keys [style muted-color]} theme
+        body-style  (:body style)
+        head-family (get-in style [:h1 :font-family])]
+    [:fo/page-sequence (merge {:master-reference master-ref} page-attrs)
+     [:fo/static-content {:flow-name "xsl-region-after"}
+      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
+       [:fo/page-number]]]
+     [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)
+      [:fo/block {:id (str "part-" (:index section))
+                  :font-family head-family :font-size "30pt" :font-weight "bold"
+                  :text-align "center" :space-before "144pt"
+                  :space-before.conditionality "retain"}
+       (:title section)]]]))
+
+(defn- body-page-attrs
+  "Page-numbering attrs for a body-run section: the first resets to arabic
+   page 1; later ones start on a recto when parity is on (print)."
+  [first-body? recto?]
+  (cond
+    first-body? {:initial-page-number "1" :format "1"}
+    recto?      {:initial-page-number "auto-odd"}
+    :else       {}))
+
+(defn- section-sequences
+  "Walk the prepared sections, emitting a page-sequence for each: roman
+   front matter, part dividers and chapters/appendices (arabic, the first
+   resetting the page count), and back matter."
+  [prepared master-ref theme recto?]
+  (loop [ss prepared, seen-body? false, acc []]
+    (if (empty? ss)
+      acc
+      (let [s (first ss), k (:kind s)]
+        (cond
+          (and (= k :matter) (= :front (:matter s)))
+          (recur (rest ss) seen-body?
+                 (conj acc (body-sequence (section->parsed s) master-ref theme
+                                          {:format "i"})))
+
+          (and (= k :matter) (= :back (:matter s)))
+          (recur (rest ss) seen-body?
+                 (conj acc (body-sequence (section->parsed s) master-ref theme {})))
+
+          (= k :part)
+          (recur (rest ss) true
+                 (conj acc (part-sequence s master-ref theme
+                                          (body-page-attrs (not seen-body?) recto?))))
+
+          :else
+          (recur (rest ss) true
+                 (conj acc (body-sequence (:chapter s) master-ref theme
+                                          (body-page-attrs (not seen-body?) recto?)))))))))
+
 ;; --- assembly -------------------------------------------------------------
 
 (defn assemble
-  "Assemble `manuscript` (`{:title :author :chapters}`, chapters being
-   `[:chapter {:id :title} ..]` Hiccup forms) and a compiled `theme`
-   (from `clj-book.book.theme/compile-theme`) into one `:fo/root` tree.
-   Bodies remain authored sugar for the later expansion pass."
-  [{:keys [title author chapters]} theme]
-  (let [{:keys [style master-reference masters]} theme
-        parsed     (mapv parse-chapter chapters)
-        _          (resolve-xrefs! parsed)
+  "Assemble a typed `manuscript` and a compiled `theme` (from
+   `clj-book.book.theme/compile-theme`) into one `:fo/root` tree.
+
+   The manuscript is either the typed value from `book.load/load-manuscript`
+   (`{:title :author :numbering :sections …}`) or the legacy flat shape
+   (`{:title :author :chapters …}`), which is treated as a body of chapters
+   with no parts and assembles to byte-identical output. Chapter bodies
+   remain authored sugar for the later expansion pass."
+  [book theme]
+  (let [{:keys [title author]} book
+        {:keys [style master-reference masters profile]} theme
+        numbering  (or (:numbering book) structure/default-numbering)
+        prepared   (book-sections book)
+        all-parsed (vec (keep :chapter prepared))
+        _          (resolve-xrefs! all-parsed)
+        body-chs   (body-chapters prepared)
+        recto?     (and (= profile :print)
+                        (= :recto (:start-chapters-on numbering)))
         body-style (get style :body)]
     (into [:fo/root {:font-family (:font-family body-style)
                      :font-size   (:font-size body-style)
                      :line-height (:line-height body-style)}]
           (concat
             [(into [:fo/layout-master-set] masters)]
-            [(bookmark-tree parsed)]
-            [(front-matter title author parsed master-reference theme)]
-            (map-indexed
-              (fn [i ch]
-                (chapter-sequence ch master-reference theme (zero? i)))
-              parsed)))))
+            [(bookmark-tree prepared)]
+            [(toc-furniture title author body-chs master-reference theme)]
+            (section-sequences prepared master-reference theme recto?)))))
