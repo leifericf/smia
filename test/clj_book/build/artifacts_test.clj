@@ -1,6 +1,6 @@
-(ns clj-book.artifacts-test
+(ns clj-book.build.artifacts-test
   (:require
-   [clj-book.artifacts :as artifacts]
+   [clj-book.build.artifacts :as artifacts]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.test :refer [deftest is testing]]))

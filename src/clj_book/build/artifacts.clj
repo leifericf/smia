@@ -1,4 +1,4 @@
-(ns clj-book.artifacts
+(ns clj-book.build.artifacts
   "Artifact manifest emitter."
   (:require
    [clojure.java.io :as io]

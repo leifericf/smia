@@ -33,7 +33,7 @@ namespace and test name that exercises them.
 
 | Scenario                                  | Requirement                | Test                                                  |
 |-------------------------------------------|----------------------------|-------------------------------------------------------|
-| Manifest includes requested targets/paths | manifest shape contract    | `clj-book.artifacts-test/manifest-shape`              |
+| Manifest includes requested targets/paths | manifest shape contract    | `clj-book.build.artifacts-test/manifest-shape`              |
 | Same input produces same output layout    | deterministic build        | `clj-book.compose-test/master-adoc-is-deterministic`  |
 
 ## Feature: Repository and content boundaries
