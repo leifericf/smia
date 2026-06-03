@@ -12,15 +12,38 @@
    [malli.core :as m]
    [malli.error :as me]))
 
+(def NonEmptyStrings
+  "A non-empty sequence of strings."
+  [:and [:sequential :string] [:fn {:error/message "should be non-empty"} seq]])
+
+(def Part
+  "A part: a title plus the chapters it groups."
+  [:map
+   [:part/title :string]
+   [:part/chapters NonEmptyStrings]])
+
+(def MatterSection
+  "A named front/back-matter section: a role keyword and, unless the role is
+   generated (bibliography, index), a source file."
+  [:map
+   [:role :keyword]
+   [:file {:optional true} :string]])
+
 (def Manuscript
   "Parsed and validated `book.edn`. Open map: unrecognized keys are
-   preserved and surfaced as warnings elsewhere, not rejected here."
+   preserved and surfaced as warnings elsewhere, not rejected here. The
+   body is a flat `:book/chapters` list or a `:book/parts` grouping; the
+   either/or requirement and cross-key checks live in `clj-book.config`."
   [:map
    [:book/slug :string]
    [:book/title :string]
-   [:book/chapters [:and
-                    [:sequential :string]
-                    [:fn {:error/message "should be non-empty"} seq]]]])
+   [:book/chapters {:optional true} NonEmptyStrings]
+   [:book/parts {:optional true} [:and [:sequential Part]
+                                  [:fn {:error/message "should be non-empty"} seq]]]
+   [:book/front-matter {:optional true} [:sequential MatterSection]]
+   [:book/back-matter {:optional true} [:sequential MatterSection]]
+   [:book/appendices {:optional true} [:sequential :string]]
+   [:book/numbering {:optional true} :map]])
 
 (def Tokens
   "Parsed and validated `styles/tokens.edn`."

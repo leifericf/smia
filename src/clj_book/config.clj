@@ -1,16 +1,18 @@
 (ns clj-book.config
   "Loader and validator for `book.edn` manuscript build configuration."
   (:require
+   [clj-book.book.structure :as structure]
    [clj-book.error :as error]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
 (def required-keys
-  "Required `book.edn` keys: slug, title, and the ordered chapter list."
+  "Always-required `book.edn` keys: slug and title. The body (a flat
+   `:book/chapters` list or a `:book/parts` grouping) is required too, but
+   is checked separately so the error can name either alternative."
   #{:book/slug
-    :book/title
-    :book/chapters})
+    :book/title})
 
 (defn- read-edn [^java.io.File f]
   (try
@@ -37,41 +39,105 @@
   (and (sequential? v) (seq v) (every? string? v)))
 
 (def ^:private type-checks
-  "Required-key type contracts as data: `[key predicate message]`."
-  [[:book/slug     string? ":book/slug must be a string."]
-   [:book/title    string? ":book/title must be a string."]
-   [:book/chapters non-empty-string-seq?
-    ":book/chapters must be a non-empty vector of strings."]])
+  "Always-present type contracts as data: `[key predicate message]`."
+  [[:book/slug  string? ":book/slug must be a string."]
+   [:book/title string? ":book/title must be a string."]])
+
+(defn- invalid-type! [path k value msg]
+  (throw (error/ex :clj-book.config/invalid-type msg
+                   {:path path :key k :value value})))
 
 (defn- check-types [config path]
   (doseq [[k pred msg] type-checks
           :when (not (pred (get config k)))]
-    (throw (error/ex :clj-book.config/invalid-type
-                     msg
-                     {:path path :key k :value (get config k)}))))
+    (invalid-type! path k (get config k) msg)))
 
-(defn- duplicate-chapters [chapters]
-  (->> (frequencies chapters)
+(defn- check-body-present [config path]
+  (when-not (or (contains? config :book/chapters)
+                (contains? config :book/parts))
+    (throw (error/ex :clj-book.config/missing-required-key
+                     (str "Missing a body in " path
+                          ": declare :book/chapters or :book/parts.")
+                     {:path path :missing [:book/chapters]}))))
+
+(defn- check-unambiguous-body [config path]
+  (when (and (contains? config :book/chapters) (contains? config :book/parts))
+    (throw (error/ex :clj-book.config/ambiguous-body
+                     (str "Declare the body once in " path
+                          ": use either :book/chapters or :book/parts, not both.")
+                     {:path path}))))
+
+(defn- check-chapters [config path]
+  (when (and (contains? config :book/chapters)
+             (not (non-empty-string-seq? (:book/chapters config))))
+    (invalid-type! path :book/chapters (:book/chapters config)
+                   ":book/chapters must be a non-empty vector of strings.")))
+
+(defn- valid-part? [p]
+  (and (map? p) (string? (:part/title p))
+       (non-empty-string-seq? (:part/chapters p))))
+
+(defn- check-parts [config path]
+  (when (contains? config :book/parts)
+    (let [parts (:book/parts config)]
+      (when-not (and (sequential? parts) (seq parts) (every? valid-part? parts))
+        (invalid-type! path :book/parts parts
+                       (str ":book/parts must be a non-empty vector of "
+                            "{:part/title <string> :part/chapters [<string> …]} maps."))))))
+
+(defn- valid-matter? [m]
+  (and (map? m) (keyword? (:role m))
+       (or (nil? (:file m)) (string? (:file m)))
+       (or (string? (:file m)) (structure/generated-role? (:role m)))))
+
+(defn- check-matter [config path k]
+  (when (contains? config k)
+    (let [ms (get config k)]
+      (when-not (and (sequential? ms) (every? map? ms))
+        (invalid-type! path k ms
+                       (str k " must be a vector of {:role <keyword> :file <string>?} maps.")))
+      (doseq [m ms :when (not (valid-matter? m))]
+        (throw (error/ex :clj-book.config/invalid-matter
+                         (str "Invalid " k " entry in " path
+                              ": each needs a keyword :role, and a :file unless "
+                              "the role is generated (e.g. :bibliography, :index).")
+                         {:path path :key k :entry m}))))))
+
+(defn- check-appendices [config path]
+  (when (and (contains? config :book/appendices)
+             (not (and (sequential? (:book/appendices config))
+                       (every? string? (:book/appendices config)))))
+    (invalid-type! path :book/appendices (:book/appendices config)
+                   ":book/appendices must be a vector of strings.")))
+
+(defn- check-numbering [config path]
+  (when (and (contains? config :book/numbering)
+             (not (map? (:book/numbering config))))
+    (invalid-type! path :book/numbering (:book/numbering config)
+                   ":book/numbering must be a map.")))
+
+(defn- duplicates [coll]
+  (->> (frequencies coll)
        (filter (fn [[_ n]] (> n 1)))
        (map key)
        sort
        vec))
 
-(defn- check-no-duplicate-chapters [config path]
-  (let [dupes (duplicate-chapters (:book/chapters config))]
+(defn- check-no-duplicate-files [config path]
+  (let [dupes (duplicates (structure/file-list (structure/normalize config)))]
     (when (seq dupes)
       (throw (error/ex :clj-book.config/duplicate-chapter
-                       (str "Duplicate chapter reference(s) in " path ": "
+                       (str "Duplicate source file reference(s) in " path ": "
                             (str/join ", " dupes))
                        {:path path :duplicates dupes})))))
 
-(defn- check-chapters-exist [config book-root path]
-  (let [missing (->> (:book/chapters config)
+(defn- check-files-exist [config book-root path]
+  (let [missing (->> (structure/file-list (structure/normalize config))
                      (remove #(.exists (io/file book-root %)))
                      vec)]
     (when (seq missing)
       (throw (error/ex :clj-book.config/missing-chapter
-                       (str "Chapter file(s) not found relative to "
+                       (str "Source file(s) not found relative to "
                             book-root ": " (str/join ", " missing))
                        {:path path :book-root book-root :missing missing})))))
 
@@ -103,7 +169,15 @@
                      {:path path :value config})))
   (check-required-keys config path)
   (check-types config path)
-  (check-no-duplicate-chapters config path)
+  (check-body-present config path)
+  (check-unambiguous-body config path)
+  (check-chapters config path)
+  (check-parts config path)
+  (check-matter config path :book/front-matter)
+  (check-matter config path :book/back-matter)
+  (check-appendices config path)
+  (check-numbering config path)
+  (check-no-duplicate-files config path)
   (compute-warnings config))
 
 (defn load-config
@@ -121,7 +195,7 @@
     (let [path     (.getPath f)
           config   (read-edn f)
           warnings (validate config path)]
-      (check-chapters-exist config book-root path)
+      (check-files-exist config book-root path)
       {:config   config
        :path     path
        :warnings warnings})))

@@ -58,3 +58,57 @@
             #(config/load-config {:book-root valid-root
                                   :config-path "nope.edn"}))]
     (is (= :clj-book.config/missing (:error/type d)))))
+
+;; --- structured manuscripts (parts, matter, appendices) -------------------
+
+(deftest parts-satisfy-the-body-requirement
+  (testing "a book may declare its body as :book/parts instead of :book/chapters"
+    (let [warnings (config/validate
+                     {:book/slug "s" :book/title "t"
+                      :book/parts [{:part/title "P" :part/chapters ["a.md" "b.md"]}]}
+                     "book.edn")]
+      (is (vector? warnings)))))
+
+(deftest a-body-is-required
+  (let [d (catch-data
+            #(config/validate {:book/slug "s" :book/title "t"} "book.edn"))]
+    (is (= :clj-book.config/missing-required-key (:error/type d)))))
+
+(deftest chapters-and-parts-are-mutually-exclusive
+  (let [d (catch-data
+            #(config/validate {:book/slug "s" :book/title "t"
+                               :book/chapters ["a.md"]
+                               :book/parts [{:part/title "P" :part/chapters ["b.md"]}]}
+                              "book.edn"))]
+    (is (= :clj-book.config/ambiguous-body (:error/type d)))))
+
+(deftest malformed-part-is-rejected
+  (let [d (catch-data
+            #(config/validate {:book/slug "s" :book/title "t"
+                               :book/parts [{:part/title "P"}]}
+                              "book.edn"))]
+    (is (= :clj-book.config/invalid-type (:error/type d)))))
+
+(deftest matter-without-file-needs-a-generated-role
+  (testing ":preface has no generated content, so it must name a :file"
+    (let [d (catch-data
+              #(config/validate {:book/slug "s" :book/title "t"
+                                 :book/chapters ["a.md"]
+                                 :book/back-matter [{:role :preface}]}
+                                "book.edn"))]
+      (is (= :clj-book.config/invalid-matter (:error/type d)))))
+  (testing ":bibliography and :index are generated, so they need no file"
+    (is (vector? (config/validate
+                   {:book/slug "s" :book/title "t"
+                    :book/chapters ["a.md"]
+                    :book/back-matter [{:role :bibliography} {:role :index}]}
+                   "book.edn")))))
+
+(deftest duplicate-files-across-the-structure-are-rejected
+  (let [d (catch-data
+            #(config/validate {:book/slug "s" :book/title "t"
+                               :book/front-matter [{:role :preface :file "x.md"}]
+                               :book/chapters ["x.md"]}
+                              "book.edn"))]
+    (is (= :clj-book.config/duplicate-chapter (:error/type d)))
+    (is (= ["x.md"] (:duplicates (:error/context d))))))
