@@ -112,6 +112,72 @@
             {:id (name (:id (second node))) :text (heading-text node)}))
         body))
 
+;; --- book outline ---------------------------------------------------------
+
+;; The bookmark tree, table of contents, and page-sequence run all walk the
+;; prepared sections with the same parts -> chapters -> sections dispatch.
+;; `outline` performs that walk once, as a pure value the three builders
+;; consume, so the dispatch and part-grouping live in one place.
+
+(defn- nav-children
+  "The navigable in-chapter headings of `parsed`, as child outline nodes the
+   bookmark and TOC builders nest beneath it."
+  [parsed]
+  (mapv (fn [{:keys [id text]}] {:kind :section :id id :title text})
+        (section-headings parsed)))
+
+(defn- section-node
+  "An outline node for a non-part section: its destination id, bare title,
+   computed number/label, the original section, its parsed chapter, and child
+   nodes for its navigable headings. Works for file-backed chapters,
+   appendices, and matter as well as generated (file-less) matter."
+  [section]
+  (let [parsed (section->parsed section)]
+    {:kind     (:kind section)
+     :id       (name (:id parsed))
+     :title    (:title parsed)
+     :number   (:number parsed)
+     :label    (:label parsed)
+     :section  section
+     :parsed   parsed
+     :children (nav-children parsed)}))
+
+(defn- part-node
+  "An outline node for a part divider, nesting its grouped chapters."
+  [section kids]
+  {:kind     :part
+   :id       (str "part-" (:index section))
+   :title    (:title section)
+   :label    (:label section)
+   :section  section
+   :children (mapv section-node kids)})
+
+(defn- outline
+  "The book's structure as one ordered tree, computed once and shared by the
+   bookmark, table-of-contents, and page-sequence builders. Top-level nodes
+   are in document order; a part nests its chapters; every chapter-like node
+   carries its navigable headings as children."
+  [prepared]
+  (loop [ss prepared, acc []]
+    (if (empty? ss)
+      acc
+      (let [s (first ss)]
+        (if (= :part (:kind s))
+          (let [idx (:index s)
+                [kids more] (split-with #(and (= :chapter (:kind %))
+                                              (= idx (:part %)))
+                                        (rest ss))]
+            (recur more (conj acc (part-node s kids))))
+          (recur (rest ss) (conj acc (section-node s))))))))
+
+(defn- outline-seq
+  "The outline flattened back to document order — each part followed by its
+   chapters — for the page-sequence walk, which numbers pages in reading
+   order rather than by nesting."
+  [prepared]
+  (mapcat (fn [n] (if (= :part (:kind n)) (cons n (:children n)) [n]))
+          (outline prepared)))
+
 ;; --- fragments ------------------------------------------------------------
 
 (defn- bookmark
@@ -121,79 +187,52 @@
          [:fo/bookmark-title title]]
         children))
 
-(defn- chapter-bookmark
-  "A chapter's bookmark, nesting a child bookmark for each navigable
-   section. A chapter with no id-bearing sections (the common case) yields
-   exactly the flat bookmark of before."
-  [parsed]
-  (bookmark (:id parsed) (:title parsed)
-            (map #(bookmark (:id %) (:text %) nil) (section-headings parsed))))
+(defn- node->bookmark
+  "An outline node's `fo:bookmark`, recursively nesting its children (a
+   part's chapters, or a chapter's navigable sections)."
+  [node]
+  (bookmark (:id node) (:title node) (map node->bookmark (:children node))))
 
 (defn- bookmark-tree
   "A nested PDF bookmark tree: parts contain their chapters, chapters
    contain their sections; every other section is a top-level bookmark. A
    flat book (no parts, no section ids) yields the same flat list as before."
   [prepared]
-  (into [:fo/bookmark-tree]
-        (loop [ss prepared, acc []]
-          (if (empty? ss)
-            acc
-            (let [s (first ss)]
-              (cond
-                (= :part (:kind s))
-                (let [idx (:index s)
-                      [kids more] (split-with #(and (= :chapter (:kind %))
-                                                    (= idx (:part %)))
-                                              (rest ss))]
-                  (recur more (conj acc (bookmark (str "part-" idx) (:title s)
-                                                  (map #(chapter-bookmark (:chapter %)) kids)))))
-
-                (:chapter s)
-                (recur (rest ss) (conj acc (chapter-bookmark (:chapter s))))
-
-                :else
-                (let [{:keys [id title]} (section->parsed s)]
-                  (recur (rest ss) (conj acc (bookmark id title nil))))))))))
+  (into [:fo/bookmark-tree] (map node->bookmark (outline prepared))))
 
 (defn- numbered-text [number title]
   (if number (str number "  " title) title))
 
+(defn- chapter-toc-entries
+  "A chapter node's TOC entry at `level`, followed by its navigable sections
+   at `level + 1`."
+  [node level]
+  (cons {:id (:id node) :level level
+         :text (numbered-text (:number node) (:title node))}
+        (map (fn [c] {:id (:id c) :level (inc level) :text (:title c)})
+             (:children node))))
+
+(defn- node->toc-entries
+  "An outline node's table-of-contents entries `{:id :text :level :bold?}`:
+   a part (bold, level 0) with its chapters (level 1) and their sections
+   (level 2); a flat chapter at level 0 with its sections at level 1;
+   appendices and named matter at level 0 with no sub-entries."
+  [node]
+  (case (:kind node)
+    :part     (cons {:id (:id node) :level 0 :bold? true
+                     :text (numbered-text (:label node) (:title node))}
+                    (mapcat #(chapter-toc-entries % 1) (:children node)))
+    :chapter  (chapter-toc-entries node 0)
+    :appendix [{:id (:id node) :level 0
+                :text (numbered-text (:number node) (:title node))}]
+    :matter   [{:id (:id node) :level 0 :text (:title node)}]
+    nil))
+
 (defn- toc-entries
-  "Flatten the prepared sections into table-of-contents entries
-   `{:id :text :level :bold?}`: parts (bold, level 0) with their chapters
-   (level 1) and each chapter's sections (level 2); flat chapters at level
-   0; appendices and named matter at level 0."
+  "Flatten the book outline into table-of-contents entries in document
+   order."
   [prepared]
-  (loop [ss prepared, acc []]
-    (if (empty? ss)
-      acc
-      (let [s (first ss)]
-        (case (:kind s)
-          :part
-          (recur (rest ss)
-                 (conj acc {:id (str "part-" (:index s)) :level 0 :bold? true
-                            :text (numbered-text (:label s) (:title s))}))
-
-          :chapter
-          (let [p     (:chapter s)
-                level (if (:part s) 1 0)
-                entry {:id (name (:id p)) :level level
-                       :text (numbered-text (:number p) (:title p))}
-                secs  (map (fn [h] {:id (:id h) :level (inc level) :text (:text h)})
-                           (section-headings p))]
-            (recur (rest ss) (into (conj acc entry) secs)))
-
-          :appendix
-          (let [p (:chapter s)]
-            (recur (rest ss)
-                   (conj acc {:id (name (:id p)) :level 0
-                              :text (numbered-text (:number p) (:title p))})))
-
-          :matter
-          (let [{:keys [id title]} (section->parsed s)]
-            (recur (rest ss) (conj acc {:id (name id) :level 0 :text title})))
-
-          (recur (rest ss) acc))))))
+  (mapcat node->toc-entries (outline prepared)))
 
 (defn- toc-entry [{:keys [id text level bold?]} link-color]
   ;; text-align-last="justify" pushes the page number flush right; the
@@ -409,31 +448,31 @@
     :else       {}))
 
 (defn- section-sequences
-  "Walk the prepared sections, emitting a page-sequence for each: roman
-   front matter, part dividers and chapters/appendices (arabic, the first
-   resetting the page count), and back matter."
+  "Walk the book outline in document order, emitting a page-sequence for
+   each node: roman front matter, part dividers and chapters/appendices
+   (arabic, the first resetting the page count), and back matter."
   [prepared ctx]
   (let [recto? (:recto? ctx)]
-    (loop [ss prepared, seen-body? false, acc []]
-      (if (empty? ss)
+    (loop [ns (outline-seq prepared), seen-body? false, acc []]
+      (if (empty? ns)
         acc
-        (let [s (first ss), k (:kind s)]
+        (let [{:keys [kind section parsed]} (first ns)]
           (cond
-            (and (= k :matter) (= :front (:matter s)))
-            (recur (rest ss) seen-body?
-                   (conj acc (body-sequence (matter-parsed s ctx) ctx {:format "i"})))
+            (and (= kind :matter) (= :front (:matter section)))
+            (recur (rest ns) seen-body?
+                   (conj acc (body-sequence (matter-parsed section ctx) ctx {:format "i"})))
 
-            (and (= k :matter) (= :back (:matter s)))
-            (recur (rest ss) seen-body?
-                   (conj acc (body-sequence (matter-parsed s ctx) ctx {})))
+            (and (= kind :matter) (= :back (:matter section)))
+            (recur (rest ns) seen-body?
+                   (conj acc (body-sequence (matter-parsed section ctx) ctx {})))
 
-            (= k :part)
-            (recur (rest ss) true
-                   (conj acc (part-sequence s ctx (body-page-attrs (not seen-body?) recto?))))
+            (= kind :part)
+            (recur (rest ns) true
+                   (conj acc (part-sequence section ctx (body-page-attrs (not seen-body?) recto?))))
 
             :else
-            (recur (rest ss) true
-                   (conj acc (body-sequence (:chapter s) ctx
+            (recur (rest ns) true
+                   (conj acc (body-sequence parsed ctx
                                             (body-page-attrs (not seen-body?) recto?))))))))))
 
 ;; --- assembly -------------------------------------------------------------
