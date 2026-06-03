@@ -54,7 +54,10 @@
                                                  [:p "See " [:xref {:to :config}] "."])
                                 (chapter-section :config "Configuration")]})
         para (nth (content-for out :intro) 2)]
-    (is (= [:p "See " [:xref {:to :config} "Chapter 2"] "."] para))))
+    (is (= [:p "See "
+            [:xref {:to :config :label "Chapter 2" :title "Configuration" :kind :chapter}]
+            "."]
+           para))))
 
 (deftest xref-with-author-text-is-left-untouched
   (let [out (assign {:sections [(chapter-section :intro "Introduction"
@@ -70,7 +73,10 @@
         reg  (:registry out)
         para (nth (content-for out :intro) 3)]
     (is (= {:kind :section :title "Getting Set Up"} (get reg "setup")))
-    (is (= [:p "Jump to " [:xref {:to :setup} "Getting Set Up"] "."] para))))
+    (is (= [:p "Jump to "
+            [:xref {:to :setup :title "Getting Set Up" :kind :section}]
+            "."]
+           para))))
 
 (deftest disabling-chapter-numbering-drops-the-number
   (let [out (assign {:numbering (assoc structure/default-numbering :chapters false)

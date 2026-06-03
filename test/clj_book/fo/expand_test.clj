@@ -148,6 +148,24 @@
     (is (= :fo/basic-link (first out)))
     (is (= "Configuration" (last out)))))
 
+(deftest composed-xref-renders-the-resolved-label
+  (testing "a numbered target's label becomes the link text"
+    (is (= [:fo/basic-link {:internal-destination "ch-config" :color "#1a0dab"}
+            "Chapter 2"]
+           (ex [:xref {:to :ch-config :label "Chapter 2" :kind :chapter}]))))
+  (testing ":style :full appends the title"
+    (is (= "Chapter 2: Configuration"
+           (nth (ex [:xref {:to :ch-config :label "Chapter 2"
+                            :title "Configuration" :style :full}]) 2))))
+  (testing ":page appends a page-number citation"
+    (let [out (ex [:xref {:to :ch-config :label "Chapter 2" :page true}])]
+      (is (= "Chapter 2" (nth out 2)))
+      (is (= ", on page " (nth out 3)))
+      (is (= [:fo/page-number-citation {:ref-id "ch-config"}] (last out)))))
+  (testing "an unnumbered target falls back to its title"
+    (is (= "Getting Set Up"
+           (last (ex [:xref {:to :setup :title "Getting Set Up" :kind :section}]))))))
+
 (deftest xref-without-target-is-structured-error
   (let [d (catch-data #(ex [:xref {} "x"]))]
     (is (= :clj-book.fo.expand/invalid-xref (:error/type d)))))

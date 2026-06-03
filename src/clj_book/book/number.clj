@@ -144,7 +144,14 @@
 
 ;; --- cross-reference rewriting --------------------------------------------
 
-(defn- compose-label [entry] (or (:label entry) (:title entry)))
+(defn- xref-attrs
+  "Merge the registry entry's label, title, and kind onto a childless
+   xref's attrs so the expander can compose its final text."
+  [a entry]
+  (cond-> a
+    (:label entry) (assoc :label (:label entry))
+    (:title entry) (assoc :title (:title entry))
+    (:kind entry)  (assoc :kind (:kind entry))))
 
 (defn- rewrite-xrefs [node registry]
   (cond
@@ -153,8 +160,8 @@
           kids (children-of node)]
       (if (seq kids)
         (into [:xref a] (map #(rewrite-xrefs % registry) kids))
-        (if-let [label (some-> (get registry (name (:to a))) compose-label)]
-          [:xref a label]
+        (if-let [entry (get registry (name (:to a)))]
+          [:xref (xref-attrs a entry)]
           node)))
     (vector? node) (mapv #(rewrite-xrefs % registry) node)
     :else          node))

@@ -205,6 +205,24 @@
           (cons [:fo/inline {:baseline-shift "super" :font-size "8pt"} "* "]
                 (expand-all children style)))]])
 
+(defn- composed-xref
+  "Build the inline content of a childless cross-reference from the
+   label/title the numbering pass resolved: \"Chapter 2\" by default,
+   \"Chapter 2: Title\" with `:style :full`, optionally followed by
+   \", on page N\" when `:page` is set. With nothing resolved, fall back to
+   a bare page-number citation (the pre-numbering behavior)."
+  [author dest]
+  (let [label (:label author)
+        title (:title author)
+        text  (cond
+                (and (= :full (:style author)) label title) (str label ": " title)
+                label label
+                title title)]
+    (if text
+      (cond-> [text]
+        (:page author) (conj ", on page " [:fo/page-number-citation {:ref-id dest}]))
+      [[:fo/page-number-citation {:ref-id dest}]])))
+
 (defn- xref [author children style]
   (let [dest (as-id (:to author))]
     (when-not dest
@@ -214,7 +232,7 @@
     (into [:fo/basic-link {:internal-destination dest :color "#1a0dab"}]
           (if (seq (flatten-children children))
             (expand-all children style)
-            [[:fo/page-number-citation {:ref-id dest}]]))))
+            (composed-xref author dest)))))
 
 ;; --- the expander table ---------------------------------------------------
 
