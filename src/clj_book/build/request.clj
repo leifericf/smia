@@ -14,10 +14,11 @@
   "Edition -> internal descriptor: the output `:format` the build
    dispatches on, and for PDF editions the page `:layout` the theme
    compiles for."
-  {:screen {:format :pdf :layout :screen}
-   :print  {:format :pdf :layout :print}
-   :site   {:format :html}
-   :epub   {:format :epub}})
+  {:screen  {:format :pdf :layout :screen}
+   :print   {:format :pdf :layout :print}
+   :print-x {:format :pdf :layout :print :pdf-x true}
+   :site    {:format :html}
+   :epub    {:format :epub}})
 
 (def supported-editions
   "Editions clj-book can build."

@@ -79,6 +79,12 @@
     (is (= [:epub] (:editions out)))
     (is (= :epub (:format (request/edition-descriptors :epub))))))
 
+(deftest print-x-edition-is-a-pdf-with-print-layout-and-conformance
+  (let [out (request/normalize (assoc valid-base :editions [:print-x]) :build)]
+    (is (= [:print-x] (:editions out)))
+    (is (= {:format :pdf :layout :print :pdf-x true}
+           (request/edition-descriptors :print-x)))))
+
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]
     (is (= :clj-book.build.request/invalid-request (:error/type d)))))

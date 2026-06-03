@@ -73,6 +73,15 @@
   ;; the request has been normalized.
   (is true))
 
+(deftest print-x-without-config-fails-fast-at-prepare
+  (testing "the gate trips before any loading or rendering"
+    (let [d (catch-data #(execute/prepare (request "px" :editions [:print-x])))]
+      (is (= :clj-book.build.request/print-x-requires-config (:error/type d)))))
+  (testing "a dry-run is gated the same way"
+    (let [d (catch-data #(execute/build (request "pxdry" :editions [:print-x]
+                                                 :dry-run true)))]
+      (is (= :clj-book.build.request/print-x-requires-config (:error/type d))))))
+
 (deftest epub-edition-build-writes-the-package
   (let [req (request "epub" :editions [:epub])
         man (execute/build req)

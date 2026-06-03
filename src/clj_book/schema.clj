@@ -64,7 +64,7 @@
 
 (def Edition
   "A deliverable edition clj-book can build."
-  [:enum :screen :print :site :epub])
+  [:enum :screen :print :print-x :site :epub])
 
 (def Request
   "A normalized public request map (see `clj-book.build.request`)."

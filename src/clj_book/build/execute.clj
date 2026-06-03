@@ -18,9 +18,11 @@
    [clj-book.build.request :as request]
    [clj-book.epub.assemble :as epub-assemble]
    [clj-book.epub.zip :as epub-zip]
+   [clj-book.error :as error]
    [clj-book.eval.registry :as eval-registry]
    [clj-book.eval.validate :as eval-validate]
    [clj-book.fo.expand :as expand]
+   [clj-book.fo.fop-config :as fop-config]
    [clj-book.fo.render :as render]
    [clj-book.fo.schema :as fo-schema]
    [clj-book.fo.serialize :as serialize]
@@ -42,6 +44,13 @@
   (let [{:keys [config path warnings]} (config/load-config request)
         {:keys [tokens]}               (theme/load-tokens request)
         paths                          (build-paths request config)]
+    (when (and (some #{:print-x} (:editions request))
+               (not (:book/print-x config)))
+      (throw (error/ex :clj-book.build.request/print-x-requires-config
+                       (str "The :print-x edition needs a :book/print-x map in "
+                            "book.edn (embedded fonts and an ICC output "
+                            "intent) — PDF/X requires every font embedded.")
+                       {:editions (:editions request) :config-file path})))
     {:request    request
      :manuscript {:config      config
                   :config-file path
@@ -139,9 +148,11 @@
 
 (defn- render-pdf-edition!
   "Assemble -> expand -> serialize -> FOP for one PDF edition. The page
-   layout comes from the edition's descriptor. Writes the intermediate FO
-   and the final PDF; returns the artifact entry."
-  [{:keys [book-root book tokens]} {:keys [edition fo-path pdf-path]} descriptor]
+   layout comes from the edition's descriptor; when the book configures
+   `:book/print-x`, its fonts are embedded in every PDF edition and the
+   `:print-x` descriptor additionally turns on PDF/X conformance. Writes
+   the intermediate FO and the final PDF; returns the artifact entry."
+  [{:keys [book-root book tokens config]} {:keys [edition fo-path pdf-path]} descriptor]
   (let [the-theme (theme-compile/compile-theme tokens (:layout descriptor))
         fo-xml    (-> (assemble/assemble book the-theme)
                       (expand/expand (:style the-theme))
@@ -150,10 +161,15 @@
     (spit fo-path fo-xml)
     (io/make-parents (io/file pdf-path))
     (let [result (with-open [out (io/output-stream pdf-path)]
-                   (render/render-pdf! fo-xml out
-                                       {:base-dir book-root
-                                        :title    (:title book)
-                                        :author   (:author book)}))]
+                   (render/render-pdf!
+                     fo-xml out
+                     (cond-> {:base-dir book-root
+                              :title    (:title book)
+                              :author   (:author book)}
+                       (:book/print-x config)
+                       (assoc :fop-config
+                              (fop-config/xconf (:book/print-x config)
+                                                {:pdf-x? (boolean (:pdf-x descriptor))})))))]
       {:edition  edition
        :path     pdf-path
        :paths    {:pdf pdf-path :fo fo-path}
