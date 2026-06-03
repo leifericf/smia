@@ -46,7 +46,9 @@ One syntax, three layers, no ceiling:
 - **Ordinary HTML-flavored Hiccup** for the common case: `[:p]`, `[:h1]`, `[:ul]`,
   `[:code]`, `[:pre]`, `[:a]`, `[:table]`, `[:blockquote]`, `[:img]`, …
 - **Book extensions** for things HTML can't name: `[:chapter {…}]`,
-  `[:xref {:to :ch-config}]`, `[:footnote …]`, `[:admonition {:kind :note}]`.
+  `[:xref {:to :ch-config}]`, `[:cite {:key …}]`, `[:footnote …]`,
+  `[:admonition {:kind :note}]`, `[:sidebar {:title …}]`, `[:figure {…}]`,
+  `[:epigraph {…}]`, `[:index {:term …}]`, `[:page-break]`, `[:keep-together …]`.
 - **Raw FO** for full power, in the same data: `[:fo/block {…} …]` reaches any
   XSL-FO construct.
 
@@ -60,6 +62,36 @@ One syntax, three layers, no ceiling:
 
 Most authors stay in the first two layers and let the theme handle layout; raw FO
 is opt-in.
+
+## Book-production affordances
+
+Beyond single chapters, clj-book expresses the structural and visual apparatus of
+a long-form book (designed in `docs/plans/book-production.md`):
+
+- **Structure** — group chapters into **parts**; add **appendices** (lettered) and
+  named **front/back matter** (preface, bibliography, index, colophon) in
+  `book.edn`. Front matter is numbered in roman, the body in arabic; chapters can
+  start on a recto. A flat `:book/chapters` list still works with zero extra
+  config.
+- **Numbering** — parts, chapters, and appendices are auto-numbered; sections are
+  unnumbered by default (decimal numbering is available via `:book/numbering`).
+- **Navigation** — a multi-level table of contents (parts → chapters → sections), a
+  nested PDF outline, and cross-references that read "Figure 3" or "Chapter 5"
+  (`[:xref {:to id}]`; `:style :full` adds the title).
+- **Block vocabulary** — numbered **figures** with captions, captioned/numbered
+  **tables**, **code listings** with a filename header and a numbered caption,
+  titled **sidebars** (a richer admonition), and **epigraphs** at chapter openers.
+- **Code presentation** — optional **syntax highlighting** (a pure JVM tokenizer;
+  colors from `tokens.edn`) and **line numbers**; off by default, plain monospace
+  otherwise.
+- **Apparatus** — an **index** built from inline `[:index {:term …}]` marks and a
+  **bibliography** with inline `[:cite {:key …}]` citations resolving to a sorted
+  back-matter section.
+- **Running content** — distinct verso/recto running heads and footers carrying the
+  book/part/chapter/section title and page number, configured per book.
+
+Every one of these has both a Hiccup form and a Markdown form; the Markdown
+additions are a true superset of CommonMark.
 
 ## Editions / profiles
 
@@ -118,6 +150,10 @@ Replaces the old three tiers with a simpler, more powerful stack:
 - One PDF edition vs two profiles emitted by default.
 - v1 sugar element set + unknown-tag policy.
 - Markdown prose front-end — *promoted*; see `docs/plans/markdown-frontend.md`.
+- Book-production apparatus (parts, numbering, figures, index, bibliography,
+  running heads) — *promoted*; see `docs/plans/book-production.md`.
+- Code highlighting — *resolved*: pure JVM tokenizer registry; see
+  `docs/plans/book-production.md`.
 
 ## BDD Scenarios (Gherkin)
 

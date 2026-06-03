@@ -57,9 +57,10 @@ concentric layers in one syntax:
 2. **HTML/semantic sugar** — `:p :h1`–`:h6 :ul :ol :li :strong :em :code :pre :a
    :table :thead :tbody :tr :td :blockquote :img` … expand to FO. This is the
    "bog-standard Hiccup" surface; anything that already emits HTML hiccup works.
-3. **Book extensions** — `:chapter :xref :footnote :admonition` … expand to the
-   FO that HTML can't name (page-sequences, `fo:page-number-citation`,
-   `fo:footnote`, bordered blocks).
+3. **Book extensions** — `:chapter :xref :cite :footnote :admonition :sidebar
+   :figure :epigraph :index :page-break :keep-together` … expand to the FO that
+   HTML can't name (page-sequences, `fo:page-number-citation`, `fo:footnote`,
+   bordered blocks, numbered captions, floats).
 
 So `bog-standard HTML hiccup ⊂ (HTML sugar + book extensions + raw FO) = the
 superset`.
@@ -92,6 +93,14 @@ The core is "expand, then serialize." `:fo/*` nodes need no mapping. The engine
 emits the FO machinery authors don't touch: regions, running heads (via
 `fo:marker`/`retrieve-marker`), TOC with leaders + page numbers, PDF bookmarks,
 and keep/break control.
+
+A pure **numbering pass** (`clj-book.book.number`) runs between assembly and
+expansion — `assemble → number → expand → serialize → FOP` — assigning numbers to
+numbered targets (parts, chapters, appendices, figures, tables, listings) and
+building the registry the TOC, outline, cross-references, index, and bibliography
+draw from. It is pure and layout-free; page numbers stay FO-native
+(`fo:page-number-citation`), so determinism holds. See
+`docs/plans/book-production.md`.
 
 ## Layered architecture
 
@@ -186,10 +195,17 @@ avoid embedded timestamps, so identical inputs yield identical bytes.
 3. **Final namespace scheme and FO property representation** (compound properties,
    units, SVG).
 4. **v1 sugar element set + unknown-tag policy** (warn / error / treat as raw FO).
-5. **Code highlighting**: server-side JVM highlighter vs plain monospace for v1.
+5. **Code highlighting** — *resolved*: a **pure tokenizer registry**
+   (`clj-book.highlight.*`, language → pure `tokenize`), colors from `tokens.edn`;
+   no subprocess, deterministic, optional. See `docs/plans/book-production.md`.
 6. **Markdown author front-end** — *resolved (promoted)*: specified in
    `docs/plans/markdown-frontend.md` (CommonMark + curated extensions → author
    Hiccup; Hiccup stays the IR).
+7. **Book-production apparatus** — *resolved (promoted)*: typed document model
+   (parts, appendices, named matter), numbering/cross-reference engine,
+   multi-level TOC/outline, figures/captions/listings/sidebars/epigraphs,
+   distinct verso/recto running heads, index, and bibliography. Specified in
+   `docs/plans/book-production.md`.
 
 ## Risk areas and mitigations
 

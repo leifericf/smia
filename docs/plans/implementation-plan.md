@@ -65,9 +65,15 @@ scenario.
    Gate for Phase 4.
 4. **v1 sugar element set + unknown-tag policy** (warn / error / treat as raw FO).
    Gate for Phase 4.
-5. **Code highlighting** (server-side JVM vs plain monospace). Gate for Phase 6.
+5. **Code highlighting** — *resolved*: a pure JVM tokenizer registry
+   (`clj-book.highlight.*`), colors from `tokens.edn`; no subprocess,
+   deterministic, optional. Built in the book-production plan below.
 6. **Markdown author front-end** — *promoted*; designed in
    `docs/plans/markdown-frontend.md`, with its own implementation plan.
+7. **Book-production apparatus** — *promoted*; designed in
+   `docs/plans/book-production.md`, with its own bottom-up build-out (typed
+   document model and numbering engine first, then navigation, page mechanics,
+   block vocabulary, highlighting, and the back-matter apparatus).
 
 ---
 
