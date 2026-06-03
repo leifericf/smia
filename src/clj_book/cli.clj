@@ -1,0 +1,136 @@
+(ns clj-book.cli
+  "Human-facing command-line front-end, invoked via `clojure -M:run`.
+   Parses argv into the same request map consumed by `clj-book.request`
+   and delegates to `clj-book.api`. The `-X` map API (`clj-book.api`)
+   remains for programmatic callers; both front-ends share the single
+   `clj-book.request/normalize` seam, which owns all defaults and
+   validation. This namespace only translates strings to that map and
+   renders results, exit codes, and errors for a human."
+  (:require
+   [clj-book.api :as api]
+   [clj-book.error :as error]
+   [clojure.string :as str]
+   [clojure.tools.cli :as cli]))
+
+;; --- option specs ------------------------------------------------------
+
+(def ^:private common-options
+  [["-c" "--config-path PATH" "book.edn location, relative to book-root."]
+   [nil  "--validate-code"    "Evaluate code blocks marked {:test true}."]
+   ["-h" "--help"             "Show this help."]])
+
+(def ^:private build-options
+  (into [["-p" "--profile PROFILE" "Edition to build (screen|print); repeatable."
+          :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
+         [nil "--output-root PATH" "Directory for build output."]
+         [nil "--dry-run" "Print the build plan; render nothing."]]
+        common-options))
+
+(def ^:private validate-options common-options)
+
+(def ^:private top-level-help
+  (str/join
+   \newline
+   ["clj-book — build technical books as PDF on the JVM."
+    ""
+    "Usage: clojure -M:run <command> [book-root] [options]"
+    ""
+    "Commands:"
+    "  build      Render the requested profiles to PDF."
+    "  validate   Check a manuscript without rendering anything."
+    ""
+    "Run \"clojure -M:run <command> --help\" for command-specific options."
+    "The book-root positional defaults to \".\" (the current directory)."]))
+
+;; --- argv -> request map ----------------------------------------------
+
+(defn- args->request
+  "Translate the positional book-root and parsed options into the request
+   map `clj-book.request/normalize` expects. Only keys the user actually
+   supplied are set, so normalize applies its own defaults — this is the
+   contract that keeps the `-M` and `-X` front-ends in sync."
+  [book-root {:keys [profile config-path output-root dry-run validate-code]}]
+  (cond-> {}
+    book-root      (assoc :book-root book-root)
+    (seq profile)  (assoc :profiles profile)
+    config-path    (assoc :config-path config-path)
+    output-root    (assoc :output-root output-root)
+    dry-run        (assoc :dry-run true)
+    validate-code  (assoc :validate-code true)))
+
+;; --- reporting ---------------------------------------------------------
+
+(defn- err-println [& xs]
+  (binding [*out* *err*] (apply println xs)))
+
+(defn- report-exception
+  "Render a structured clj-book error as a clean diagnostic; fall back to a
+   stack trace only for unexpected (non-structured) throwables."
+  [^Throwable t]
+  (if-let [{:error/keys [type message context]} (error/data t)]
+    (do (err-println "error:" message)
+        (err-println "       type:" (str type))
+        (when (seq context) (err-println "       context:" (pr-str context))))
+    (do (err-println "unexpected error:" (.getMessage t))
+        (.printStackTrace t))))
+
+(defn- print-usage [header summary]
+  (println header)
+  (println "")
+  (println summary))
+
+;; --- subcommands -------------------------------------------------------
+
+(def ^:private build-usage "Usage: clojure -M:run build [book-root] [options]")
+(def ^:private validate-usage "Usage: clojure -M:run validate [book-root] [options]")
+
+(defn- run-build [args]
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args build-options)]
+    (cond
+      (:help options) (do (print-usage build-usage summary) 0)
+      errors          (do (run! err-println errors)
+                          (err-println summary)
+                          2)
+      :else
+      (try
+        (api/build (args->request (first arguments) options))
+        0
+        (catch Throwable t (report-exception t) 1)))))
+
+(defn- run-validate [args]
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args validate-options)]
+    (cond
+      (:help options) (do (print-usage validate-usage summary) 0)
+      errors          (do (run! err-println errors)
+                          (err-println summary)
+                          2)
+      :else
+      (try
+        (let [{:keys [warnings]} (api/validate (args->request (first arguments) options))]
+          (if (seq warnings)
+            (println "ok —" (count warnings) "warning(s)")
+            (println "ok"))
+          0)
+        (catch Throwable t (report-exception t) 1)))))
+
+;; --- dispatch ----------------------------------------------------------
+
+(defn run
+  "Parse argv, dispatch a subcommand, and return an integer exit code.
+   Pure with respect to process state (no `System/exit`) so it is testable."
+  [argv]
+  (let [[command & rest] argv]
+    (case command
+      "build"             (run-build rest)
+      "validate"          (run-validate rest)
+      (nil "-h" "--help") (do (println top-level-help) 0)
+      (do (err-println "unknown command:" command)
+          (println top-level-help)
+          2))))
+
+(defn -main [& argv]
+  (let [code (run (vec argv))]
+    (flush)
+    (System/exit code)))
