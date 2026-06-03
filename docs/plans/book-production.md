@@ -2,8 +2,16 @@
 
 ## Status
 
-**Planned.** This document specifies the structural and visual apparatus a
-long-form technical book needs and that clj-book does not yet express. It extends
+**Implemented.** The affordances specified here have shipped: the typed document
+model and generalized assembly, the numbering and cross-reference engine, the
+multi-level TOC and nested outline, distinct verso/recto running heads, figures,
+captioned tables, code listings, sidebars, epigraphs, page sugar, syntax
+highlighting, and the generated bibliography and index. The dogfood manual under
+`docs/manual/` exercises all of them and is the regression oracle. This document
+remains the design rationale.
+
+This document specifies the structural and visual apparatus a
+long-form technical book needs and that clj-book did not yet express. It extends
 the established `load → assemble → expand → serialize → render` pipeline and the
 functional-core / imperative-shell discipline; it introduces no new intermediate
 representation. The phased build-out lives in `docs/plans/implementation-plan.md`;

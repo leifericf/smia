@@ -10,7 +10,13 @@
            :line-height    "1.45"
            :h1-size        "22pt"
            :h2-size        "16pt"
-           :h3-size        "13pt"}
+           :h3-size        "13pt"
+           :highlight      true}
+ :code    {:keyword "#0033cc"
+           :string  "#008800"
+           :comment "#888888"
+           :number  "#aa5500"
+           :literal "#7700aa"}
  :spacing {:paragraph "6pt"
            :block     "8pt"}
  :layout  {:page-size      :a4

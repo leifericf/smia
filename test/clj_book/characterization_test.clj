@@ -44,7 +44,17 @@
         (let [text (.getText (PDFTextStripper.) doc)]
           (is (str/includes? text "Contents"))
           (is (str/includes? text "Quickstart"))
-          (is (str/includes? text "Error catalog")))))))
+          (is (str/includes? text "Error catalog"))))
+      (testing "the structural apparatus is present"
+        (let [text (.getText (PDFTextStripper.) doc)]
+          (is (str/includes? text "Preface")     "named front matter")
+          (is (str/includes? text "Part I")      "part dividers are numbered")
+          (is (str/includes? text "Chapter 1")   "chapters are numbered")
+          (is (str/includes? text "Figure 1")    "a numbered figure caption")
+          (is (str/includes? text "Listing 1")   "a numbered code listing")
+          (is (str/includes? text "Appendix A")  "a lettered appendix")
+          (is (str/includes? text "Bibliography") "the generated bibliography")
+          (is (str/includes? text "Index")       "the generated index"))))))
 
 (deftest ^:integration manual-build-is-structurally-reproducible
   (testing "two builds of the same manuscript agree on pages and text"

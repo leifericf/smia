@@ -1,11 +1,23 @@
-{:book/slug     "clj-book-manual"
- :book/title    "The clj-book Manual"
- :book/author   "The clj-book authors"
- :book/chapters ["chapters/01-quickstart.md"
-                 "chapters/02-authoring.md"
-                 "chapters/03-markdown.md"
-                 "chapters/04-configuration.md"
-                 "chapters/05-theming.md"
-                 "chapters/06-commands.md"
-                 "chapters/07-error-catalog.md"
-                 "chapters/08-design.md"]}
+{:book/slug       "clj-book-manual"
+ :book/title      "The clj-book Manual"
+ :book/author     "The clj-book authors"
+ :book/references "references.edn"
+
+ :book/front-matter [{:role :preface :file "front/preface.md"}]
+
+ :book/parts
+ [{:part/title    "Authoring"
+   :part/chapters ["chapters/01-quickstart.md"
+                   "chapters/02-authoring.md"
+                   "chapters/03-markdown.md"]}
+  {:part/title    "Configuration and Theming"
+   :part/chapters ["chapters/04-configuration.md"
+                   "chapters/05-theming.md"
+                   "chapters/06-commands.md"]}
+  {:part/title    "Producing a Book"
+   :part/chapters ["chapters/09-book-production.md"
+                   "chapters/08-design.md"]}]
+
+ :book/appendices ["chapters/07-error-catalog.md"]
+
+ :book/back-matter [{:role :bibliography} {:role :index}]}
