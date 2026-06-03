@@ -96,9 +96,9 @@
    :h6         {:font-size "11pt" :font-style "italic" :space-before "8pt"
                 :space-after "3pt"}
    :code       {:font-family "monospace"}
-   :pre        {:font-family "monospace" :white-space "pre" :space-before "6pt"
-                :space-after "8pt" :background-color "#f4f4f4" :padding "6pt"
-                :font-size "9.5pt"}
+   :pre        {:font-family "monospace" :white-space "pre" :wrap-option "wrap"
+                :space-before "6pt" :space-after "8pt"
+                :background-color "#f4f4f4" :padding "6pt" :font-size "9.5pt"}
    :blockquote {:start-indent "18pt" :end-indent "18pt" :font-style "italic"
                 :space-before "6pt" :space-after "6pt"}
    :ul         {:provisional-distance-between-starts "16pt"
@@ -342,7 +342,7 @@
    `width` digits, the highlighted `line`, and an optional trailing
    annotation `mark`."
   [lang line width n gutter? mark style]
-  (cond-> (into (cond-> [:fo/block {:white-space "pre"}]
+  (cond-> (into (cond-> [:fo/block {:white-space "pre" :wrap-option "wrap"}]
                   gutter? (conj [:fo/inline {:color "#999999"}
                                  (str (format (str "%" width "d") n) "  ")]))
                 (code-content lang line style))

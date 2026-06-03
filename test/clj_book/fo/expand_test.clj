@@ -26,6 +26,21 @@
          (ex [:pre {:lang :clojure :test true} "code"])
          (ex [:pre {:lang :clojure :include "x.clj"} "code"]))))
 
+(deftest code-blocks-soft-wrap-overlong-lines
+  ;; `white-space "pre"` alone implies no-wrap, letting a long line run past
+  ;; the column edge; an explicit wrap-option soft-wraps it instead.
+  (testing "a plain code block preserves whitespace but wraps"
+    (let [attrs (second (ex [:pre "x"]))]
+      (is (= "pre" (:white-space attrs)))
+      (is (= "wrap" (:wrap-option attrs)))))
+  (testing "the per-line blocks of a numbered listing wrap too"
+    (let [out   (ex [:pre {:line-numbers true} "aaa\nbbb"])
+          lines (filter #(and (vector? %) (= :fo/block (first %))
+                              (= "pre" (:white-space (second %))))
+                        (drop 2 out))]
+      (is (seq lines))
+      (is (every? #(= "wrap" (:wrap-option (second %))) lines)))))
+
 (defn- tag-children [tag out]
   (filter #(and (vector? %) (= tag (first %))) out))
 
