@@ -55,6 +55,7 @@
    "src/clj_book/fo/serialize.clj"
    "src/clj_book/fo/expand.clj"
    "src/clj_book/fo/schema.clj"
+   "src/clj_book/fo/fop_config.clj"
    "src/clj_book/html/serialize.clj"
    "src/clj_book/html/links.clj"
    "src/clj_book/html/expand.clj"

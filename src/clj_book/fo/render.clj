@@ -20,11 +20,12 @@
   (:require
    [clj-book.error :as error])
   (:import
-   (java.io File OutputStream StringReader)
+   (java.io ByteArrayInputStream File OutputStream StringReader)
    (java.util Date)
    (javax.xml XMLConstants)
    (javax.xml.parsers SAXParserFactory)
    (org.apache.fop.apps FopFactoryBuilder MimeConstants)
+   (org.apache.fop.configuration DefaultConfigurationBuilder)
    (org.apache.fop.events EventFormatter EventListener)
    (org.apache.fop.events.model EventSeverity)
    (org.xml.sax InputSource)))
@@ -55,15 +56,24 @@
    caller-owned OutputStream `out`. Options:
 
    - `:base-dir` directory whose `file:` URI resolves relative resources
-     (e.g. image `src`); defaults to the process directory.
+     (e.g. image `src`, configured font and ICC paths); defaults to the
+     process directory.
    - `:title` / `:author` pinned into PDF metadata.
+   - `:fop-config` FOP configuration XML (see `fo.fop-config/xconf`) for
+     font embedding and PDF/X conformance.
 
    Returns `{:warnings [{:level :warn :message ...} ...]}`. Throws a
    structured error on FOP ERROR/FATAL events or a parse failure. The
    caller is responsible for closing `out`."
-  [^String fo-xml ^OutputStream out {:keys [base-dir title author]}]
+  [^String fo-xml ^OutputStream out {:keys [base-dir title author fop-config]}]
   (let [events      (atom [])
-        fop-factory (.build (FopFactoryBuilder. (base-uri base-dir)))
+        fop-factory (-> (FopFactoryBuilder. (base-uri base-dir))
+                        (cond-> fop-config
+                          (.setConfiguration
+                            (.build (DefaultConfigurationBuilder.)
+                                    (ByteArrayInputStream.
+                                      (.getBytes ^String fop-config "UTF-8")))))
+                        (.build))
         ua          (.newFOUserAgent fop-factory)]
     (doto ua
       (.setProducer "clj-book")
