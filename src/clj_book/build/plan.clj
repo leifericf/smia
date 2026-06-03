@@ -10,10 +10,7 @@
   (:require
    [clj-book.schema :as schema]))
 
-(defn- profile-step [profile slug paths]
-  {:profile  profile
-   :fo-path  (str (:intermediate-dir paths) "/book-" (name profile) ".fo")
-   :pdf-path (str (:pdf-output-dir paths) "/" slug "-" (name profile) ".pdf")})
+(declare profile-step)
 
 (defn plan
   "Pure: produce the build Plan value from a prepared build context
@@ -34,3 +31,10 @@
                            :metadata       {:warnings warnings}}
        :validation        {:enabled (boolean (:validate-code request))}}
       :clj-book.build.plan/invalid-plan)))
+
+;; --- private helpers -------------------------------------------------------
+
+(defn- profile-step [profile slug paths]
+  {:profile  profile
+   :fo-path  (str (:intermediate-dir paths) "/book-" (name profile) ".fo")
+   :pdf-path (str (:pdf-output-dir paths) "/" slug "-" (name profile) ".pdf")})

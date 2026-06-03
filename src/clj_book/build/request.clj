@@ -17,6 +17,33 @@
 (def ^:private default-config-path "book.edn")
 (def ^:private default-book-root ".")
 
+(declare string-or-throw normalize-profiles resolve-profiles resolve-book-root)
+
+(defn normalize
+  "Normalize and validate a public request map for the given `command`
+   (`:validate` or `:build`). Returns a normalized map or throws a
+   structured `ex-info`. A build with no `:profiles` defaults to both
+   editions; a subset may be selected."
+  [request-map command]
+  (when-not (map? request-map)
+    (throw (error/ex :clj-book.build.request/invalid-request
+                     "Request must be a map."
+                     {:request request-map})))
+  (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
+        normalized {:command     command
+                    :book-root   (resolve-book-root book-root)
+                    :config-path (or (string-or-throw :config-path config-path)
+                                     default-config-path)
+                    :output-root (or (string-or-throw :output-root output-root)
+                                     default-output-root)
+                    :dry-run     (boolean dry-run)
+                    :validate-code (boolean (:validate-code request-map))
+                    :profiles    (normalize-profiles profiles)}]
+    (cond-> normalized
+      (= command :build) (update :profiles resolve-profiles))))
+
+;; --- private helpers -------------------------------------------------------
+
 (defn- string-or-throw [k v]
   (when (and (some? v) (not (string? v)))
     (throw (error/ex :clj-book.build.request/invalid-value
@@ -61,26 +88,3 @@
           (and (string? book-root) (str/blank? book-root)))
     default-book-root
     (string-or-throw :book-root book-root)))
-
-(defn normalize
-  "Normalize and validate a public request map for the given `command`
-   (`:validate` or `:build`). Returns a normalized map or throws a
-   structured `ex-info`. A build with no `:profiles` defaults to both
-   editions; a subset may be selected."
-  [request-map command]
-  (when-not (map? request-map)
-    (throw (error/ex :clj-book.build.request/invalid-request
-                     "Request must be a map."
-                     {:request request-map})))
-  (let [{:keys [book-root config-path profiles output-root dry-run]} request-map
-        normalized {:command     command
-                    :book-root   (resolve-book-root book-root)
-                    :config-path (or (string-or-throw :config-path config-path)
-                                     default-config-path)
-                    :output-root (or (string-or-throw :output-root output-root)
-                                     default-output-root)
-                    :dry-run     (boolean dry-run)
-                    :validate-code (boolean (:validate-code request-map))
-                    :profiles    (normalize-profiles profiles)}]
-    (cond-> normalized
-      (= command :build) (update :profiles resolve-profiles))))

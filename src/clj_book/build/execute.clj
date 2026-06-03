@@ -27,12 +27,7 @@
   (:import
    (java.time Instant)))
 
-(defn- build-paths [{:keys [output-root]} config]
-  (let [slug (:book/slug config)
-        root (io/file output-root slug)]
-    {:book-output-dir  (.getPath root)
-     :intermediate-dir (.getPath (io/file root "intermediate"))
-     :pdf-output-dir   (.getPath (io/file root "pdf"))}))
+(declare build-paths load-book render-profile!)
 
 (defn prepare
   "Shell: load and validate the manuscript and resolve output paths.
@@ -48,33 +43,6 @@
                   :warnings    (vec warnings)}
      :paths      (schema/check schema/Paths paths
                                :clj-book.build.execute/invalid-paths)}))
-
-(defn- load-book
-  "Shell: load the book's structure and chapter files into the typed,
-   assemble-ready manuscript value (see `book.load/load-manuscript`)."
-  [book-root {:keys [config]}]
-  (book-load/load-manuscript book-root config))
-
-(defn- render-profile!
-  "Assemble -> expand -> serialize -> FOP for one profile. Writes the
-   intermediate FO and the final PDF; returns the artifact entry."
-  [{:keys [book-root book tokens]} {:keys [profile fo-path pdf-path]}]
-  (let [the-theme (theme-compile/compile-theme tokens profile)
-        fo-xml    (-> (assemble/assemble book the-theme)
-                      (expand/expand (:style the-theme))
-                      (serialize/serialize))]
-    (io/make-parents (io/file fo-path))
-    (spit fo-path fo-xml)
-    (io/make-parents (io/file pdf-path))
-    (let [result (with-open [out (io/output-stream pdf-path)]
-                   (render/render-pdf! fo-xml out
-                                       {:base-dir book-root
-                                        :title    (:title book)
-                                        :author   (:author book)}))]
-      {:profile  profile
-       :path     pdf-path
-       :paths    {:pdf pdf-path :fo fo-path}
-       :warnings (:warnings result)})))
 
 (defn execute!
   "Perform a Plan: load the book once, render each profile, and write the
@@ -145,3 +113,39 @@
        :tokens     (:tokens manuscript)
        :warnings   (:warnings manuscript)
        :validation validation})))
+
+;; --- private helpers -------------------------------------------------------
+
+(defn- build-paths [{:keys [output-root]} config]
+  (let [slug (:book/slug config)
+        root (io/file output-root slug)]
+    {:book-output-dir  (.getPath root)
+     :intermediate-dir (.getPath (io/file root "intermediate"))
+     :pdf-output-dir   (.getPath (io/file root "pdf"))}))
+
+(defn- load-book
+  "Shell: load the book's structure and chapter files into the typed,
+   assemble-ready manuscript value (see `book.load/load-manuscript`)."
+  [book-root {:keys [config]}]
+  (book-load/load-manuscript book-root config))
+
+(defn- render-profile!
+  "Assemble -> expand -> serialize -> FOP for one profile. Writes the
+   intermediate FO and the final PDF; returns the artifact entry."
+  [{:keys [book-root book tokens]} {:keys [profile fo-path pdf-path]}]
+  (let [the-theme (theme-compile/compile-theme tokens profile)
+        fo-xml    (-> (assemble/assemble book the-theme)
+                      (expand/expand (:style the-theme))
+                      (serialize/serialize))]
+    (io/make-parents (io/file fo-path))
+    (spit fo-path fo-xml)
+    (io/make-parents (io/file pdf-path))
+    (let [result (with-open [out (io/output-stream pdf-path)]
+                   (render/render-pdf! fo-xml out
+                                       {:base-dir book-root
+                                        :title    (:title book)
+                                        :author   (:author book)}))]
+      {:profile  profile
+       :path     pdf-path
+       :paths    {:pdf pdf-path :fo fo-path}
+       :warnings (:warnings result)})))
