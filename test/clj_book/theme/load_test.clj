@@ -24,8 +24,6 @@
 
 (deftest missing-token-group-fails
   (let [d (catch-data
-            #(with-redefs [theme/required-groups
-                           #{:color :type :spacing :layout :motion}]
-               (theme/load-tokens {:book-root valid-root})))]
-    (is (= :clj-book.theme.load/missing-group (:error/type d)))
-    (is (some #{:motion} (:missing (:error/context d))))))
+            #(theme/validate {:color {} :type {} :spacing {}} "tokens.edn"))]
+    (is (= :clj-book.theme.load/invalid-tokens (:error/type d)))
+    (is (contains? (:errors (:error/context d)) :layout))))

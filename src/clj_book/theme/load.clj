@@ -5,14 +5,15 @@
    validation of a parsed token map is exposed as `validate`."
   (:require
    [clj-book.error :as error]
+   [clj-book.schema :as schema]
    [clojure.edn :as edn]
-   [clojure.java.io :as io]
-   [clojure.string :as str])
+   [clojure.java.io :as io])
   (:import
    (java.io PushbackReader)))
 
 (def required-groups
-  "Required top-level token groups."
+  "Required top-level token groups. `clj-book.schema/Tokens` is the schema
+   that enforces this contract; this set names the groups for consumers."
   #{:color :type :spacing :layout})
 
 (defn- read-edn [^java.io.File f]
@@ -28,34 +29,13 @@
                        (str "Tokens file is not valid EDN: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))))
 
-(defn- check-required-groups [tokens path]
-  (let [missing (sort (remove #(contains? tokens %) required-groups))]
-    (when (seq missing)
-      (throw (error/ex :clj-book.theme.load/missing-group
-                       (str "Missing required token group(s): "
-                            (str/join ", " (map pr-str missing)))
-                       {:path path :missing missing})))))
-
-(defn- check-group-shapes [tokens path]
-  (doseq [g required-groups
-          :let [v (get tokens g)]]
-    (when-not (map? v)
-      (throw (error/ex :clj-book.theme.load/invalid-type
-                       (str "Token group " g " must be a map.")
-                       {:path path :group g :value v})))))
-
 (defn validate
   "Pure validation of an already-parsed `tokens.edn` map. Performs no IO.
-   Throws structured `ex-info` for malformed/invalid inputs; returns the
-   tokens map unchanged otherwise. `path` is used only for error context."
-  [tokens path]
-  (when-not (map? tokens)
-    (throw (error/ex :clj-book.theme.load/invalid-shape
-                     "Top-level value of tokens.edn must be a map."
-                     {:path path :value tokens})))
-  (check-required-groups tokens path)
-  (check-group-shapes tokens path)
-  tokens)
+   Throws a structured `ex-info` carrying the humanized schema errors for a
+   malformed map; returns the tokens map unchanged otherwise. `path` is
+   ignored here but kept for call-site symmetry with the config loader."
+  [tokens _path]
+  (schema/check schema/Tokens tokens :clj-book.theme.load/invalid-tokens))
 
 (defn load-tokens
   "Read, parse, and validate `styles/tokens.edn`.
