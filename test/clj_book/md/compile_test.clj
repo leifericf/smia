@@ -54,6 +54,25 @@
   (is (= [[:epigraph {:attribution "A. Hacker"} [:p "Make it work."]]]
          (md->body ":::epigraph {:attribution \"A. Hacker\"}\nMake it work.\n:::\n"))))
 
+(deftest deflist-directive-pairs-terms-and-definitions
+  (testing "a paragraph that is a lone strong span is a term; the next block its definition"
+    (is (= [[:dl {}
+             [:dt "Manuscript"] [:dd "The normalized document structure."]
+             [:dt "Profile"]    [:dd "A layout variant."]]]
+           (md->body (str ":::deflist\n"
+                          "**Manuscript**\n\n"
+                          "The normalized document structure.\n\n"
+                          "**Profile**\n\n"
+                          "A layout variant.\n"
+                          ":::\n")))))
+  (testing "definitions keep their inline markup"
+    (is (= [[:dl {}
+             [:dt "reduce"] [:dd "Folds with " [:code "reduce"] "."]]]
+           (md->body (str ":::deflist\n"
+                          "**reduce**\n\n"
+                          "Folds with `reduce`.\n"
+                          ":::\n"))))))
+
 (deftest page-mechanics-directives-compile
   (testing ":::page-break compiles to the page-break element"
     (is (= [[:page-break]] (md->body ":::page-break\n:::\n"))))

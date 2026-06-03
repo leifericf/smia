@@ -75,6 +75,9 @@
                 :provisional-label-separation "5pt" :space-after "6pt"}
    :ol         {:provisional-distance-between-starts "16pt"
                 :provisional-label-separation "5pt" :space-after "6pt"}
+   :dl         {:space-before "6pt" :space-after "8pt"}
+   :dt         {:font-weight "bold" :space-before "4pt"}
+   :dd         {:start-indent "18pt" :space-after "4pt"}
    :hr         {:border-top "0.5pt solid #999999" :space-before "8pt"
                 :space-after "8pt"}
    :admonition {:border "0.75pt solid #999999" :padding "6pt"
@@ -132,6 +135,24 @@
                  [:fo/list-item-body {:start-indent "body-start()"}
                   (into [:fo/block] (expand-all item-children style))]]))
             (list-items children)))))
+
+;; --- description lists -----------------------------------------------------
+
+(defn- dl-block
+  "A description list: a wrapping block whose children alternate a bold
+   term (`:dt`) block and an indented definition (`:dd`) block. Non-`:dt`/
+   `:dd` children are ignored, so whitespace and stray nodes are harmless."
+  [author children style]
+  (into [:fo/block (cond-> (get style :dl)
+                     (:id author) (assoc :id (as-id (:id author))))]
+        (keep (fn [child]
+                (when (vector? child)
+                  (let [[tag _ kids] (parse-node child)]
+                    (case tag
+                      :dt (into [:fo/block (get style :dt)] (expand-all kids style))
+                      :dd (into [:fo/block (get style :dd)] (expand-all kids style))
+                      nil))))
+              (flatten-children children))))
 
 ;; --- tables ---------------------------------------------------------------
 
@@ -409,6 +430,9 @@
                                 (:height a) (assoc :content-height (:height a)))])
      :ul         (fn [a c s] (list-block :ul a c s))
      :ol         (fn [a c s] (list-block :ol a c s))
+     :dl         (fn [a c s] (dl-block a c s))
+     :dt         (fn [a c s] (styled-block :dt a c s {}))
+     :dd         (fn [a c s] (styled-block :dd a c s {}))
      :figure     (fn [a c s] (figure-block a c s))
      :table      (fn [a c s]
                    (let [tbl (table-block a c s)]

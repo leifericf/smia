@@ -254,6 +254,32 @@
 (deftest index-mark-is-an-anchor-with-its-id
   (is (= [:fo/inline {:id "idx-3"}] (ex [:index {:term "Determinism" :id "idx-3"}]))))
 
+(deftest description-list-renders-terms-and-definitions
+  (let [out (ex [:dl
+                 [:dt "Manuscript"] [:dd "The normalized document structure."]
+                 [:dt "Profile"]    [:dd "A layout variant."]])
+        blocks (filter #(and (vector? %) (= :fo/block (first %))) out)]
+    (is (= :fo/block (first out)))
+    (is (= 4 (count blocks)) "one block per term and per definition, in order")
+    (testing "terms are bold"
+      (is (some #(and (= "bold" (:font-weight (second %)))
+                      (= "Manuscript" (last %)))
+                blocks)))
+    (testing "definitions are indented"
+      (is (some #(and (:start-indent (second %))
+                      (= "The normalized document structure." (last %)))
+                blocks)))
+    (testing "order is preserved (term then its definition)"
+      (is (= ["Manuscript" "The normalized document structure."
+              "Profile" "A layout variant."]
+             (map last blocks))))))
+
+(deftest description-list-definitions-keep-inline-markup
+  (let [out (ex [:dl [:dt "reduce"] [:dd "Folds with " [:code "reduce"] "."]])]
+    (is (some #(and (vector? %) (= :fo/inline (first %)) (= "reduce" (last %)))
+              (tree-seq vector? seq out))
+        "inline markup in a definition is expanded")))
+
 (deftest page-break-forces-a-break-before
   (is (= [:fo/block {:break-before "page"}] (ex [:page-break]))))
 

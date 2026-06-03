@@ -199,6 +199,29 @@
         (let [m (try (edn/read-string t) (catch Exception _ nil))]
           (when (map? m) m))))))
 
+;; --- description lists ------------------------------------------------------
+
+(defn- deflist-term?
+  "True when a compiled block is the deflist term form: a paragraph whose
+   sole child is a strong span (`[:p [:strong …]]`)."
+  [block]
+  (and (vector? block) (= :p (first block)) (= 2 (count block))
+       (vector? (second block)) (= :strong (first (second block)))))
+
+(defn- compile-deflist
+  "Compile the blocks inside a `:::deflist` directive into `:dt`/`:dd`
+   children: a paragraph that is a lone strong span becomes a term, every
+   other block a definition. A definition paragraph is unwrapped so its
+   inline content sits directly in the `:dd`; richer blocks are kept whole."
+  [nodes]
+  (mapv (fn [block]
+          (if (deflist-term? block)
+            (into [:dt] (rest (second block)))
+            (if (and (vector? block) (= :p (first block)))
+              (into [:dd] (rest block))
+              [:dd block])))
+        (compile-block-seq nodes)))
+
 ;; --- directives (admonitions) ----------------------------------------------
 
 (defn- directive-attrs [node]
@@ -230,6 +253,9 @@
 
     "sidebar"
     (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node)))
+
+    "deflist"
+    (into [:dl (directive-attrs node)] (compile-deflist (:children node)))
 
     "epigraph"
     (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node)))
