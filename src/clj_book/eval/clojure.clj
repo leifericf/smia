@@ -13,6 +13,8 @@
    the build runtime nor leak state into one another. `:level` selects how
    far to go: `:parse` reads only; `:compile`/`:run` evaluate; `:assert`
    additionally requires the last form's value to be truthy."
+  (:require
+   [clj-book.eval.registry :as registry])
   (:import
    (java.io PushbackReader StringReader)))
 
@@ -47,20 +49,10 @@
     (try
       (let [forms (read-forms source)]
         (case level
-          :parse
-          {:status :parsed}
-
-          :assert
-          (let [v (eval-in-fresh-ns forms)]
-            (if v
-              {:status :matched :value v}
-              {:status      :failed
-               :diagnostics [{:message "Assertion block evaluated to a falsey value."}]}))
-
-          ;; :compile and :run both evaluate (Clojure compiles as it evals).
-          (let [v (eval-in-fresh-ns forms)]
-            {:status :ran :value v})))
+          :parse (registry/parsed)
+          ;; :assert requires truthiness; :compile and :run both evaluate
+          ;; (Clojure compiles as it evals) — `from-value` shapes each.
+          (registry/from-value level (eval-in-fresh-ns forms))))
       (catch Throwable e
-        {:status      :failed
-         :diagnostics [{:message   (or (.getMessage e) (str e))
-                        :exception (.getName (class e))}]}))))
+        (registry/failed [{:message   (or (.getMessage e) (str e))
+                           :exception (.getName (class e))}])))))
