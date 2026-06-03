@@ -94,6 +94,32 @@
     (is (= "1.1" (:number (get reg "a"))))
     (is (= "1.2" (:number (get reg "b"))))))
 
+(deftest figures-tables-and-listings-number-book-wide
+  (let [out (assign {:sections
+                     [(chapter-section :a "A"
+                                       [:figure {:id :diagram :caption "A diagram"} [:img {:src "d.png"}]]
+                                       [:table {:id :grid :caption "A grid"} [:tr [:td "x"]]])
+                      (chapter-section :b "B"
+                                       [:figure {:id :flow :caption "A flow"} [:img {:src "f.png"}]]
+                                       [:pre {:lang :clojure :id :listing :caption "A listing"} "(+ 1 2)"])]})
+        reg (:registry out)]
+    (is (= {:kind :figure :number "1" :label "Figure 1" :title "A diagram"} (get reg "diagram")))
+    (is (= "Figure 2" (:label (get reg "flow"))) "figures continue across chapters")
+    (is (= "Table 1" (:label (get reg "grid"))))
+    (is (= "Listing 1" (:label (get reg "listing")))) ))
+
+(deftest a-table-without-a-caption-is-not-numbered
+  (let [out (assign {:sections [(chapter-section :a "A" [:table [:tr [:td "x"]]])]})]
+    (is (empty? (filter #(= :table (:kind (val %))) (:registry out))))))
+
+(deftest xref-to-a-figure-composes-its-label
+  (let [out (assign {:sections [(chapter-section :a "A"
+                                                 [:figure {:id :diagram :caption "D"} [:img {:src "d.png"}]]
+                                                 [:p "See " [:xref {:to :diagram}] "."])]})
+        para (nth (content-for out :a) 3)]
+    (is (= [:xref {:to :diagram :label "Figure 1" :title "D" :kind :figure}]
+           (nth para 2)))))
+
 (deftest counts-summarize-the-numbered-targets
   (let [out (assign {:sections [{:kind :part :title "P" :index 0}
                                 (assoc (chapter-section :a "A") :part 0)

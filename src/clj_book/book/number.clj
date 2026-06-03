@@ -59,16 +59,40 @@
     (vector? node) (apply str (map node-text (children-of node)))
     :else          ""))
 
+;; --- counters --------------------------------------------------------------
+
+(defn- swap-count [counters k] (get (swap! counters update k (fnil inc 0)) k))
+
 ;; --- body sections (headings) ---------------------------------------------
+
+(defn- numberable-kind
+  "The numbered kind of a body block, or nil. Figures always number;
+   tables and code listings number only when they carry a `:caption`."
+  [node]
+  (case (first node)
+    :figure :figure
+    :table  (when (:caption (attrs-of node)) :table)
+    :pre    (when (:caption (attrs-of node)) :listing)
+    nil))
 
 (defn- number-body
   "Walk a chapter body: collect every `:id` heading into `registry` (an
-   atom) and, when section numbering is on, number top-level (`:h2`)
-   sections decimally within `chapter-number` and prepend the number to the
-   heading text."
-  [body {:keys [chapter-number policy registry]}]
+   atom); number top-level (`:h2`) sections decimally within
+   `chapter-number` when section numbering is on; and number figures,
+   captioned tables, and captioned code listings book-wide via `counters`,
+   annotating each with its `:number`/`:label` and registering any `:id`."
+  [body {:keys [chapter-number policy registry counters]}]
   (let [sec (volatile! 0)]
-    (letfn [(walk [node]
+    (letfn [(number-float [node kind]
+              (let [a     (or (attrs-of node) {})
+                    num   (str (swap-count counters kind))
+                    label (str (kind-words kind) " " num)]
+                (when (:id a)
+                  (swap! registry assoc (name (:id a))
+                         {:kind kind :number num :label label :title (:caption a)}))
+                (into [(first node) (assoc a :number num :label label)]
+                      (map walk (children-of node)))))
+            (walk [node]
               (cond
                 (heading? node)
                 (let [a (attrs-of node)]
@@ -83,13 +107,15 @@
                                    {:kind :section :title title})
                             node)))
                     node))
+
+                (and (vector? node) (numberable-kind node))
+                (number-float node (numberable-kind node))
+
                 (vector? node) (mapv walk node)
                 :else          node))]
       (mapv walk body))))
 
 ;; --- structural sections --------------------------------------------------
-
-(defn- swap-count [counters k] (get (swap! counters update k (fnil inc 0)) k))
 
 (defn- number-chapter-like
   "Number a `:chapter` or `:appendix` section: increment its counter (unless
@@ -104,7 +130,8 @@
         label    (when num (str (kind-words k) " " num))
         [_ a & body] (:content section)
         body'    (number-body (vec body)
-                              {:chapter-number num :policy policy :registry registry})
+                              {:chapter-number num :policy policy
+                               :registry registry :counters counters})
         a'       (cond-> a num (assoc :number num :label label :kind k))]
     (swap! registry assoc (name (:id a))
            (cond-> {:kind k :title (:title a)}
@@ -119,11 +146,12 @@
            {:kind :part :number num :label label :title (:title section)})
     (assoc section :number num :label label)))
 
-(defn- number-matter [section policy registry]
+(defn- number-matter [section policy registry counters]
   (if-let [content (:content section)]
     (let [[_ a & body] content
           body' (number-body (vec body)
-                             {:chapter-number nil :policy policy :registry registry})]
+                             {:chapter-number nil :policy policy
+                              :registry registry :counters counters})]
       (swap! registry assoc (name (:id a)) {:kind :matter :title (:title a)})
       (assoc section :content (into [:chapter a] body')))
     (do (swap! registry assoc (name (:role section))
@@ -137,7 +165,7 @@
                     (case (:kind s)
                       :part                (number-part s policy registry counters)
                       (:chapter :appendix) (number-chapter-like s policy registry counters)
-                      :matter              (number-matter s policy registry)
+                      :matter              (number-matter s policy registry counters)
                       s))
                   sections)]
     {:sections out :registry @registry}))
