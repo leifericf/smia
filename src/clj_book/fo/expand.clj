@@ -43,6 +43,13 @@
          (let [expanded (expand-all children style)]
            (if attrs (into [tag attrs] expanded) (into [tag] expanded)))
 
+         (and (keyword? tag) (= "html" (namespace tag)))
+         (throw (error/ex :clj-book.fo.expand/html-tag-in-pdf
+                          (str "Raw HTML element " (pr-str tag) " has no PDF "
+                               "rendering. Use portable sugar, or the :fo/* "
+                               "hatch for this edition.")
+                          {:tag tag}))
+
          (contains? expanders tag)
          ((get expanders tag) attrs children style)
 

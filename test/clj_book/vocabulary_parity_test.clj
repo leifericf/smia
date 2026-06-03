@@ -6,7 +6,11 @@
   (:require
    [clj-book.fo.expand :as fo-expand]
    [clj-book.fo.schema :as fo-schema]
+   [clj-book.html.expand :as html-expand]
    [clojure.test :refer [deftest is]]))
 
 (deftest fo-expanders-cover-the-vocabulary-exactly
   (is (= fo-schema/sugar-tags (set (keys fo-expand/expanders)))))
+
+(deftest html-expanders-cover-the-vocabulary-exactly
+  (is (= fo-schema/sugar-tags (set (keys html-expand/expanders)))))

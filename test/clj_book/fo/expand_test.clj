@@ -392,6 +392,11 @@
     (is (= :clj-book.fo.expand/unknown-tag (:error/type d)))
     (is (= :marquee (:tag (:error/context d))))))
 
+(deftest html-hatch-in-pdf-edition-is-structured-error
+  (let [d (catch-data #(ex [:html/aside {:class "x"} "no"]))]
+    (is (= :clj-book.fo.expand/html-tag-in-pdf (:error/type d)))
+    (is (= :html/aside (:tag (:error/context d))))))
+
 (deftest code-block-preserves-pre-whitespace-through-serialization
   (let [xml (ser/serialize (ex [:pre "(defn f [x]\n  x)"])
                            {:xml-declaration? false})]
