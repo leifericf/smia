@@ -28,9 +28,9 @@
                          [(.matcher ^java.util.regex.Pattern p code) kind])
                        rules)]
     (merge-runs
-      (loop [i 0, acc (transient [])]
+      (loop [i 0, acc []]
         (if (>= i n)
-          (persistent! acc)
+          acc
           (let [hit (some (fn [[^java.util.regex.Matcher m kind]]
                             (.region m i n)
                             (when (and (.lookingAt m) (> (.end m) i))
@@ -38,9 +38,9 @@
                                 {:kind (if (fn? kind) (kind s) kind) :text s})))
                           matchers)]
             (if hit
-              (recur (+ i (count (:text hit))) (conj! acc hit))
+              (recur (+ i (count (:text hit))) (conj acc hit))
               (recur (inc i)
-                     (conj! acc {:kind :text :text (subs code i (inc i))})))))))))
+                     (conj acc {:kind :text :text (subs code i (inc i))})))))))))
 
 (defn keyword-classifier
   "A `kind` fn for identifier rules: `:keyword` when the identifier is in
