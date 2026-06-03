@@ -20,6 +20,16 @@
     (is (fo-schema/valid? [:fo/block {:space-before "12pt"} "raw"]))
     (is (fo-schema/valid? [:fo/table [:fo/table-body [:fo/table-row]]]))))
 
+(deftest accepts-raw-html
+  (testing ":html/* tags pass the vocabulary like :fo/*"
+    (is (fo-schema/known-tag? :html/aside))
+    (is (fo-schema/valid? [:html/aside {:class "warn"} [:p "x"]]))
+    (is (fo-schema/valid? [:p "inline " [:html/kbd "Ctrl"]]))))
+
+(deftest rejects-unknown-namespaced-tags
+  (is (not (fo-schema/known-tag? :bogus/x)))
+  (is (not (fo-schema/valid? [:bogus/x "no"]))))
+
 (deftest accepts-numbers-as-content
   (is (fo-schema/valid? [:p "answer " 42])))
 
