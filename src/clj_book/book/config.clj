@@ -116,15 +116,9 @@
     (invalid-type! path :book/numbering (:book/numbering config)
                    ":book/numbering must be a map.")))
 
-(defn- duplicates [coll]
-  (->> (frequencies coll)
-       (filter (fn [[_ n]] (> n 1)))
-       (map key)
-       sort
-       vec))
-
 (defn- check-no-duplicate-files [config path]
-  (let [dupes (duplicates (structure/file-list (structure/normalize config)))]
+  (let [dupes (structure/duplicates
+                (structure/file-list (structure/normalize config)))]
     (when (seq dupes)
       (throw (error/ex :clj-book.book.config/duplicate-chapter
                        (str "Duplicate source file reference(s) in " path ": "

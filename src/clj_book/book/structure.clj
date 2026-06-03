@@ -77,6 +77,17 @@
   [structure]
   (into [] (keep :file) (:sections structure)))
 
+(defn duplicates
+  "The distinct values occurring more than once in `coll`, sorted by
+   `sort-key` (default `identity`). Returns a vector."
+  ([coll] (duplicates identity coll))
+  ([sort-key coll]
+   (->> (frequencies coll)
+        (filter (fn [[_ n]] (> n 1)))
+        (map key)
+        (sort-by sort-key)
+        vec)))
+
 (defn body?
   "True for sections numbered in the arabic body run (chapters and
    appendices)."

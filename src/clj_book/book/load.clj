@@ -182,11 +182,7 @@
        (keep (fn [c]
                (when (and (vector? c) (= :chapter (first c)) (map? (second c)))
                  (:id (second c)))))
-       frequencies
-       (filter (fn [[_ n]] (> n 1)))
-       (map key)
-       (sort-by name)
-       vec))
+       (structure/duplicates name)))
 
 (defn- check-no-duplicate-ids [chapters]
   (let [dupes (duplicate-ids chapters)]
