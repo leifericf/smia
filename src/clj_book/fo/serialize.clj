@@ -12,6 +12,7 @@
   (:require
    [clj-book.error :as error]
    [clj-book.fo.attrs :as attrs]
+   [clj-book.fo.hiccup :as hiccup]
    [clojure.string :as str]))
 
 (def ^:private fo-namespace "http://www.w3.org/1999/XSL/Format")
@@ -34,11 +35,6 @@
     (str ns ":" (name tag))
     (name tag)))
 
-(defn- parse-node [[tag & more]]
-  (if (map? (first more))
-    [tag (first more) (next more)]
-    [tag nil more]))
-
 (declare emit!)
 
 (defn- emit-children! [^StringBuilder sb children]
@@ -49,7 +45,7 @@
       :else            (emit! sb child))))
 
 (defn- emit-element! [^StringBuilder sb node]
-  (let [[tag attrs children] (parse-node node)
+  (let [[tag attrs children] (hiccup/parse-node node)
         tname (tag-name tag)]
     (.append sb "<")
     (.append sb tname)

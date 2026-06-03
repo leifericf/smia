@@ -17,19 +17,13 @@
    This namespace is a pure core: no IO, no FOP."
   (:require
    [clj-book.error :as error]
+   [clj-book.fo.hiccup :as hiccup]
    [clj-book.highlight.registry :as highlight]
    [clojure.string :as str]))
 
 (declare expand)
 
 ;; --- node parsing ---------------------------------------------------------
-
-(defn- parse-node
-  "Split a Hiccup vector into `[tag attrs children]` (attrs may be nil)."
-  [[tag & more]]
-  (if (map? (first more))
-    [tag (first more) (next more)]
-    [tag nil more]))
 
 (defn- flatten-children
   "Flatten one level of seqs (e.g. produced by `for`) among children."
@@ -137,7 +131,7 @@
     (into [:fo/list-block base]
           (map-indexed
             (fn [i item]
-              (let [[_ _ item-children] (parse-node item)
+              (let [[_ _ item-children] (hiccup/parse-node item)
                     label (if (= list-type :ol) (str (inc i) ".") "•")]
                 [:fo/list-item
                  [:fo/list-item-label {:end-indent "label-end()"}
@@ -157,7 +151,7 @@
                      (:id author) (assoc :id (as-id (:id author))))]
         (keep (fn [child]
                 (when (vector? child)
-                  (let [[tag _ kids] (parse-node child)]
+                  (let [[tag _ kids] (hiccup/parse-node child)]
                     (case tag
                       :dt (into [:fo/block (get style :dt)] (expand-all kids style))
                       :dd (into [:fo/block (get style :dd)] (expand-all kids style))
@@ -167,16 +161,16 @@
 ;; --- tables ---------------------------------------------------------------
 
 (defn- cells-of [tr]
-  (let [[_ _ children] (parse-node tr)]
+  (let [[_ _ children] (hiccup/parse-node tr)]
     (filter #(and (vector? %) (#{:td :th} (first %)))
             (flatten-children children))))
 
 (defn- rows-of [section]
-  (let [[_ _ children] (parse-node section)]
+  (let [[_ _ children] (hiccup/parse-node section)]
     (filter #(and (vector? %) (= :tr (first %))) (flatten-children children))))
 
 (defn- cell->fo [cell style]
-  (let [[tag _ children] (parse-node cell)]
+  (let [[tag _ children] (hiccup/parse-node cell)]
     [:fo/table-cell (get style :table-cell)
      (into [:fo/block (when (= tag :th) {:font-weight "bold"})]
            (expand-all children style))]))
@@ -557,7 +551,7 @@
      (string? node) node
      (number? node) node
      (vector? node)
-     (let [[tag attrs children] (parse-node node)]
+     (let [[tag attrs children] (hiccup/parse-node node)]
        (cond
          (and (keyword? tag) (= "fo" (namespace tag)))
          (let [expanded (expand-all children style)]
