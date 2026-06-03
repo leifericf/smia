@@ -94,7 +94,14 @@
                 :text-align "center"}
    :listing    {:space-before "6pt" :space-after "8pt"}
    :file-bar   {:font-family "monospace" :font-size "8pt" :font-weight "bold"
-                :background-color "#e8e8e8" :padding "3pt 6pt"}})
+                :background-color "#e8e8e8" :padding "3pt 6pt"}
+   :annotation-mark {:font-family "sans-serif" :font-size "7.5pt"
+                     :font-weight "bold" :color "#ffffff"
+                     :background-color "#555555" :padding "0pt 3pt"
+                     :baseline-shift "super"}
+   :annotation-list {:provisional-distance-between-starts "20pt"
+                     :provisional-label-separation "6pt"
+                     :font-size "9.5pt" :space-before "4pt" :space-after "6pt"}})
 
 ;; --- shared builders ------------------------------------------------------
 
@@ -272,40 +279,98 @@
                      (:id author) (assoc :id (as-id (:id author))))]
         (code-content (:lang author) (code-text children) style)))
 
-(defn- numbered-code-block
-  "A code block with a muted line-number gutter: one block per line, each
-   prefixed by its right-aligned number."
-  [author children style]
-  (let [lines (str/split (code-text children) #"\n" -1)
-        width (count (str (count lines)))
+(defn- annotation-mark
+  "A small theme-styled badge carrying an annotation's ordinal `n`. The same
+   mark appears at the end of a code line and beside its note in the list."
+  [n style]
+  [:fo/inline (get style :annotation-mark) (str n)])
+
+(defn- annotations->by-line
+  "Validate a listing's `:annotations` and index them as `{line -> {:n
+   ordinal :note note}}`. Ordinals are 1-based by vector order. Throws
+   `:clj-book.fo.expand/invalid-annotation` for a line outside `1..line-count`
+   or a line carrying more than one note."
+  [annotations line-count id]
+  (reduce
+    (fn [acc [i {:keys [line note]}]]
+      (when-not (and (integer? line) (<= 1 line line-count))
+        (throw (error/ex :clj-book.fo.expand/invalid-annotation
+                         (str "Annotation " (inc i) " references line "
+                              (pr-str line) ", outside the listing's "
+                              "1.." line-count " lines.")
+                         {:listing id :line line :lines line-count})))
+      (when (contains? acc line)
+        (throw (error/ex :clj-book.fo.expand/invalid-annotation
+                         (str "Line " line " carries more than one annotation.")
+                         {:listing id :line line})))
+      (assoc acc line {:n (inc i) :note note}))
+    {}
+    (map-indexed vector annotations)))
+
+(defn- code-lines-block
+  "Render code as one block per line. `gutter?` prefixes each line with a
+   muted right-aligned line number; `marks` (a `{line -> ordinal}` map)
+   appends an annotation mark at the end of each annotated line."
+  [author lines style gutter? marks]
+  (let [width (count (str (count lines)))
         lang  (:lang author)]
     (into [:fo/block (cond-> (get style :pre)
                        (:id author) (assoc :id (as-id (:id author))))]
           (map-indexed
             (fn [i line]
-              (into [:fo/block {:white-space "pre"}
-                     [:fo/inline {:color "#999999"}
-                      (str (format (str "%" width "d") (inc i)) "  ")]]
-                    (code-content lang line style)))
+              (let [n (inc i)]
+                (cond-> (into (cond-> [:fo/block {:white-space "pre"}]
+                                gutter? (conj [:fo/inline {:color "#999999"}
+                                               (str (format (str "%" width "d") n) "  ")]))
+                              (code-content lang line style))
+                  (get marks n) (conj (annotation-mark (get marks n) style)))))
             lines))))
 
-(defn- render-code [author children style]
-  (if (:line-numbers author)
-    (numbered-code-block author children style)
+(defn- render-code
+  "Render a code body. Line numbers and/or annotation marks force per-line
+   blocks; otherwise the code is one block. `by-line` (line -> {:n :note},
+   or nil) supplies the annotation marks."
+  [author children style by-line]
+  (if (or (:line-numbers author) (seq by-line))
+    (code-lines-block author (str/split (code-text children) #"\n" -1) style
+                      (boolean (:line-numbers author))
+                      (reduce-kv (fn [m line {:keys [n]}] (assoc m line n)) {}
+                                 (or by-line {})))
     (code-block author children style)))
 
+(defn- annotation-list-block
+  "The ordered notes beneath an annotated listing: one item per annotation,
+   each led by the same mark that appears at its line's end."
+  [by-line style]
+  (into [:fo/list-block (get style :annotation-list)]
+        (map (fn [{:keys [n note]}]
+               [:fo/list-item
+                [:fo/list-item-label {:end-indent "label-end()"}
+                 [:fo/block (annotation-mark n style)]]
+                [:fo/list-item-body {:start-indent "body-start()"}
+                 (into [:fo/block] (expand-all [note] style))]])
+             (sort-by :n (vals by-line)))))
+
 (defn- listing-block
-  "A code listing: an optional filename header bar above the code block, and
-   an optional numbered caption beneath it. The wrapper carries the `:id`."
+  "A code listing: an optional filename header bar above the code block, an
+   optional line-anchored annotation list beneath it, and an optional
+   numbered caption. The wrapper carries the `:id` and is kept together."
   [author children style]
-  (into [:fo/block (cond-> (assoc (get style :listing)
-                                  :keep-together.within-page "always")
-                     (:id author) (assoc :id (as-id (:id author))))]
-        (concat
-          (when-let [file (:file author)]
-            [[:fo/block (get style :file-bar) file]])
-          [(render-code (dissoc author :id) children style)]
-          (when (captioned? author) [(caption-block author style)]))))
+  (let [annotations (:annotations author)
+        by-line     (when (seq annotations)
+                      (annotations->by-line
+                        annotations
+                        (count (str/split (code-text children) #"\n" -1))
+                        (as-id (:id author))))]
+    (into [:fo/block (cond-> (assoc (get style :listing)
+                                    :keep-together.within-page "always")
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (concat
+            (when-let [file (:file author)]
+              [[:fo/block (get style :file-bar) file]])
+            [(render-code (dissoc author :id) children style by-line)]
+            (when by-line [(annotation-list-block by-line style)])
+            (when (captioned? author) [(caption-block author style)])))))
 
 ;; --- book extensions ------------------------------------------------------
 
@@ -426,15 +491,16 @@
      :h4         (head :h4)
      :h5         (head :h5)
      :h6         (head :h6)
-     :pre        (fn [a c s] (if (or (:file a) (captioned? a))
+     :pre        (fn [a c s] (if (or (:file a) (captioned? a) (:annotations a))
                                (listing-block a c s)
-                               (render-code a c s)))
+                               (render-code a c s nil)))
      :blockquote (fn [a c s] (styled-block :blockquote a c s {}))
      :li         (fn [a c s] (styled-block :p a c s {}))
      :hr         (fn [_ _ s] [:fo/block (get s :hr)])
      :strong     (fn [_ c s] (styled-inline {:font-weight "bold"} c s))
      :em         (fn [_ c s] (styled-inline {:font-style "italic"} c s))
      :code       (fn [_ c s] (styled-inline (get s :code) c s))
+     :span       (fn [_ c s] (into [:fo/inline] (expand-all c s)))
      :br         (fn [_ _ _] [:fo/block])
      :a          (fn [a c s] (styled-inline
                               {:external-destination (str "url('" (:href a) "')")

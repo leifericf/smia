@@ -42,6 +42,17 @@
   (is (= [[:pre {:lang :clojure :id :ex :file "core.clj" :caption "Core"} "(+ 1 2)"]]
          (md->body "```clojure {:id :ex :file \"core.clj\" :caption \"Core\"}\n(+ 1 2)\n```\n"))))
 
+(deftest annotations-ride-on-the-fenced-code-info-string
+  (is (= [[:pre {:lang :clojure :id :ex
+                 :annotations [{:line 1 :note "Defines the accumulator"}
+                               {:line 2 :note "Folds the sequence"}]}
+           "(def xs [1 2 3])\n(reduce + xs)"]]
+         (md->body
+          (str "```clojure {:id :ex :annotations "
+               "[{:line 1 :note \"Defines the accumulator\"} "
+               "{:line 2 :note \"Folds the sequence\"}]}\n"
+               "(def xs [1 2 3])\n(reduce + xs)\n```\n")))))
+
 (deftest inline-cite-and-index-escapes-compile
   (is (= [[:p "See " [:cite {:key :smith2020}] "."]]
          (md->body "See `smith2020`{=cite}.\n")))

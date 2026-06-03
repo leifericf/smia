@@ -15,7 +15,7 @@
   #{:p :h1 :h2 :h3 :h4 :h5 :h6
     :ul :ol :li
     :dl :dt :dd
-    :strong :em :code :pre :a :br
+    :strong :em :code :span :pre :a :br
     :blockquote :img :hr :figure
     :table :thead :tbody :tr :td :th
     :admonition :sidebar :overview :epigraph :footnote :xref :cite :index

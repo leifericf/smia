@@ -196,6 +196,46 @@
       (is (= [:fo/block (get expand/default-style :pre) "code"]
              (ex [:pre "code"]))))))
 
+(deftest annotated-listing-marks-lines-and-emits-a-bound-list
+  (let [out (ex [:pre {:lang :clojure :id :ex :caption "Core"
+                       :annotations [{:line 1 :note "Defines xs"}
+                                     {:line 3 :note [:span "Folds with " [:code "reduce"]]}]}
+                 "(def xs [1 2 3])\n;; ...\n(reduce + xs)"])
+        inlines (->> (tree-seq vector? seq out)
+                     (filter #(and (vector? %) (= :fo/inline (first %)))))]
+    (is (= "ex" (:id (second out))))
+    (testing "an annotation mark carrying the ordinal appears for each note"
+      (is (some #(= "1" (last %)) inlines))
+      (is (some #(= "2" (last %)) inlines)))
+    (testing "a bound ordered annotation list is emitted"
+      (is (some #(and (vector? %) (= :fo/list-block (first %)))
+                (tree-seq vector? seq out)))
+      (is (some #(= "Defines xs" (last %))
+                (filter vector? (tree-seq vector? seq out))))
+      (is (some #(= "reduce" (last %)) inlines)
+          "rich inline note content is expanded"))
+    (testing "the listing is kept together on a page"
+      (is (= "always" (:keep-together.within-page (second out)))))))
+
+(deftest annotations-compose-with-the-line-number-gutter
+  (let [out (ex [:pre {:lang :clojure :line-numbers true
+                       :annotations [{:line 2 :note "here"}]}
+                 "a\nb\nc"])
+        inlines (->> (tree-seq vector? seq out)
+                     (filter #(and (vector? %) (= :fo/inline (first %)))))]
+    (is (some #(str/starts-with? (str (last %)) "1") inlines) "gutter line numbers remain")
+    (is (some #(= "1" (last %)) inlines) "the single annotation mark is present")))
+
+(deftest annotation-referencing-a-missing-line-is-a-structured-error
+  (let [d (catch-data #(ex [:pre {:lang :clojure :annotations [{:line 9 :note "x"}]}
+                            "(+ 1 2)"]))]
+    (is (= :clj-book.fo.expand/invalid-annotation (:error/type d)))))
+
+(deftest two-annotations-on-one-line-is-a-structured-error
+  (let [d (catch-data #(ex [:pre {:annotations [{:line 1 :note "a"} {:line 1 :note "b"}]}
+                            "one\ntwo"]))]
+    (is (= :clj-book.fo.expand/invalid-annotation (:error/type d)))))
+
 (deftest code-highlighting-colors-tokens-when-enabled
   (let [style (assoc expand/default-style :highlight? true
                      :code-colors {:keyword "#00f" :string "#080"})
