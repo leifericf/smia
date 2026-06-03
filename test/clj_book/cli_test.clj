@@ -18,11 +18,11 @@
 (deftest args->request-sets-only-supplied-keys
   (testing "Absent flags are omitted so normalize owns the defaults"
     (is (= {:book-root "."} (args->request "." {})))
-    (is (= {:book-root "docs/manual"
+    (is (= {:book-root "manual"
             :profiles  [:screen]
             :dry-run   true
             :validate-code true}
-           (args->request "docs/manual"
+           (args->request "manual"
                           {:profile [:screen] :dry-run true :validate-code true})))))
 
 (deftest args->request-output-is-accepted-by-normalize

@@ -9,7 +9,7 @@
    [clojure.string :as str]
    [clojure.test :refer [deftest is]]))
 
-(def manual-root "docs/manual")
+(def manual-root "manual")
 
 (deftest manual-fixture-resolves
   (let [{:keys [config warnings]} (config/load-config

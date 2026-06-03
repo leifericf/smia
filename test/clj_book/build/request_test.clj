@@ -23,7 +23,7 @@
 
 (deftest non-string-book-root-is-hard-error
   (testing "A present non-string :book-root is rejected (no coercion on -X)"
-    (let [d (catch-error #(request/normalize {:book-root 'docs/manual} :build))]
+    (let [d (catch-error #(request/normalize {:book-root 'manual} :build))]
       (is (= :clj-book.build.request/invalid-value (:error/type d))))))
 
 (deftest build-defaults-to-both-profiles

@@ -19,19 +19,19 @@ The only prerequisites are a JDK and the Clojure CLI; everything else arrives as
 Maven dependency. To build the manual that ships with the repo:
 
 ```bash
-clojure -M:run build docs/manual
+clojure -M:run build manual
 ```
 
 With no `--profile` option, both the screen and print editions are produced under
 `build/clj-book-manual/pdf/`, next to a machine-readable `artifacts.edn` manifest.
-Run `clojure -M:run validate docs/manual` to check a manuscript without rendering,
+Run `clojure -M:run validate manual` to check a manuscript without rendering,
 and `clojure -M:run build --help` for the full option list. Scripts and other tools
 can call the same engine through the `-X` map API
-(`clojure -X clj-book.api/build :book-root '"docs/manual"'`).
+(`clojure -X clj-book.api/build :book-root '"manual"'`).
 
 ## Documentation
 
-The manual is itself a clj-book manuscript, under `docs/manual/`. Build it (the
+The manual is itself a clj-book manuscript, under `manual/`. Build it (the
 command above) and read the PDFs in `build/clj-book-manual/pdf/`. It walks through
 the quickstart, the Markdown and Hiccup authoring vocabulary, `book.edn`
 configuration, theming and profiles, the build commands, producing a finished

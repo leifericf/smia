@@ -13,16 +13,18 @@
     (is (= #{"synthetic"} subs)
         "test/fixtures should contain only synthetic manuscripts")))
 
-(deftest only-manuscript-under-docs-is-the-manual
-  ;; The dogfood manual is the only manuscript the platform ships; no other
-  ;; book.edn should live under docs/.
-  (let [offenders (->> (file-seq (io/file "docs"))
+(deftest manual-is-the-only-shipped-manuscript
+  ;; The dogfood manual at manual/ is the only manuscript the platform ships;
+  ;; every other book.edn in the repo is a synthetic test fixture.
+  (let [offenders (->> (file-seq (io/file "."))
                        (filter #(.isFile %))
                        (filter #(= "book.edn" (.getName %)))
                        (map #(.getPath %))
-                       (remove #(str/starts-with? % "docs/manual")))]
+                       (remove #(str/includes? % "/manual/"))
+                       (remove #(str/includes? % "/test/fixtures/"))
+                       (remove #(str/includes? % "/build/")))]
     (is (empty? offenders)
-        (str "Unexpected manuscript(s) under docs/: " (str/join ", " offenders)))))
+        (str "Unexpected manuscript(s): " (str/join ", " offenders)))))
 
 ;; --- Functional core, imperative shell -----------------------------------
 

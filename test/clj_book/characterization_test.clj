@@ -11,7 +11,7 @@
    (org.apache.pdfbox Loader)
    (org.apache.pdfbox.text PDFTextStripper)))
 
-(def manual-root "docs/manual")
+(def manual-root "manual")
 
 (defn- out-root []
   (str (System/getProperty "java.io.tmpdir")

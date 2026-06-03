@@ -41,17 +41,17 @@ jobs:
         run: clojure -M:test
 
       - name: Validate dogfood manual with code checks
-        run: clojure -M:run validate docs/manual --validate-code
+        run: clojure -M:run validate manual --validate-code
 
       - name: Build dogfood user manual (screen + print)
         run: |
-          clojure -M:run build docs/manual \
+          clojure -M:run build manual \
             --profile screen \
             --profile print \
             --output-root build/ci
 
       - name: Smoke-test the programmatic -X API
-        run: clojure -X:build :book-root '"docs/manual"' :dry-run true
+        run: clojure -X:build :book-root '"manual"' :dry-run true
 
       - name: Verify dogfood artifacts
         run: |

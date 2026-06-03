@@ -2,7 +2,7 @@
 # Preface
 
 This manual is itself a clj-book manuscript: every page you are reading was
-produced by building the Markdown sources under `docs/manual/` with clj-book.
+produced by building the Markdown sources under `manual/` with clj-book.
 It is the platform dogfooding its own affordances, and it doubles as a
 regression test — if a feature breaks, this book stops building.
 

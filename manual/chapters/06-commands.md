@@ -7,7 +7,7 @@ clj-book has two front-ends over one engine. The **command-line interface**, `cl
 Check that the manuscript is well-formed without rendering anything — config, tokens, chapter vocabulary, and cross-references:
 
 ```
-clojure -M:run validate docs/manual
+clojure -M:run validate manual
 ```
 
 The `book-root` argument is optional and defaults to `.`, so from inside a book directory `clojure -M:run validate` is enough.
@@ -17,7 +17,7 @@ The `book-root` argument is optional and defaults to `.`, so from inside a book 
 Render the requested profiles to PDF. With no `--profile`, both editions build:
 
 ```
-clojure -M:run build docs/manual --profile screen --profile print
+clojure -M:run build manual --profile screen --profile print
 ```
 
 Outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, plus an `artifacts.edn` manifest listing the profiles, paths, and build metadata. See `clojure -M:run build --help` for the full option list.
@@ -45,7 +45,7 @@ The CLI returns a meaningful exit code, so it composes in scripts and CI:
 Tools that assemble the request themselves call `clj-book.api/build` and `clj-book.api/validate` with `-X`, passing an EDN map. Because `-X` reads its arguments as EDN, string values carry both shell and EDN quotes:
 
 ```
-clojure -X clj-book.api/build :book-root '"docs/manual"' :profiles '[:screen :print]'
+clojure -X clj-book.api/build :book-root '"manual"' :profiles '[:screen :print]'
 ```
 
 The keys mirror the CLI options: `:book-root` (default `.`), `:profiles`, `:config-path`, `:output-root`, `:dry-run`, and `:validate-code`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.
