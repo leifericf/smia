@@ -76,7 +76,7 @@
 
 (defn- print-usage [header summary]
   (println header)
-  (println "")
+  (println)
   (println summary))
 
 ;; --- subcommands -------------------------------------------------------
@@ -84,36 +84,34 @@
 (def ^:private build-usage "Usage: clojure -M:run build [book-root] [options]")
 (def ^:private validate-usage "Usage: clojure -M:run validate [book-root] [options]")
 
-(defn- run-build [args]
+(defn- run-subcommand
+  "Parse `args` against `options`, then dispatch: print `usage` on `--help`
+   (exit 0), report option `errors` (exit 2), or call `on-request` with the
+   built request map and return 0 — or 1 if it throws."
+  [args option-specs usage on-request]
   (let [{:keys [options arguments errors summary]}
-        (cli/parse-opts args build-options)]
+        (cli/parse-opts args option-specs)]
     (cond
-      (:help options) (do (print-usage build-usage summary) 0)
+      (:help options) (do (print-usage usage summary) 0)
       errors          (do (run! err-println errors)
                           (err-println summary)
                           2)
       :else
       (try
-        (api/build (args->request (first arguments) options))
+        (on-request (args->request (first arguments) options))
         0
         (catch Throwable t (report-exception t) 1)))))
 
+(defn- run-build [args]
+  (run-subcommand args build-options build-usage api/build))
+
 (defn- run-validate [args]
-  (let [{:keys [options arguments errors summary]}
-        (cli/parse-opts args validate-options)]
-    (cond
-      (:help options) (do (print-usage validate-usage summary) 0)
-      errors          (do (run! err-println errors)
-                          (err-println summary)
-                          2)
-      :else
-      (try
-        (let [{:keys [warnings]} (api/validate (args->request (first arguments) options))]
-          (if (seq warnings)
-            (println "ok —" (count warnings) "warning(s)")
-            (println "ok"))
-          0)
-        (catch Throwable t (report-exception t) 1)))))
+  (run-subcommand args validate-options validate-usage
+                  (fn [request]
+                    (let [{:keys [warnings]} (api/validate request)]
+                      (if (seq warnings)
+                        (println "ok —" (count warnings) "warning(s)")
+                        (println "ok"))))))
 
 ;; --- dispatch ----------------------------------------------------------
 
