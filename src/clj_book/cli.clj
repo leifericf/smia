@@ -8,6 +8,7 @@
    renders results, exit codes, and errors for a human."
   (:require
    [clj-book.api :as api]
+   [clj-book.build.preview :as preview]
    [clj-book.error :as error]
    [clojure.string :as str]
    [clojure.tools.cli :as cli]))
@@ -28,6 +29,12 @@
 
 (def ^:private validate-options common-options)
 
+(def ^:private preview-options
+  (into [["-p" "--profile PROFILE" "Edition to preview (screen|print); repeatable."
+          :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
+         [nil "--output-root PATH" "Directory for build output."]]
+        common-options))
+
 (def ^:private top-level-help
   (str/join
    \newline
@@ -38,6 +45,7 @@
     "Commands:"
     "  build      Render the requested profiles to PDF."
     "  validate   Check a manuscript without rendering anything."
+    "  preview    Rebuild the book on every save while you write."
     ""
     "Run \"clojure -M:run <command> --help\" for command-specific options."
     "The book-root positional defaults to \".\" (the current directory)."]))
@@ -80,6 +88,7 @@
 
 (def ^:private build-usage "Usage: clojure -M:run build [book-root] [options]")
 (def ^:private validate-usage "Usage: clojure -M:run validate [book-root] [options]")
+(def ^:private preview-usage "Usage: clojure -M:run preview [book-root] [options]")
 
 (defn- run-subcommand
   "Parse `args` against `options`, then dispatch: print `usage` on `--help`
@@ -110,6 +119,16 @@
                         (println "ok —" (count warnings) "warning(s)")
                         (println "ok"))))))
 
+(defn- run-preview
+  "Start a preview session and block until the watcher thread ends (in
+   practice: until Ctrl-C kills the process). An initial-build failure
+   propagates through `run-subcommand`'s catch and exits 1."
+  [args]
+  (run-subcommand args preview-options preview-usage
+                  (fn [request]
+                    (let [handle (preview/preview! request)]
+                      (.join ^Thread (:thread handle))))))
+
 ;; --- dispatch ----------------------------------------------------------
 
 (defn run
@@ -120,6 +139,7 @@
     (case command
       "build"             (run-build rest)
       "validate"          (run-validate rest)
+      "preview"           (run-preview rest)
       (nil "-h" "--help") (do (println top-level-help) 0)
       (do (err-println "unknown command:" command)
           (println top-level-help)

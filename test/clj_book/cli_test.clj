@@ -41,10 +41,12 @@
 
 (deftest subcommand-help-succeeds
   (is (= 0 (run-code ["build" "--help"])))
-  (is (= 0 (run-code ["validate" "--help"]))))
+  (is (= 0 (run-code ["validate" "--help"])))
+  (is (= 0 (run-code ["preview" "--help"]))))
 
 (deftest bad-option-is-a-usage-error
-  (is (= 2 (run-code ["build" fixture "--no-such-flag"]))))
+  (is (= 2 (run-code ["build" fixture "--no-such-flag"])))
+  (is (= 2 (run-code ["preview" fixture "--no-such-flag"]))))
 
 (deftest dry-run-build-succeeds
   (testing "A dry-run build returns 0 and renders nothing"
