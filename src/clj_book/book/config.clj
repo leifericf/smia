@@ -1,4 +1,4 @@
-(ns clj-book.config
+(ns clj-book.book.config
   "Loader and validator for `book.edn` manuscript build configuration."
   (:require
    [clj-book.book.structure :as structure]
@@ -19,18 +19,18 @@
     (with-open [r (java.io.PushbackReader. (io/reader f))]
       (edn/read r))
     (catch java.io.IOException e
-      (throw (error/ex :clj-book.config/unreadable
+      (throw (error/ex :clj-book.book.config/unreadable
                        (str "Could not read config file: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))
     (catch RuntimeException e
-      (throw (error/ex :clj-book.config/invalid-edn
+      (throw (error/ex :clj-book.book.config/invalid-edn
                        (str "Config file is not valid EDN: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))))
 
 (defn- check-required-keys [config path]
   (let [missing (sort (remove #(contains? config %) required-keys))]
     (when (seq missing)
-      (throw (error/ex :clj-book.config/missing-required-key
+      (throw (error/ex :clj-book.book.config/missing-required-key
                        (str "Missing required key(s) in " path ": "
                             (str/join ", " (map pr-str missing)))
                        {:path path :missing missing})))))
@@ -44,7 +44,7 @@
    [:book/title string? ":book/title must be a string."]])
 
 (defn- invalid-type! [path k value msg]
-  (throw (error/ex :clj-book.config/invalid-type msg
+  (throw (error/ex :clj-book.book.config/invalid-type msg
                    {:path path :key k :value value})))
 
 (defn- check-types [config path]
@@ -55,14 +55,14 @@
 (defn- check-body-present [config path]
   (when-not (or (contains? config :book/chapters)
                 (contains? config :book/parts))
-    (throw (error/ex :clj-book.config/missing-required-key
+    (throw (error/ex :clj-book.book.config/missing-required-key
                      (str "Missing a body in " path
                           ": declare :book/chapters or :book/parts.")
                      {:path path :missing [:book/chapters]}))))
 
 (defn- check-unambiguous-body [config path]
   (when (and (contains? config :book/chapters) (contains? config :book/parts))
-    (throw (error/ex :clj-book.config/ambiguous-body
+    (throw (error/ex :clj-book.book.config/ambiguous-body
                      (str "Declare the body once in " path
                           ": use either :book/chapters or :book/parts, not both.")
                      {:path path}))))
@@ -97,7 +97,7 @@
         (invalid-type! path k ms
                        (str k " must be a vector of {:role <keyword> :file <string>?} maps.")))
       (doseq [m ms :when (not (valid-matter? m))]
-        (throw (error/ex :clj-book.config/invalid-matter
+        (throw (error/ex :clj-book.book.config/invalid-matter
                          (str "Invalid " k " entry in " path
                               ": each needs a keyword :role, and a :file unless "
                               "the role is generated (e.g. :bibliography, :index).")
@@ -126,7 +126,7 @@
 (defn- check-no-duplicate-files [config path]
   (let [dupes (duplicates (structure/file-list (structure/normalize config)))]
     (when (seq dupes)
-      (throw (error/ex :clj-book.config/duplicate-chapter
+      (throw (error/ex :clj-book.book.config/duplicate-chapter
                        (str "Duplicate source file reference(s) in " path ": "
                             (str/join ", " dupes))
                        {:path path :duplicates dupes})))))
@@ -136,7 +136,7 @@
                      (remove #(.exists (io/file book-root %)))
                      vec)]
     (when (seq missing)
-      (throw (error/ex :clj-book.config/missing-chapter
+      (throw (error/ex :clj-book.book.config/missing-chapter
                        (str "Source file(s) not found relative to "
                             book-root ": " (str/join ", " missing))
                        {:path path :book-root book-root :missing missing})))))
@@ -149,7 +149,7 @@
                      (remove #(= "book" (namespace %)))
                      vec)]
     (when (seq unknown)
-      [{:warning/type :clj-book.config/unknown-key
+      [{:warning/type :clj-book.book.config/unknown-key
         :warning/keys unknown
         :warning/note "Preserved but not interpreted by clj-book."}])))
 
@@ -164,7 +164,7 @@
    warning vector otherwise. `path` is used only for error context."
   [config path]
   (when-not (map? config)
-    (throw (error/ex :clj-book.config/invalid-shape
+    (throw (error/ex :clj-book.book.config/invalid-shape
                      "Top-level value of book.edn must be a map."
                      {:path path :value config})))
   (check-required-keys config path)
@@ -188,7 +188,7 @@
   [{:keys [book-root config-path]}]
   (let [f (io/file book-root config-path)]
     (when-not (.exists f)
-      (throw (error/ex :clj-book.config/missing
+      (throw (error/ex :clj-book.book.config/missing
                        (str "Configuration file not found: "
                             (.getPath f))
                        {:book-root book-root :config-path config-path})))

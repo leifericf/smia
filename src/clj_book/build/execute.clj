@@ -9,11 +9,11 @@
    reused across profiles."
   (:require
    [clj-book.book.assemble :as assemble]
+   [clj-book.book.config :as config]
    [clj-book.book.load :as book-load]
    [clj-book.book.number :as number]
    [clj-book.build.artifacts :as artifacts]
    [clj-book.build.plan :as plan]
-   [clj-book.config :as config]
    [clj-book.eval.registry :as eval-registry]
    [clj-book.eval.validate :as eval-validate]
    [clj-book.fo.expand :as expand]

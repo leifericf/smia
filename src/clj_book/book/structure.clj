@@ -18,7 +18,7 @@
    - `{:kind :chapter :file <str> :part <n|nil>}` — a body chapter.
    - `{:kind :appendix :file <str>}` — an appendix (lettered).
 
-   No IO. File existence is checked in the shell (`clj-book.config`)."
+   No IO. File existence is checked in the shell (`clj-book.book.config`)."
   (:require
    [clojure.string :as str]))
 

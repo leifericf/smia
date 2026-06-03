@@ -16,8 +16,8 @@ namespace and test name that exercises them.
 
 | Scenario                                    | Requirement                | Test                                                  |
 |---------------------------------------------|----------------------------|-------------------------------------------------------|
-| Validation fails when required key missing  | required-key enforcement   | `clj-book.config-test/missing-required-key-fails`     |
-| Validation accepts additional keys          | open-map preservation      | `clj-book.config-test/additional-keys-pass`           |
+| Validation fails when required key missing  | required-key enforcement   | `clj-book.book.config-test/missing-required-key-fails`     |
+| Validation accepts additional keys          | open-map preservation      | `clj-book.book.config-test/additional-keys-pass`           |
 
 ## Feature: Single cross-target theme file
 

@@ -3,7 +3,7 @@
    render-to-PDF regression lives in clj-book.characterization-test."
   (:require
    [clj-book.book.structure :as structure]
-   [clj-book.config :as config]
+   [clj-book.book.config :as config]
    [clj-book.theme.load :as theme]
    [clojure.java.io :as io]
    [clojure.string :as str]

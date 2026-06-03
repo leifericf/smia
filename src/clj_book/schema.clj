@@ -33,7 +33,7 @@
   "Parsed and validated `book.edn`. Open map: unrecognized keys are
    preserved and surfaced as warnings elsewhere, not rejected here. The
    body is a flat `:book/chapters` list or a `:book/parts` grouping; the
-   either/or requirement and cross-key checks live in `clj-book.config`."
+   either/or requirement and cross-key checks live in `clj-book.book.config`."
   [:map
    [:book/slug :string]
    [:book/title :string]

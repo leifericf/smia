@@ -1,6 +1,6 @@
-(ns clj-book.config-test
+(ns clj-book.book.config-test
   (:require
-   [clj-book.config :as config]
+   [clj-book.book.config :as config]
    [clj-book.error :as error]
    [clojure.test :refer [deftest is testing]]))
 
@@ -17,7 +17,7 @@
   (let [d (catch-data
             #(config/load-config {:book-root invalid-root
                                   :config-path "book.edn"}))]
-    (is (= :clj-book.config/missing-required-key (:error/type d)))
+    (is (= :clj-book.book.config/missing-required-key (:error/type d)))
     (is (some #{:book/slug} (:missing (:error/context d))))))
 
 (deftest additional-keys-pass
@@ -40,7 +40,7 @@
   (let [d (catch-data
             #(config/load-config {:book-root missing-chapter-root
                                   :config-path "book.edn"}))]
-    (is (= :clj-book.config/missing-chapter (:error/type d)))
+    (is (= :clj-book.book.config/missing-chapter (:error/type d)))
     (is (some #{"chapters/does-not-exist.clj"}
               (:missing (:error/context d))))))
 
@@ -50,14 +50,14 @@
               #(config/validate {:book/slug "x" :book/title "t"
                                  :book/chapters ["a.adoc" "a.adoc"]}
                                 "book.edn"))]
-      (is (= :clj-book.config/duplicate-chapter (:error/type d)))
+      (is (= :clj-book.book.config/duplicate-chapter (:error/type d)))
       (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
 (deftest config-file-not-found
   (let [d (catch-data
             #(config/load-config {:book-root valid-root
                                   :config-path "nope.edn"}))]
-    (is (= :clj-book.config/missing (:error/type d)))))
+    (is (= :clj-book.book.config/missing (:error/type d)))))
 
 ;; --- structured manuscripts (parts, matter, appendices) -------------------
 
@@ -72,7 +72,7 @@
 (deftest a-body-is-required
   (let [d (catch-data
             #(config/validate {:book/slug "s" :book/title "t"} "book.edn"))]
-    (is (= :clj-book.config/missing-required-key (:error/type d)))))
+    (is (= :clj-book.book.config/missing-required-key (:error/type d)))))
 
 (deftest chapters-and-parts-are-mutually-exclusive
   (let [d (catch-data
@@ -80,14 +80,14 @@
                                :book/chapters ["a.md"]
                                :book/parts [{:part/title "P" :part/chapters ["b.md"]}]}
                               "book.edn"))]
-    (is (= :clj-book.config/ambiguous-body (:error/type d)))))
+    (is (= :clj-book.book.config/ambiguous-body (:error/type d)))))
 
 (deftest malformed-part-is-rejected
   (let [d (catch-data
             #(config/validate {:book/slug "s" :book/title "t"
                                :book/parts [{:part/title "P"}]}
                               "book.edn"))]
-    (is (= :clj-book.config/invalid-type (:error/type d)))))
+    (is (= :clj-book.book.config/invalid-type (:error/type d)))))
 
 (deftest matter-without-file-needs-a-generated-role
   (testing ":preface has no generated content, so it must name a :file"
@@ -96,7 +96,7 @@
                                  :book/chapters ["a.md"]
                                  :book/back-matter [{:role :preface}]}
                                 "book.edn"))]
-      (is (= :clj-book.config/invalid-matter (:error/type d)))))
+      (is (= :clj-book.book.config/invalid-matter (:error/type d)))))
   (testing ":bibliography and :index are generated, so they need no file"
     (is (vector? (config/validate
                    {:book/slug "s" :book/title "t"
@@ -118,5 +118,5 @@
                                :book/front-matter [{:role :preface :file "x.md"}]
                                :book/chapters ["x.md"]}
                               "book.edn"))]
-    (is (= :clj-book.config/duplicate-chapter (:error/type d)))
+    (is (= :clj-book.book.config/duplicate-chapter (:error/type d)))
     (is (= ["x.md"] (:duplicates (:error/context d))))))

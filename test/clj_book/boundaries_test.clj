@@ -2,7 +2,7 @@
   "Encode the architecture as regression tests: functional core /
    imperative shell is machine-checked here so it cannot quietly erode."
   (:require
-   [clj-book.config :as config]
+   [clj-book.book.config :as config]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is]]))
@@ -85,5 +85,5 @@
                     :book/chapters ["a.clj"] :unknown-key 1}
                    "/does/not/exist/book.edn")]
     (is (vector? warnings))
-    (is (some #(= :clj-book.config/unknown-key (:warning/type %)) warnings)
+    (is (some #(= :clj-book.book.config/unknown-key (:warning/type %)) warnings)
         "validate computes warnings without touching the disk")))

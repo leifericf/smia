@@ -1,6 +1,6 @@
 (ns clj-book.schema-test
   (:require
-   [clj-book.config :as config]
+   [clj-book.book.config :as config]
    [clj-book.error :as error]
    [clj-book.request :as request]
    [clj-book.schema :as schema]

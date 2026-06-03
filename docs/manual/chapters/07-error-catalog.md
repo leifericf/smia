@@ -5,16 +5,16 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 
 ## Request
 
-- `:clj-book.request/invalid-value` — `:book-root`, `:config-path`, or `:output-root` was given as a non-string. A missing or blank `:book-root` is not an error: it defaults to `.`, the current directory, and a non-existent book then surfaces as `:clj-book.config/missing`.
+- `:clj-book.request/invalid-value` — `:book-root`, `:config-path`, or `:output-root` was given as a non-string. A missing or blank `:book-root` is not an error: it defaults to `.`, the current directory, and a non-existent book then surfaces as `:clj-book.book.config/missing`.
 - `:clj-book.request/unknown-profile` — a profile other than `:screen` or `:print` was requested.
 - `:clj-book.request/invalid-profiles` — `:profiles` was not a vector of keywords.
 
 ## Configuration and tokens
 
-- `:clj-book.config/missing` — no `book.edn` at the expected path.
-- `:clj-book.config/missing-required-key` — a required `:book/*` key is absent.
-- `:clj-book.config/missing-chapter` — a listed chapter file does not exist.
-- `:clj-book.config/duplicate-chapter` — a chapter is listed more than once.
+- `:clj-book.book.config/missing` — no `book.edn` at the expected path.
+- `:clj-book.book.config/missing-required-key` — a required `:book/*` key is absent.
+- `:clj-book.book.config/missing-chapter` — a listed chapter file does not exist.
+- `:clj-book.book.config/duplicate-chapter` — a chapter is listed more than once.
 - `:clj-book.theme.load/missing` — no `styles/tokens.edn`.
 - `:clj-book.theme.load/missing-group` — a required token group is absent.
 
