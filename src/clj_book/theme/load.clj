@@ -16,18 +16,7 @@
    that enforces this contract; this set names the groups for consumers."
   #{:color :type :spacing :layout})
 
-(defn- read-edn [^java.io.File f]
-  (try
-    (with-open [r (PushbackReader. (io/reader f))]
-      (edn/read r))
-    (catch java.io.IOException e
-      (throw (error/ex :clj-book.theme.load/unreadable
-                       (str "Could not read tokens file: " (.getPath f))
-                       {:path (.getPath f) :cause (.getMessage e)})))
-    (catch RuntimeException e
-      (throw (error/ex :clj-book.theme.load/invalid-edn
-                       (str "Tokens file is not valid EDN: " (.getPath f))
-                       {:path (.getPath f) :cause (.getMessage e)})))))
+(declare read-edn)
 
 (defn validate
   "Pure validation of an already-parsed `tokens.edn` map. Performs no IO.
@@ -52,3 +41,18 @@
           tokens (read-edn f)]
       (validate tokens path)
       {:tokens tokens :path path})))
+
+;; --- private helpers -------------------------------------------------------
+
+(defn- read-edn [^java.io.File f]
+  (try
+    (with-open [r (PushbackReader. (io/reader f))]
+      (edn/read r))
+    (catch java.io.IOException e
+      (throw (error/ex :clj-book.theme.load/unreadable
+                       (str "Could not read tokens file: " (.getPath f))
+                       {:path (.getPath f) :cause (.getMessage e)})))
+    (catch RuntimeException e
+      (throw (error/ex :clj-book.theme.load/invalid-edn
+                       (str "Tokens file is not valid EDN: " (.getPath f))
+                       {:path (.getPath f) :cause (.getMessage e)})))))

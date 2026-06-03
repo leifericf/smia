@@ -17,6 +17,35 @@
    :letter {:width "8.5in" :height "11in"}
    :digest {:width "140mm" :height "216mm"}})
 
+(def default-code-colors
+  "Fallback syntax-highlight palette (token class -> color), overridden by
+   the `:code` token group."
+  {:keyword "#0033cc" :string "#008800" :comment "#888888"
+   :number  "#aa5500" :literal "#7700aa"})
+
+(declare style-from-tokens page-dims regions masters running-regions)
+
+(defn compile-theme
+  "Compile validated `tokens` and a layout `profile` (`:screen` or
+   `:print`) into `{:profile :style :master-reference :masters
+   :link-color :rule-color :muted-color}`. The palette colors are
+   surfaced for the assembled furniture (title page, TOC, rules)."
+  [tokens profile]
+  (let [color (:color tokens)]
+    {:profile          profile
+     :style            (-> (style-from-tokens tokens)
+                           (assoc :highlight?   (get-in tokens [:type :highlight] false)
+                                  :code-colors  (merge default-code-colors
+                                                       (:code tokens))))
+     :link-color       (get color :link "#1a0dab")
+     :rule-color       (get color :rule "#999999")
+     :muted-color      (get color :muted "#666666")
+     :master-reference "book"
+     :masters          (masters profile (:layout tokens))
+     :running-regions  (running-regions profile)}))
+
+;; --- private helpers -------------------------------------------------------
+
 (defn- style-from-tokens
   "Override the renderer defaults with token-driven typography."
   [{:keys [color type spacing]}]
@@ -50,12 +79,6 @@
                                    :start-indent "0pt"
                                    :color        muted})
         (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
-
-(def default-code-colors
-  "Fallback syntax-highlight palette (token class -> color), overridden by
-   the `:code` token group."
-  {:keyword "#0033cc" :string "#008800" :comment "#888888"
-   :number  "#aa5500" :literal "#7700aa"})
 
 (defn- page-dims [layout]
   (get page-sizes (get layout :page-size :a4) (:a4 page-sizes)))
@@ -115,22 +138,3 @@
      {:slot :after  :name "foot-verso" :parity :verso}]
     [{:slot :before :name "xsl-region-before" :parity :any}
      {:slot :after  :name "xsl-region-after" :parity :any}]))
-
-(defn compile-theme
-  "Compile validated `tokens` and a layout `profile` (`:screen` or
-   `:print`) into `{:profile :style :master-reference :masters
-   :link-color :rule-color :muted-color}`. The palette colors are
-   surfaced for the assembled furniture (title page, TOC, rules)."
-  [tokens profile]
-  (let [color (:color tokens)]
-    {:profile          profile
-     :style            (-> (style-from-tokens tokens)
-                           (assoc :highlight?   (get-in tokens [:type :highlight] false)
-                                  :code-colors  (merge default-code-colors
-                                                       (:code tokens))))
-     :link-color       (get color :link "#1a0dab")
-     :rule-color       (get color :rule "#999999")
-     :muted-color      (get color :muted "#666666")
-     :master-reference "book"
-     :masters          (masters profile (:layout tokens))
-     :running-regions  (running-regions profile)}))
