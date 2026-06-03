@@ -16,12 +16,15 @@
 (def manuscript
   {:title    "A Book"
    :author   "An Author"
-   :chapters [[:chapter {:id :intro :title "Introduction"}
-               [:p "Welcome. See " [:xref {:to :config}] "."]]
-              [:chapter {:id :config :title "Configuration"}
-               [:p "Set things up."]
-               [:h2 {:id :keys} "Keys"]
-               [:p "Back to " [:xref {:to :intro} "the start"] "."]]]})
+   :numbering structure/default-numbering
+   :sections [{:kind :chapter
+               :content [:chapter {:id :intro :title "Introduction"}
+                         [:p "Welcome. See " [:xref {:to :config}] "."]]}
+              {:kind :chapter
+               :content [:chapter {:id :config :title "Configuration"}
+                         [:p "Set things up."]
+                         [:h2 {:id :keys} "Keys"]
+                         [:p "Back to " [:xref {:to :intro} "the start"] "."]]}]})
 
 (defn- tag= [t] (fn [n] (and (vector? n) (= t (first n)))))
 
@@ -80,28 +83,31 @@
     (is (contains? (set ids) "config"))))
 
 (deftest unresolved-xref-is-a-hard-error
-  (let [bad (assoc manuscript :chapters
-                   [[:chapter {:id :only :title "Only"}
-                     [:p "See " [:xref {:to :nowhere}] "."]]])
+  (let [bad (assoc manuscript :sections
+                   [{:kind :chapter
+                     :content [:chapter {:id :only :title "Only"}
+                               [:p "See " [:xref {:to :nowhere}] "."]]}])
         d   (catch-data #(assemble/assemble bad the-theme))]
     (is (= :clj-book.book.assemble/unresolved-xref (:error/type d)))
     (is (= ["nowhere"] (:missing (:error/context d))))))
 
 (deftest xref-to-an-inner-heading-id-resolves
   (testing ":keys is defined by an inner [:h2 {:id :keys}] heading"
-    (let [m (update-in manuscript [:chapters 0] conj
+    (let [m (update-in manuscript [:sections 0 :content] conj
                        [:p "Jump to " [:xref {:to :keys}] "."])]
       (is (vector? (assemble/assemble m the-theme))))))
 
 (deftest malformed-chapter-is-a-hard-error
   (is (= :clj-book.book.assemble/invalid-chapter
          (:error/type (catch-data
-                        #(assemble/assemble {:chapters [[:p "not a chapter"]]}
-                                            the-theme)))))
+                        #(assemble/assemble
+                          {:sections [{:kind :chapter :content [:p "not a chapter"]}]}
+                          the-theme)))))
   (is (= :clj-book.book.assemble/missing-chapter-id
          (:error/type (catch-data
-                        #(assemble/assemble {:chapters [[:chapter {:title "T"} "x"]]}
-                                            the-theme))))))
+                        #(assemble/assemble
+                          {:sections [{:kind :chapter :content [:chapter {:title "T"} "x"]}]}
+                          the-theme))))))
 
 (deftest assembled-tree-expands-and-serializes-end-to-end
   (testing "the sugar bodies expand and the whole document serializes"

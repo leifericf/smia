@@ -96,15 +96,8 @@
   (mapv (fn [s] (if (:content s) (assoc s :chapter (parse-chapter (:content s))) s))
         sections))
 
-(defn- legacy-sections
-  "Wrap a flat `:chapters` list as body chapter sections, so a manuscript
-   that predates the typed model assembles through the same walk and yields
-   byte-identical output."
-  [chapters]
-  (mapv (fn [c] {:kind :chapter :part nil :content c}) chapters))
-
-(defn- book-sections [{:keys [sections chapters]}]
-  (prepare-sections (or sections (legacy-sections chapters))))
+(defn- book-sections [{:keys [sections]}]
+  (prepare-sections sections))
 
 (defn- heading-text [node]
   (apply str (filter string? (tree-seq vector? seq node))))
@@ -449,11 +442,9 @@
   "Assemble a typed `manuscript` and a compiled `theme` (from
    `clj-book.book.theme/compile-theme`) into one `:fo/root` tree.
 
-   The manuscript is either the typed value from `book.load/load-manuscript`
-   (`{:title :author :numbering :sections …}`) or the legacy flat shape
-   (`{:title :author :chapters …}`), which is treated as a body of chapters
-   with no parts and assembles to byte-identical output. Chapter bodies
-   remain authored sugar for the later expansion pass."
+   The manuscript is the typed value from `book.load/load-manuscript`
+   (`{:title :author :numbering :sections …}`). Chapter bodies remain
+   authored sugar for the later expansion pass."
   [book theme]
   (let [{:keys [title author]} book
         {:keys [style master-reference masters profile]} theme
