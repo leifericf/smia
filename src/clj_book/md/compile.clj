@@ -209,6 +209,16 @@
                                          :clj-book.md.compile/invalid-admonition)]
       (into [:admonition attrs] (compile-block-seq (:children node))))
 
+    "figure"
+    (let [blocks (compile-block-seq (:children node))
+          ;; a Markdown image is a paragraph wrapping the image; unwrap a
+          ;; lone such paragraph so the figure holds the image directly.
+          content (if (and (= 1 (count blocks))
+                           (vector? (first blocks)) (= :p (ffirst blocks)))
+                    (vec (rest (first blocks)))
+                    blocks)]
+      (into [:figure (directive-attrs node)] content))
+
     "sidebar"
     (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node)))
 

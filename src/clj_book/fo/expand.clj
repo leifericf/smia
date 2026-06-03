@@ -81,7 +81,13 @@
                 :background-color "#f7f7f7"}
    :table      {:table-layout "fixed" :width "100%" :border-collapse "collapse"
                 :space-before "6pt" :space-after "8pt"}
-   :table-cell {:border "0.5pt solid #cccccc" :padding "4pt"}})
+   :table-cell {:border "0.5pt solid #cccccc" :padding "4pt"}
+   :figure     {:space-before "10pt" :space-after "10pt" :text-align "center"}
+   :caption    {:font-size "9pt" :color "#666666" :space-before "4pt"
+                :text-align "center"}
+   :listing    {:space-before "6pt" :space-after "8pt"}
+   :file-bar   {:font-family "monospace" :font-size "8pt" :font-weight "bold"
+                :background-color "#e8e8e8" :padding "3pt 6pt"}})
 
 ;; --- shared builders ------------------------------------------------------
 
@@ -194,6 +200,44 @@
               [(into [:fo/table-header] (map #(row->fo % style) header-rows))])
             [(into [:fo/table-body] (map #(row->fo % style) body-rows))]))))
 
+;; --- captions, figures, listings ------------------------------------------
+
+(defn- caption-block
+  "A numbered caption: a bold \"Figure 3.\" / \"Table 1.\" / \"Listing 2.\"
+   label (from the numbering pass) followed by the caption text."
+  [author style]
+  (into [:fo/block (get style :caption)]
+        (concat
+          (when-let [label (:label author)]
+            [[:fo/inline {:font-weight "bold"} (str label ". ")]])
+          (when-let [caption (:caption author)] [caption]))))
+
+(defn- captioned?
+  "True when a node carries a caption or a numbering-pass label."
+  [author]
+  (or (:caption author) (:label author)))
+
+(defn- figure-block [author children style]
+  (into [:fo/block (cond-> (get style :figure)
+                     (:id author)    (assoc :id (as-id (:id author)))
+                     (:float author) (assoc :float (name (:float author))))]
+        (concat
+          (expand-all children style)
+          (when (captioned? author) [(caption-block author style)]))))
+
+(defn- listing-block
+  "A code listing: an optional filename header bar above the code block, and
+   an optional numbered caption beneath it. The wrapper carries the `:id`."
+  [author children style]
+  (into [:fo/block (cond-> (assoc (get style :listing)
+                                  :keep-together.within-page "always")
+                     (:id author) (assoc :id (as-id (:id author))))]
+        (concat
+          (when-let [file (:file author)]
+            [[:fo/block (get style :file-bar) file]])
+          [(styled-block :pre (dissoc author :id) children style {})]
+          (when (captioned? author) [(caption-block author style)]))))
+
 ;; --- book extensions ------------------------------------------------------
 
 (def ^:private admonition-labels
@@ -287,7 +331,9 @@
      :h4         (head :h4)
      :h5         (head :h5)
      :h6         (head :h6)
-     :pre        (fn [a c s] (styled-block :pre a c s {}))
+     :pre        (fn [a c s] (if (or (:file a) (captioned? a))
+                               (listing-block a c s)
+                               (styled-block :pre a c s {})))
      :blockquote (fn [a c s] (styled-block :blockquote a c s {}))
      :li         (fn [a c s] (styled-block :p a c s {}))
      :hr         (fn [_ _ s] [:fo/block (get s :hr)])
@@ -305,7 +351,14 @@
                                 (:height a) (assoc :content-height (:height a)))])
      :ul         (fn [a c s] (list-block :ul a c s))
      :ol         (fn [a c s] (list-block :ol a c s))
-     :table      (fn [a c s] (table-block a c s))
+     :figure     (fn [a c s] (figure-block a c s))
+     :table      (fn [a c s]
+                   (let [tbl (table-block a c s)]
+                     (if (captioned? a)
+                       (into [:fo/block (cond-> {:space-before "6pt" :space-after "8pt"}
+                                          (:id a) (assoc :id (as-id (:id a))))]
+                             [(caption-block a s) tbl])
+                       tbl)))
      :thead      (fn [a c s] (styled-block :p a c s {}))
      :tbody      (fn [a c s] (styled-block :p a c s {}))
      :tr         (fn [a c s] (styled-block :p a c s {}))

@@ -29,6 +29,19 @@
   (is (= [[:h2 "Two"] [:h3 "Three"]]
          (md->body "## Two\n\n### Three\n"))))
 
+(deftest figure-directive-wraps-an-image
+  (is (= [[:figure {:id :diagram :caption "A widget"} [:img {:src "w.png" :alt "alt"}]]]
+         (md->body ":::figure {:id :diagram :caption \"A widget\"}\n![alt](w.png)\n:::\n"))))
+
+(deftest captioned-table-via-the-bare-edn-line
+  (is (= [[:table {:id :grid :caption "A grid"}
+           [:thead [:tr [:th "H"]]] [:tbody [:tr [:td "x"]]]]]
+         (md->body "{:id :grid :caption \"A grid\"}\n\n| H |\n|---|\n| x |\n"))))
+
+(deftest code-listing-fence-carries-file-and-caption
+  (is (= [[:pre {:lang :clojure :id :ex :file "core.clj" :caption "Core"} "(+ 1 2)"]]
+         (md->body "```clojure {:id :ex :file \"core.clj\" :caption \"Core\"}\n(+ 1 2)\n```\n"))))
+
 (deftest sidebar-and-epigraph-directives-compile
   (is (= [[:sidebar {:title "Aside"} [:p "Body."]]]
          (md->body ":::sidebar {:title \"Aside\"}\nBody.\n:::\n")))

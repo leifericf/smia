@@ -170,6 +170,40 @@
   (let [d (catch-data #(ex [:xref {} "x"]))]
     (is (= :clj-book.fo.expand/invalid-xref (:error/type d)))))
 
+(deftest figure-wraps-image-with-a-numbered-caption
+  (let [out (ex [:figure {:id :diagram :label "Figure 1" :caption "A widget"}
+                 [:img {:src "w.png"}]])]
+    (is (= :fo/block (first out)))
+    (is (= "diagram" (:id (second out))))
+    (is (some #(and (vector? %) (= :fo/external-graphic (first %)))
+              (tree-seq vector? seq out)))
+    (is (some #(= "Figure 1. " (last %))
+              (filter vector? (tree-seq vector? seq out)))
+        "the numbered label leads the caption")
+    (is (some #(= "A widget" (last %)) (filter vector? (tree-seq vector? seq out))))))
+
+(deftest figure-float-becomes-an-fo-float-property
+  (is (= "start" (:float (second (ex [:figure {:float :start} [:img {:src "x"}]]))))))
+
+(deftest code-listing-adds-a-filename-bar-and-caption
+  (let [out (ex [:pre {:lang :clojure :id :ex1 :file "core.clj" :label "Listing 1"
+                       :caption "The core"} "(+ 1 2)"])]
+    (is (= "ex1" (:id (second out))))
+    (is (some #(= "core.clj" (last %)) (filter vector? (tree-seq vector? seq out)))
+        "the filename header bar")
+    (is (some #(= "Listing 1. " (last %)) (filter vector? (tree-seq vector? seq out))))
+    (testing "a plain code block (no file/caption) is unchanged"
+      (is (= [:fo/block (get expand/default-style :pre) "code"]
+             (ex [:pre "code"]))))))
+
+(deftest captioned-table-wraps-with-a-caption
+  (let [out (ex [:table {:id :grid :label "Table 1" :caption "A grid"}
+                 [:tr [:td "x"]]])]
+    (is (= :fo/block (first out)))
+    (is (= "grid" (:id (second out))))
+    (is (some #(and (vector? %) (= :fo/table (first %))) (tree-seq vector? seq out)))
+    (is (some #(= "Table 1. " (last %)) (filter vector? (tree-seq vector? seq out))))))
+
 (deftest sidebar-has-an-arbitrary-title
   (let [out (ex [:sidebar {:title "On Determinism"} [:p "Stuff."]])]
     (is (= :fo/block (first out)))
