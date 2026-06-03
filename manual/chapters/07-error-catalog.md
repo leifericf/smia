@@ -15,7 +15,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:clj-book.book.config/missing-required-key` — a required `:book/*` key is absent.
 - `:clj-book.book.config/missing-chapter` — a listed chapter file does not exist.
 - `:clj-book.book.config/duplicate-chapter` — a chapter is listed more than once.
-- `:clj-book.theme.load/missing` — no `styles/tokens.edn`.
+- `:clj-book.theme.load/missing` — no `theme.edn`.
 - `:clj-book.theme.load/missing-group` — a required token group is absent.
 
 ## Authoring

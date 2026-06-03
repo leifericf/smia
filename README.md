@@ -8,7 +8,7 @@ or asciidoctor underneath, and the renderer never shells out to an external bina
 so a build stays self-contained and reproducible.
 
 A book is a `book.edn` file together with its chapter sources and a
-`styles/tokens.edn`. From that, clj-book gives you parts and numbered chapters,
+`theme.edn`. From that, clj-book gives you parts and numbered chapters,
 appendices, named front and back matter, figures and code listings with captions,
 cross-references that read "Figure 1" instead of a bare page number, in-process
 syntax highlighting, running heads, an index, and a bibliography.

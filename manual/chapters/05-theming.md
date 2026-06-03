@@ -2,9 +2,9 @@
 
 Styling comes from design **tokens** plus a layout **profile** — never from arbitrary CSS. FOP is not a CSS engine, and clj-book does not pretend it is.
 
-## tokens.edn
+## theme.edn
 
-Define the theme once in `styles/tokens.edn`, grouped into `:color`, `:type`, `:spacing`, and `:layout`:
+Define the theme once in `theme.edn` at the book root, beside `book.edn` — `book.edn` is the manuscript, `theme.edn` is the appearance. Tokens are grouped into `:color`, `:type`, `:spacing`, and `:layout`:
 
 ```edn
 {:color  {:text "#1c1c1c" :link "#2a52be"}

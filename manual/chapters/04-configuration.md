@@ -19,5 +19,5 @@ One `book.edn` describes the manuscript. It is an **open map**: required keys ar
 A missing required key, a missing chapter file, or a duplicated chapter fails with a descriptive, structured error. See [the error catalog](#errors) for the full list.
 
 :::admonition {:kind :note}
-There is no AsciiDoc header anymore: all metadata lives in `book.edn`, and all styling lives in [tokens.edn](#theming).
+There is no AsciiDoc header anymore: all metadata lives in `book.edn`, and all styling lives in [theme.edn](#theming).
 :::

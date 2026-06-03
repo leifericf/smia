@@ -8,7 +8,7 @@ All you need is a JVM and the Clojure CLI. Everything else arrives as a Maven de
 
 ## A minimal book
 
-A manuscript is three kinds of file: one `book.edn`, one or more chapter source files, and a `styles/tokens.edn`. The smallest useful `book.edn` is:
+A manuscript is three kinds of file: one `book.edn`, one or more chapter source files, and a `theme.edn`. The smallest useful `book.edn` is:
 
 ```edn
 {:book/slug    "my-book"

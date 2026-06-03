@@ -9,7 +9,7 @@ A build is a short series of transforms from your Hiccup to PDF bytes:
 :::deflist
 **load**
 
-Read `book.edn` and `tokens.edn`; compile each Markdown or `.clj` chapter.
+Read `book.edn` and `theme.edn`; compile each Markdown or `.clj` chapter.
 
 **assemble**
 

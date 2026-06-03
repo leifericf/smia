@@ -49,7 +49,7 @@
    [:book/numbering {:optional true} :map]])
 
 (def Tokens
-  "Parsed and validated `styles/tokens.edn`."
+  "Parsed and validated `theme.edn` (the book root's theme file)."
   [:map
    [:color :map]
    [:type :map]

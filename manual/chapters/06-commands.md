@@ -30,7 +30,7 @@ Rebuild the book on every save while you write. Preview builds once, then watche
 clojure -M:run preview manual
 ```
 
-The whole book tree is watched — chapters, `book.edn`, `styles/tokens.edn`, references, included code files, and images — while editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and, on some platforms, faster too.
+The whole book tree is watched — chapters, `book.edn`, `theme.edn`, references, included code files, and images — while editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and, on some platforms, faster too.
 
 Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--profile` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
 

@@ -22,14 +22,13 @@
          overrides))
 
 (defn- tmp-book-with-chapter
-  "Create a temp manuscript (tokens copied from valid-book) whose single
+  "Create a temp manuscript (theme copied from valid-book) whose single
    Markdown chapter has the given body, and return its root path."
   [tag chapter-md]
   (let [root (str (tmp-dir tag) "/book")]
     (io/make-parents (io/file root "chapters/x"))
-    (io/make-parents (io/file root "styles/x"))
-    (io/copy (io/file valid-root "styles/tokens.edn")
-             (io/file root "styles/tokens.edn"))
+    (io/copy (io/file valid-root "theme.edn")
+             (io/file root "theme.edn"))
     (spit (io/file root "book.edn")
           (pr-str {:book/slug "vbook" :book/title "V"
                    :book/chapters ["chapters/01-x.md"]}))
