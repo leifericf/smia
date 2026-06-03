@@ -47,6 +47,7 @@ The same manuscript builds into **editions** — the deliverable forms of the bo
 - `:screen` — a PDF with comfortable, symmetric margins for on-screen reading.
 - `:print` — a PDF with mirrored recto/verso margins and a binding gutter on the inside edge.
 - `:site` — a static HTML site styled by the same theme.
+- `:epub` — an accessible EPUB3 package over the same pages.
 
 Both PDF editions are built by default; pass `:editions '[:print]'` (or repeat `--edition` on the command line) to select a subset. See [the commands chapter](#commands) and [the editions chapter](#editions).
 

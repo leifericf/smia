@@ -45,6 +45,9 @@ repeatable `--edition` flag:
   home page, one page per chapter, a stylesheet generated from the same
   `theme.edn`, and copies of referenced images. Cross-references become links,
   footnotes collect at each chapter's end, and the output needs no server.
+- `epub` — an accessible, byte-reproducible EPUB3 package at
+  `build/<slug>/epub/<slug>.epub`, validated clean under epubcheck. The same
+  pages as the site, packaged for e-readers and store pipelines.
 
 Numbering and cross-reference resolution run once, before any format-specific
 rendering, so every edition agrees on the book's structure.

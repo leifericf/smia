@@ -95,6 +95,22 @@
       (is (.exists (io/file dir "styles.css")))
       (is (.exists (io/file dir "images/pipeline.svg"))))))
 
+(deftest ^:integration manual-builds-every-edition-in-one-run
+  (let [man (build! [:screen :print :site :epub])]
+    (is (= [:screen :print :site :epub] (:build/editions man)))
+    (is (= [:screen :print :site :epub] (mapv :edition (:artifacts man))))
+    (doseq [art (:artifacts man)]
+      (is (.exists (io/file (:path art)))
+          (str (name (:edition art)) " artifact exists")))))
+
+(deftest ^:integration manual-epub-is-byte-reproducible
+  (testing "two EPUB builds of the same manuscript are identical bytes"
+    (let [a (artifact-path (build! [:epub]) :epub)
+          b (artifact-path (build! [:epub]) :epub)]
+      (is (java.util.Arrays/equals
+            (java.nio.file.Files/readAllBytes (.toPath (io/file a)))
+            (java.nio.file.Files/readAllBytes (.toPath (io/file b))))))))
+
 (deftest ^:integration manual-build-is-structurally-reproducible
   (testing "two builds of the same manuscript agree on pages and text"
     (let [a (artifact-path (build! [:screen]) :screen)
