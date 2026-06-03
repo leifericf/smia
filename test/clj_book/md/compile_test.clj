@@ -42,6 +42,12 @@
   (is (= [[:pre {:lang :clojure :id :ex :file "core.clj" :caption "Core"} "(+ 1 2)"]]
          (md->body "```clojure {:id :ex :file \"core.clj\" :caption \"Core\"}\n(+ 1 2)\n```\n"))))
 
+(deftest inline-cite-and-index-escapes-compile
+  (is (= [[:p "See " [:cite {:key :smith2020}] "."]]
+         (md->body "See `smith2020`{=cite}.\n")))
+  (is (= [[:p "Determinism" [:index {:term "Determinism"}] " matters."]]
+         (md->body "Determinism`Determinism`{=index} matters.\n"))))
+
 (deftest sidebar-and-epigraph-directives-compile
   (is (= [[:sidebar {:title "Aside"} [:p "Body."]]]
          (md->body ":::sidebar {:title \"Aside\"}\nBody.\n:::\n")))

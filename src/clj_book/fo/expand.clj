@@ -352,6 +352,19 @@
         (:page author) (conj ", on page " [:fo/page-number-citation {:ref-id dest}]))
       [[:fo/page-number-citation {:ref-id dest}]])))
 
+(defn- cite [author]
+  (let [key (:key author)]
+    (when-not key
+      (throw (error/ex :clj-book.fo.expand/invalid-cite
+                       ":cite requires a :key." {:attrs author})))
+    (let [ref-id (or (:ref-id author) (str "ref-" (name key)))
+          label  (or (:label author) (name key))]
+      [:fo/basic-link {:internal-destination ref-id :color "#1a0dab"} label])))
+
+(defn- index-mark [author]
+  ;; A zero-width anchor the index page-cites; invisible in the flow.
+  [:fo/inline (cond-> {} (:id author) (assoc :id (as-id (:id author))))])
+
 (defn- xref [author children style]
   (let [dest (as-id (:to author))]
     (when-not dest
@@ -414,6 +427,8 @@
      :epigraph   (fn [a c s] (epigraph-block a c s))
      :footnote   (fn [a c s] (footnote a c s))
      :xref       (fn [a c s] (xref a c s))
+     :cite       (fn [a _ _] (cite a))
+     :index      (fn [a _ _] (index-mark a))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together
      (fn [a c s]

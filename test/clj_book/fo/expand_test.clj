@@ -241,6 +241,19 @@
     (is (= "italic" (:font-style (second out))))
     (is (some #(= "— A. Hacker" (last %)) (filter vector? (tree-seq vector? seq out))))))
 
+(deftest cite-links-to-the-bibliography-entry
+  (testing "a bare key links to ref-<key> with the key as text"
+    (is (= [:fo/basic-link {:internal-destination "ref-smith2020" :color "#1a0dab"}
+            "smith2020"]
+           (ex [:cite {:key :smith2020}]))))
+  (testing "a resolved cite uses its label and ref-id"
+    (is (= [:fo/basic-link {:internal-destination "ref-smith2020" :color "#1a0dab"}
+            "Smith 2020"]
+           (ex [:cite {:key :smith2020 :label "Smith 2020" :ref-id "ref-smith2020"}])))))
+
+(deftest index-mark-is-an-anchor-with-its-id
+  (is (= [:fo/inline {:id "idx-3"}] (ex [:index {:term "Determinism" :id "idx-3"}]))))
+
 (deftest page-break-forces-a-break-before
   (is (= [:fo/block {:break-before "page"}] (ex [:page-break]))))
 

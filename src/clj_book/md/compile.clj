@@ -86,28 +86,37 @@
 
 ;; --- inline raw escapes ----------------------------------------------------
 
-(def ^:private inline-escape-re #"^\{=(hiccup|fo)\}")
+(def ^:private inline-escape-re #"^\{=(hiccup|fo|cite|index)\}")
+
+(defn- inline-escape-form
+  "Build the author node for an inline `` `payload`{=kind} `` escape. The raw
+   IR escapes read the payload as EDN; `{=cite}` makes a citation keyed by
+   the payload; `{=index}` marks the payload as an index term."
+  [kind payload]
+  (case kind
+    ("hiccup" "fo")
+    (try (edn/read-string payload)
+         (catch Exception e
+           (throw (error/ex :clj-book.md.compile/invalid-raw-escape
+                            (str "Inline raw escape is not readable EDN: "
+                                 (.getMessage e))
+                            {:source payload}))))
+    "cite"  [:cite {:key (keyword (str/trim payload))}]
+    "index" [:index {:term payload}]))
 
 (defn- fold-inline-escapes
-  "Fold an inline `[:code payload]` immediately followed by a `{=hiccup}` /
-   `{=fo}` marker into spliced raw content. The code span's literal is read
-   as EDN; `{=hiccup}` re-enters expansion, `{=fo}` is verbatim FO. Any text
-   after the marker is preserved."
+  "Fold an inline `[:code payload]` immediately followed by a
+   `{=hiccup}` / `{=fo}` / `{=cite}` / `{=index}` marker into the
+   corresponding author node. Any text after the marker is preserved."
   [items]
   (loop [items (seq items), acc []]
     (if (nil? items)
       acc
       (let [a (first items)
             b (second items)]
-        (if (and (vector? a) (= :code (first a))
-                 (string? b) (re-find inline-escape-re b))
-          (let [payload (second a)
-                form    (try (edn/read-string payload)
-                             (catch Exception e
-                               (throw (error/ex :clj-book.md.compile/invalid-raw-escape
-                                                (str "Inline raw escape is not readable EDN: "
-                                                     (.getMessage e))
-                                                {:source payload}))))
+        (if-let [m (and (vector? a) (= :code (first a))
+                        (string? b) (re-find inline-escape-re b))]
+          (let [form    (inline-escape-form (second m) (second a))
                 rest-tx (str/replace-first b inline-escape-re "")
                 more    (nnext items)]
             (recur (if (seq rest-tx) (cons rest-tx more) more)
