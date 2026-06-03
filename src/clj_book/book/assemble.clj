@@ -341,6 +341,47 @@
                [[:fo/block {:font-size "30pt" :font-weight "bold"}
                  (:title section)]]))])))
 
+;; --- generated back matter (bibliography, index) --------------------------
+
+(defn- bibliography-entry-text [{:keys [author title year publisher]}]
+  (->> [(when author (str author "."))
+        (when title (str title "."))
+        (when publisher (str publisher ","))
+        (when year (str year "."))]
+       (remove nil?)
+       (str/join " ")))
+
+(defn- bibliography-blocks
+  "A sorted, hanging-indent bibliography; each entry's `:id` is `ref-<key>`,
+   the citation target."
+  [references]
+  (for [[key entry] (sort-by (fn [[k e]] [(or (:author e) (name k)) (str (:year e))])
+                             references)]
+    [:fo/block {:id (str "ref-" (name key)) :space-after "6pt"
+                :start-indent "12pt" :text-indent "-12pt"}
+     (bibliography-entry-text entry)]))
+
+(defn- index-blocks
+  "An alphabetical index; each term lists page citations to its marks."
+  [index]
+  (for [[term ids] (sort-by key index)]
+    (into [:fo/block {:text-align-last "justify" :space-after "2pt"} term
+           [:fo/leader {:leader-pattern "dots" :leader-length.minimum "12pt"
+                        :leader-length.optimum "12pt" :leader-length.maximum "100%"}]]
+          (interpose ", " (map (fn [id] [:fo/page-number-citation {:ref-id id}]) ids)))))
+
+(defn- matter-parsed
+  "The parsed `{:id :title :body}` for a matter section: its loaded chapter,
+   or a generated body for the bibliography/index roles."
+  [section ctx]
+  (or (:chapter section)
+      {:id    (:role section)
+       :title (structure/role-title (:role section))
+       :body  (case (:role section)
+                :bibliography (vec (bibliography-blocks (:references ctx)))
+                :index        (vec (index-blocks (:index ctx)))
+                [])}))
+
 (defn- body-page-attrs
   "Page-numbering attrs for a body-run section: the first resets to arabic
    page 1; later ones start on a recto when parity is on (print)."
@@ -363,11 +404,11 @@
           (cond
             (and (= k :matter) (= :front (:matter s)))
             (recur (rest ss) seen-body?
-                   (conj acc (body-sequence (section->parsed s) ctx {:format "i"})))
+                   (conj acc (body-sequence (matter-parsed s ctx) ctx {:format "i"})))
 
             (and (= k :matter) (= :back (:matter s)))
             (recur (rest ss) seen-body?
-                   (conj acc (body-sequence (section->parsed s) ctx {})))
+                   (conj acc (body-sequence (matter-parsed s ctx) ctx {})))
 
             (= k :part)
             (recur (rest ss) true
@@ -402,6 +443,8 @@
                     :master-ref    master-reference
                     :recto?        recto?
                     :book-title    title
+                    :references    (:references book)
+                    :index         (:index book)
                     :running-heads (merge-with merge default-running-heads
                                                (:running-heads book))}
         body-style (get style :body)]

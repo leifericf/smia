@@ -20,6 +20,7 @@
    listings) register through the same counters in later phases. No IO."
   (:require
    [clj-book.book.structure :as structure]
+   [clj-book.error :as error]
    [clojure.string :as str]))
 
 ;; --- number formats -------------------------------------------------------
@@ -76,13 +77,15 @@
     nil))
 
 (defn- number-body
-  "Walk a chapter body: collect every `:id` heading into `registry` (an
-   atom); number top-level (`:h2`) sections decimally within
-   `chapter-number` when section numbering is on; and number figures,
-   captioned tables, and captioned code listings book-wide via `counters`,
-   annotating each with its `:number`/`:label` and registering any `:id`."
-  [body {:keys [chapter-number policy registry counters]}]
-  (let [sec (volatile! 0)]
+  "Walk a chapter body with the numbering `ctx` (`:policy :registry
+   :counters :index :idx-counter`, all atoms but `:policy`): collect every
+   `:id` heading into the registry; number top-level (`:h2`) sections
+   decimally within `chapter-number` when enabled; number figures, captioned
+   tables, and listings book-wide; and stamp each `:index` mark with a unique
+   anchor id, collecting `term -> [ids]`."
+  [body ctx chapter-number]
+  (let [{:keys [policy registry counters index idx-counter]} ctx
+        sec (volatile! 0)]
     (letfn [(number-float [node kind]
               (let [a     (or (attrs-of node) {})
                     num   (str (swap-count counters kind))
@@ -92,6 +95,12 @@
                          {:kind kind :number num :label label :title (:caption a)}))
                 (into [(first node) (assoc a :number num :label label)]
                       (map walk (children-of node)))))
+            (mark-index [node]
+              (let [a  (or (attrs-of node) {})
+                    id (str "idx-" (swap! idx-counter inc))]
+                (when (:term a)
+                  (swap! index update (:term a) (fnil conj []) id))
+                (into [:index (assoc a :id id)] (map walk (children-of node)))))
             (walk [node]
               (cond
                 (heading? node)
@@ -108,6 +117,9 @@
                             node)))
                     node))
 
+                (and (vector? node) (= :index (first node)))
+                (mark-index node)
+
                 (and (vector? node) (numberable-kind node))
                 (number-float node (numberable-kind node))
 
@@ -121,7 +133,7 @@
   "Number a `:chapter` or `:appendix` section: increment its counter (unless
    the policy disables that kind), label it, annotate the chapter attrs, and
    number its body sections."
-  [section policy registry counters]
+  [section {:keys [policy registry counters] :as ctx}]
   (let [k        (:kind section)
         fmt-key  (if (= k :appendix) (:appendices policy) (:chapters policy))
         numbered? (boolean fmt-key)
@@ -129,16 +141,14 @@
         num      (when numbered? (fmt fmt-key n))
         label    (when num (str (kind-words k) " " num))
         [_ a & body] (:content section)
-        body'    (number-body (vec body)
-                              {:chapter-number num :policy policy
-                               :registry registry :counters counters})
+        body'    (number-body (vec body) ctx num)
         a'       (cond-> a num (assoc :number num :label label :kind k))]
     (swap! registry assoc (name (:id a))
            (cond-> {:kind k :title (:title a)}
              num (assoc :number num :label label)))
     (assoc section :content (into [:chapter a'] body') :number num :label label)))
 
-(defn- number-part [section policy registry counters]
+(defn- number-part [section {:keys [policy registry counters]}]
   (let [n     (swap-count counters :part)
         num   (fmt (:parts policy) n)
         label (str (kind-words :part) " " num)]
@@ -146,12 +156,10 @@
            {:kind :part :number num :label label :title (:title section)})
     (assoc section :number num :label label)))
 
-(defn- number-matter [section policy registry counters]
+(defn- number-matter [section {:keys [registry] :as ctx}]
   (if-let [content (:content section)]
     (let [[_ a & body] content
-          body' (number-body (vec body)
-                             {:chapter-number nil :policy policy
-                              :registry registry :counters counters})]
+          body' (number-body (vec body) ctx nil)]
       (swap! registry assoc (name (:id a)) {:kind :matter :title (:title a)})
       (assoc section :content (into [:chapter a] body')))
     (do (swap! registry assoc (name (:role section))
@@ -159,16 +167,19 @@
         section)))
 
 (defn- number-sections [sections policy]
-  (let [registry (atom {})
-        counters (atom {})
+  (let [ctx {:policy      policy
+             :registry    (atom {})
+             :counters    (atom {})
+             :index       (atom {})
+             :idx-counter (atom 0)}
         out (mapv (fn [s]
                     (case (:kind s)
-                      :part                (number-part s policy registry counters)
-                      (:chapter :appendix) (number-chapter-like s policy registry counters)
-                      :matter              (number-matter s policy registry counters)
+                      :part                (number-part s ctx)
+                      (:chapter :appendix) (number-chapter-like s ctx)
+                      :matter              (number-matter s ctx)
                       s))
                   sections)]
-    {:sections out :registry @registry}))
+    {:sections out :registry @(:registry ctx) :index @(:index ctx)}))
 
 ;; --- cross-reference rewriting --------------------------------------------
 
@@ -181,34 +192,63 @@
     (:title entry) (assoc :title (:title entry))
     (:kind entry)  (assoc :kind (:kind entry))))
 
-(defn- rewrite-xrefs [node registry]
+(defn- cite-label
+  "Compose a citation's visible label from a bibliography `entry`: \"Author
+   Year\" when both are present, else the title, else the bare key."
+  [entry key]
+  (cond
+    (and (:author entry) (:year entry)) (str (:author entry) " " (:year entry))
+    (:title entry)                      (:title entry)
+    :else                               (name key)))
+
+(defn- rewrite-refs
+  "Resolve cross-references and citations: a childless `:xref` gains the
+   target's label/title/kind; a `:cite` gains its bibliography label and
+   `ref-id`. An unknown citation key is a hard error."
+  [node registry references]
   (cond
     (and (vector? node) (= :xref (first node)) (map? (second node)))
     (let [a    (second node)
           kids (children-of node)]
       (if (seq kids)
-        (into [:xref a] (map #(rewrite-xrefs % registry) kids))
+        (into [:xref a] (map #(rewrite-refs % registry references) kids))
         (if-let [entry (get registry (name (:to a)))]
           [:xref (xref-attrs a entry)]
           node)))
-    (vector? node) (mapv #(rewrite-xrefs % registry) node)
+
+    (and (vector? node) (= :cite (first node)) (map? (second node)))
+    (let [a   (second node)
+          key (:key a)
+          entry (get references key)]
+      (when-not entry
+        (throw (error/ex :clj-book.book.number/unknown-citation
+                         (str "No bibliography entry for citation: " key)
+                         {:key key})))
+      [:cite (assoc a :label (cite-label entry key)
+                    :ref-id (str "ref-" (name key)))])
+
+    (vector? node) (mapv #(rewrite-refs % registry references) node)
     :else          node))
 
-(defn- rewrite-section [section registry]
+(defn- rewrite-section [section registry references]
   (if (:content section)
-    (assoc section :content (rewrite-xrefs (:content section) registry))
+    (assoc section :content (rewrite-refs (:content section) registry references))
     section))
 
 ;; --- public transform -----------------------------------------------------
 
 (defn assign
-  "Number `manuscript`'s targets and resolve cross-references. Returns
-   `{:manuscript <annotated manuscript> :registry <id → entry>}`."
+  "Number `manuscript`'s targets, resolve cross-references and citations, and
+   collect index marks. Returns `{:manuscript <annotated manuscript with
+   :index term->ids> :registry <id → entry>}`. Bibliography lookups use the
+   manuscript's `:references` map."
   [manuscript]
-  (let [policy (:numbering manuscript)
-        {:keys [sections registry]} (number-sections (:sections manuscript) policy)
-        sections (mapv #(rewrite-section % registry) sections)]
-    {:manuscript (assoc manuscript :sections sections)
+  (let [policy     (:numbering manuscript)
+        references (:references manuscript)
+        {:keys [sections registry index]}
+        (number-sections (:sections manuscript) policy)
+        sections   (mapv #(rewrite-section % registry references) sections)]
+    {:manuscript (assoc manuscript :sections sections :index index)
      :registry   registry}))
 
 (defn counts

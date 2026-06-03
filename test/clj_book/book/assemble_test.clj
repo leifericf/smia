@@ -261,6 +261,25 @@
     (is (= #{"setup"} (set (map #(:internal-destination (second %)) kids)))
         "the chapter's section is a nested bookmark")))
 
+(deftest generated-bibliography-and-index-render
+  (let [book {:title "B" :author "A" :numbering structure/default-numbering
+              :references {:smith2020 {:author "Smith" :title "On Data" :year 2020}}
+              :index {"Data" ["idx-1" "idx-2"] "FOP" ["idx-3"]}
+              :sections [{:kind :chapter :content (chapter :a "A" [:p "x"])}
+                         {:kind :matter :matter :back :role :bibliography :generated true}
+                         {:kind :matter :matter :back :role :index :generated true}]}
+        out    (assemble/assemble book the-theme)
+        blocks (find-all :fo/block out)
+        ids    (set (keep #(:id (second %)) blocks))
+        cites  (find-all :fo/page-number-citation out)]
+    (testing "the bibliography entry is a citation target with formatted text"
+      (is (contains? ids "ref-smith2020"))
+      (is (some #(and (string? (last %)) (str/includes? (last %) "Smith. On Data. 2020."))
+                blocks)))
+    (testing "the index page-cites each mark's anchor"
+      (is (some #(= "idx-1" (:ref-id (second %))) cites))
+      (is (some #(= "idx-3" (:ref-id (second %))) cites)))))
+
 (deftest generated-back-matter-renders-a-titled-placeholder
   (let [out    (assemble/assemble structured the-theme)
         blocks (find-all :fo/block out)

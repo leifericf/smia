@@ -22,6 +22,7 @@
    [clj-book.md.frontmatter :as md-frontmatter]
    [clj-book.md.parse :as md-parse]
    [clj-book.md.schema :as md-schema]
+   [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
@@ -156,6 +157,24 @@
     (check-no-duplicate-ids chapters)
     chapters))
 
+(defn- load-references
+  "Read the optional `:book/references` EDN file (key -> bibliography entry
+   map), or nil when the book declares none. A declared-but-missing file is
+   a hard error."
+  [book-root config]
+  (when-let [path (:book/references config)]
+    (let [f (io/file book-root path)]
+      (when-not (.exists f)
+        (throw (error/ex :clj-book.book.load/missing-references
+                         (str "References file not found: " (.getPath f))
+                         {:book-root book-root :references path})))
+      (let [refs (edn/read-string (slurp f))]
+        (when-not (map? refs)
+          (throw (error/ex :clj-book.book.load/invalid-references
+                           "References file must be an EDN map of key -> entry."
+                           {:path (.getPath f)})))
+        refs))))
+
 (defn load-manuscript
   "Shell: normalize `config` into a typed document structure and load every
    file-backed section into its `[:chapter …]` Hiccup, returning the typed
@@ -182,5 +201,6 @@
      :author        (:book/author config)
      :numbering     numbering
      :running-heads (:book/running-heads config)
+     :references    (load-references book-root config)
      :sections      loaded
      :chapters      chapters}))

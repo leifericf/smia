@@ -120,6 +120,38 @@
     (is (= [:xref {:to :diagram :label "Figure 1" :title "D" :kind :figure}]
            (nth para 2)))))
 
+(deftest citations-resolve-against-the-references
+  (let [out (number/assign
+             {:numbering structure/default-numbering
+              :references {:smith2020 {:author "Smith" :year 2020 :title "On Data"}}
+              :sections [(chapter-section :a "A" [:p "As in " [:cite {:key :smith2020}] "."])]})
+        para (nth (content-for out :a) 2)]
+    (is (= [:p "As in "
+            [:cite {:key :smith2020 :label "Smith 2020" :ref-id "ref-smith2020"}]
+            "."]
+           para))))
+
+(deftest an-unknown-citation-is-a-hard-error
+  (let [d (try (number/assign
+                {:numbering structure/default-numbering :references {}
+                 :sections [(chapter-section :a "A" [:p [:cite {:key :nope}]])]})
+               nil
+               (catch Exception e (clj-book.error/data e)))]
+    (is (= :clj-book.book.number/unknown-citation (:error/type d)))))
+
+(deftest index-marks-collect-terms-with-anchor-ids
+  (let [out (number/assign
+             {:numbering structure/default-numbering
+              :sections [(chapter-section :a "A"
+                                          [:p "x" [:index {:term "Data"}]]
+                                          [:p "y" [:index {:term "Data"}]]
+                                          [:p "z" [:index {:term "FOP"}]])]})
+        index (:index (:manuscript out))]
+    (is (= {"Data" ["idx-1" "idx-2"] "FOP" ["idx-3"]} index))
+    (testing "each mark is stamped with its anchor id"
+      (let [para (nth (content-for out :a) 2)]
+        (is (= [:p "x" [:index {:term "Data" :id "idx-1"}]] para))))))
+
 (deftest counts-summarize-the-numbered-targets
   (let [out (assign {:sections [{:kind :part :title "P" :index 0}
                                 (assoc (chapter-section :a "A") :part 0)
