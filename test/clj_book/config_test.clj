@@ -102,6 +102,14 @@
                    {:book/slug "s" :book/title "t"
                     :book/chapters ["a.md"]
                     :book/back-matter [{:role :bibliography} {:role :index}]}
+                   "book.edn"))))
+  (testing "the lists of figures, tables, and listings are generated too"
+    (is (vector? (config/validate
+                   {:book/slug "s" :book/title "t"
+                    :book/chapters ["a.md"]
+                    :book/front-matter [{:role :list-of-figures}
+                                        {:role :list-of-tables}
+                                        {:role :list-of-listings}]}
                    "book.edn")))))
 
 (deftest duplicate-files-across-the-structure-are-rejected

@@ -46,6 +46,11 @@
   {:part "Part" :chapter "Chapter" :appendix "Appendix"
    :figure "Figure" :table "Table" :listing "Listing" :section "Section"})
 
+(def ^:private float-id-prefixes
+  "The synthesized anchor-id prefix for each float kind, used when the
+   author gave no `:id` (mirrors the `idx-N` scheme for index marks)."
+  {:figure "fig" :table "tbl" :listing "lst"})
+
 ;; --- node helpers ---------------------------------------------------------
 
 (defn- attrs-of [node] (when (map? (second node)) (second node)))
@@ -84,16 +89,22 @@
    tables, and listings book-wide; and stamp each `:index` mark with a unique
    anchor id, collecting `term -> [ids]`."
   [body ctx chapter-number]
-  (let [{:keys [policy registry counters index idx-counter]} ctx
+  (let [{:keys [policy registry counters index idx-counter floats]} ctx
         sec (volatile! 0)]
     (letfn [(number-float [node kind]
-              (let [a     (or (attrs-of node) {})
-                    num   (str (swap-count counters kind))
-                    label (str (kind-words kind) " " num)]
-                (when (:id a)
-                  (swap! registry assoc (name (:id a))
-                         {:kind kind :number num :label label :title (:caption a)}))
-                (into [(first node) (assoc a :number num :label label)]
+              (let [a         (or (attrs-of node) {})
+                    num       (str (swap-count counters kind))
+                    label     (str (kind-words kind) " " num)
+                    author-id (:id a)
+                    id        (if author-id (name author-id)
+                                  (str (float-id-prefixes kind) "-" num))
+                    entry     {:kind kind :id id :number num :label label
+                               :title (:caption a)}]
+                (swap! registry assoc id (dissoc entry :id))
+                (swap! floats conj entry)
+                (into [(first node)
+                       (cond-> (assoc a :number num :label label)
+                         (not author-id) (assoc :id id))]
                       (map walk (children-of node)))))
             (mark-index [node]
               (let [a  (or (attrs-of node) {})
@@ -163,7 +174,8 @@
       (swap! registry assoc (name (:id a)) {:kind :matter :title (:title a)})
       (assoc section :content (into [:chapter a] body')))
     (do (swap! registry assoc (name (:role section))
-               {:kind :matter :title (structure/role-title (:role section))})
+               {:kind :matter
+                :title (or (:title section) (structure/role-title (:role section)))})
         section)))
 
 (defn- number-sections [sections policy]
@@ -171,7 +183,8 @@
              :registry    (atom {})
              :counters    (atom {})
              :index       (atom {})
-             :idx-counter (atom 0)}
+             :idx-counter (atom 0)
+             :floats      (atom [])}
         out (mapv (fn [s]
                     (case (:kind s)
                       :part                (number-part s ctx)
@@ -179,7 +192,8 @@
                       :matter              (number-matter s ctx)
                       s))
                   sections)]
-    {:sections out :registry @(:registry ctx) :index @(:index ctx)}))
+    {:sections out :registry @(:registry ctx) :index @(:index ctx)
+     :floats @(:floats ctx)}))
 
 ;; --- cross-reference rewriting --------------------------------------------
 
@@ -245,10 +259,10 @@
   [manuscript]
   (let [policy     (:numbering manuscript)
         references (:references manuscript)
-        {:keys [sections registry index]}
+        {:keys [sections registry index floats]}
         (number-sections (:sections manuscript) policy)
         sections   (mapv #(rewrite-section % registry references) sections)]
-    {:manuscript (assoc manuscript :sections sections :index index)
+    {:manuscript (assoc manuscript :sections sections :index index :floats floats)
      :registry   registry}))
 
 (defn counts

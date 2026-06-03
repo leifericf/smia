@@ -280,6 +280,48 @@
       (is (some #(= "idx-1" (:ref-id (second %))) cites))
       (is (some #(= "idx-3" (:ref-id (second %))) cites)))))
 
+(deftest generated-lists-of-floats-render-with-links-and-page-numbers
+  (let [src  {:title "B" :author "A" :numbering structure/default-numbering
+              :sections [{:kind :matter :matter :front :role :list-of-figures}
+                         {:kind :matter :matter :front :role :list-of-tables}
+                         {:kind :matter :matter :front :role :list-of-listings}
+                         {:kind :chapter
+                          :content (chapter :a "A"
+                                            [:figure {:caption "A diagram"} [:img {:src "d.png"}]]
+                                            [:table {:caption "A grid"} [:tr [:td "x"]]]
+                                            [:pre {:lang :clojure :caption "A snippet"} "(+ 1 2)"])}
+                         {:kind :chapter
+                          :content (chapter :b "B"
+                                            [:figure {:caption "A flow"} [:img {:src "f.png"}]])}]}
+        out  (assemble/assemble (:manuscript (number/assign src)) the-theme)
+        links (find-all :fo/basic-link out)
+        cites (find-all :fo/page-number-citation out)
+        link-text (fn [id] (some #(when (= id (:internal-destination (second %)))
+                                    (last %))
+                                 links))]
+    (testing "the list of figures links each figure, in order, to its anchor"
+      (is (= "Figure 1. A diagram" (link-text "fig-1")))
+      (is (= "Figure 2. A flow" (link-text "fig-2"))))
+    (testing "the list of tables and listings link their floats"
+      (is (= "Table 1. A grid" (link-text "tbl-1")))
+      (is (= "Listing 1. A snippet" (link-text "lst-1"))))
+    (testing "each list entry resolves a page number against its anchor"
+      (is (some #(= "fig-1" (:ref-id (second %))) cites))
+      (is (some #(= "tbl-1" (:ref-id (second %))) cites))
+      (is (some #(= "lst-1" (:ref-id (second %))) cites)))))
+
+(deftest an-author-title-overrides-a-generated-role-title
+  (let [src  {:title "B" :author "A" :numbering structure/default-numbering
+              :sections [{:kind :matter :matter :front :role :list-of-figures
+                          :title "Figures"}
+                         {:kind :chapter
+                          :content (chapter :a "A"
+                                            [:figure {:caption "D"} [:img {:src "d.png"}]])}]}
+        out  (assemble/assemble (:manuscript (number/assign src)) the-theme)
+        blocks (find-all :fo/block out)]
+    (is (some #(= "Figures" (last %)) blocks)
+        "the author's :title replaces the default \"List of Figures\"")))
+
 (deftest generated-back-matter-renders-a-titled-placeholder
   (let [out    (assemble/assemble structured the-theme)
         blocks (find-all :fo/block out)

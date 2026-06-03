@@ -85,14 +85,29 @@
 
 (defn generated-role?
   "Back/front-matter roles whose content clj-book produces (no source
-   file): the bibliography and the index."
+   file): the bibliography, the index, and the lists of figures, tables,
+   and listings."
   [role]
-  (contains? #{:bibliography :index} role))
+  (contains? #{:bibliography :index
+               :list-of-figures :list-of-tables :list-of-listings}
+             role))
+
+(def ^:private role-titles
+  "Explicit human titles for generated roles, so the multi-word lists read
+   naturally (e.g. \"List of Figures\", not the title-cased \"List Of
+   Figures\"). An author `:title` still overrides these downstream."
+  {:bibliography      "Bibliography"
+   :index             "Index"
+   :list-of-figures   "List of Figures"
+   :list-of-tables    "List of Tables"
+   :list-of-listings  "List of Listings"})
 
 (defn role-title
   "A human title for a generated matter `role` (e.g. `:bibliography` ->
-   \"Bibliography\")."
+   \"Bibliography\"). Known generated roles have curated titles; any other
+   role is title-cased from its kebab name."
   [role]
-  (->> (str/split (name role) #"-")
-       (map str/capitalize)
-       (str/join " ")))
+  (or (role-titles role)
+      (->> (str/split (name role) #"-")
+           (map str/capitalize)
+           (str/join " "))))

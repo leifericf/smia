@@ -79,7 +79,9 @@
   "The synthetic `{:id :title :body}` for a generated matter section (the
    bibliography or index), which has no source file."
   [section]
-  {:id (:role section) :title (structure/role-title (:role section)) :body []})
+  {:id    (:role section)
+   :title (or (:title section) (structure/role-title (:role section)))
+   :body  []})
 
 (defn- section->parsed
   "The parsed `{:id :title :body}` a section contributes — its loaded
@@ -370,17 +372,39 @@
                         :leader-length.optimum "12pt" :leader-length.maximum "100%"}]]
           (interpose ", " (map (fn [id] [:fo/page-number-citation {:ref-id id}]) ids)))))
 
+(defn- float-list-blocks
+  "A list of figures/tables/listings: every numbered float of `kind`, in
+   document order, linked to its anchor with a dotted leader and resolved
+   page number (the TOC-entry pattern)."
+  [floats want-kind link-color]
+  (for [{:keys [kind id label title]} floats
+        :when (= kind want-kind)]
+    (let [text (if title (str label ". " title) label)]
+      [:fo/block {:text-align-last "justify" :space-after "5pt"}
+       [:fo/basic-link {:internal-destination id :color link-color} text]
+       [:fo/leader {:leader-pattern        "dots"
+                    :leader-length.minimum "12pt"
+                    :leader-length.optimum "12pt"
+                    :leader-length.maximum "100%"}]
+       [:fo/page-number-citation {:ref-id id}]])))
+
 (defn- matter-parsed
   "The parsed `{:id :title :body}` for a matter section: its loaded chapter,
-   or a generated body for the bibliography/index roles."
+   or a generated body for the bibliography, index, and float-list roles.
+   An author `:title` on the section overrides the role's default title."
   [section ctx]
   (or (:chapter section)
-      {:id    (:role section)
-       :title (structure/role-title (:role section))
-       :body  (case (:role section)
-                :bibliography (vec (bibliography-blocks (:references ctx)))
-                :index        (vec (index-blocks (:index ctx)))
-                [])}))
+      (let [role       (:role section)
+            link-color (get-in ctx [:theme :link-color])]
+        {:id    role
+         :title (or (:title section) (structure/role-title role))
+         :body  (case role
+                  :bibliography     (vec (bibliography-blocks (:references ctx)))
+                  :index            (vec (index-blocks (:index ctx)))
+                  :list-of-figures  (vec (float-list-blocks (:floats ctx) :figure link-color))
+                  :list-of-tables   (vec (float-list-blocks (:floats ctx) :table link-color))
+                  :list-of-listings (vec (float-list-blocks (:floats ctx) :listing link-color))
+                  [])})))
 
 (defn- body-page-attrs
   "Page-numbering attrs for a body-run section: the first resets to arabic
@@ -445,6 +469,7 @@
                     :book-title    title
                     :references    (:references book)
                     :index         (:index book)
+                    :floats        (:floats book)
                     :running-heads (merge-with merge default-running-heads
                                                (:running-heads book))}
         body-style (get style :body)]

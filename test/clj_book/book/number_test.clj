@@ -108,6 +108,37 @@
     (is (= "Table 1" (:label (get reg "grid"))))
     (is (= "Listing 1" (:label (get reg "listing")))) ))
 
+(deftest floats-are-collected-in-document-order
+  (let [out (assign {:sections
+                     [(chapter-section :a "A"
+                                       [:figure {:caption "A diagram"} [:img {:src "d.png"}]]
+                                       [:table {:caption "A grid"} [:tr [:td "x"]]])
+                      (chapter-section :b "B"
+                                       [:pre {:lang :clojure :caption "A listing"} "(+ 1 2)"])]})
+        floats (:floats (:manuscript out))]
+    (is (= [{:kind :figure  :id "fig-1" :number "1" :label "Figure 1"  :title "A diagram"}
+            {:kind :table   :id "tbl-1" :number "1" :label "Table 1"   :title "A grid"}
+            {:kind :listing :id "lst-1" :number "1" :label "Listing 1" :title "A listing"}]
+           floats)
+        "every numbered float, in document order, with an anchor id")))
+
+(deftest a-float-with-no-author-id-gets-a-synthesized-anchor
+  (let [out (assign {:sections [(chapter-section :a "A"
+                                                 [:figure {:caption "D"} [:img {:src "d.png"}]])]})
+        fig (->> (content-for out :a) (tree-seq vector? seq)
+                 (filter #(and (vector? %) (= :figure (first %)))) first)]
+    (is (= "fig-1" (:id (second fig)))
+        "the synthesized id is stamped onto the node so the float list can link to it")))
+
+(deftest an-author-id-on-a-float-is-used-as-its-anchor
+  (let [out (assign {:sections [(chapter-section :a "A"
+                                                 [:figure {:id :diagram :caption "D"} [:img {:src "d.png"}]])]})
+        floats (:floats (:manuscript out))
+        fig    (->> (content-for out :a) (tree-seq vector? seq)
+                    (filter #(and (vector? %) (= :figure (first %)))) first)]
+    (is (= "diagram" (:id (first floats))) "an explicit id is the anchor in the float list")
+    (is (= :diagram (:id (second fig))) "the author's keyword id is left untouched on the node")))
+
 (deftest a-table-without-a-caption-is-not-numbered
   (let [out (assign {:sections [(chapter-section :a "A" [:table [:tr [:td "x"]]])]})]
     (is (empty? (filter #(= :table (:kind (val %))) (:registry out))))))
