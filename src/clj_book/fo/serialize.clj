@@ -17,6 +17,22 @@
 
 (def ^:private fo-namespace "http://www.w3.org/1999/XSL/Format")
 
+(declare escape-text escape-attr tag-name emit-children! emit-element! emit!)
+
+(defn serialize
+  "Serialize FO-Hiccup `node` to an XSL-FO XML string. With
+   `:xml-declaration? false`, omit the `<?xml …?>` prolog (useful for
+   serializing fragments in tests)."
+  ([node] (serialize node {}))
+  ([node {:keys [xml-declaration?] :or {xml-declaration? true}}]
+   (let [sb (StringBuilder.)]
+     (when xml-declaration?
+       (.append sb "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"))
+     (emit! sb node)
+     (.toString sb))))
+
+;; --- private helpers -------------------------------------------------------
+
 (defn- escape-text [^String s]
   (-> s
       (str/replace "&" "&amp;")
@@ -34,8 +50,6 @@
   (if-let [ns (namespace tag)]
     (str ns ":" (name tag))
     (name tag)))
-
-(declare emit!)
 
 (defn- emit-children! [^StringBuilder sb children]
   (doseq [child children]
@@ -78,15 +92,3 @@
                            (str "Cannot serialize node of type "
                                 (some-> node class .getName))
                            {:node node}))))
-
-(defn serialize
-  "Serialize FO-Hiccup `node` to an XSL-FO XML string. With
-   `:xml-declaration? false`, omit the `<?xml …?>` prolog (useful for
-   serializing fragments in tests)."
-  ([node] (serialize node {}))
-  ([node {:keys [xml-declaration?] :or {xml-declaration? true}}]
-   (let [sb (StringBuilder.)]
-     (when xml-declaration?
-       (.append sb "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"))
-     (emit! sb node)
-     (.toString sb))))

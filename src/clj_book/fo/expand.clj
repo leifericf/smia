@@ -21,7 +21,43 @@
    [clj-book.highlight.registry :as highlight]
    [clojure.string :as str]))
 
-(declare expand)
+(declare expand-all expanders default-style)
+
+;; --- the public transform -------------------------------------------------
+
+(defn expand
+  "Expand author Hiccup `node` into FO-Hiccup using `style` (defaults to
+   `default-style`). `:fo/*` passes through (children still expanded);
+   known sugar/book tags are expanded; an unknown bare tag throws a
+   structured `:clj-book.fo.expand/unknown-tag` error."
+  ([node] (expand node default-style))
+  ([node style]
+   (cond
+     (nil? node)    nil
+     (string? node) node
+     (number? node) node
+     (vector? node)
+     (let [[tag attrs children] (hiccup/parse-node node)]
+       (cond
+         (and (keyword? tag) (= "fo" (namespace tag)))
+         (let [expanded (expand-all children style)]
+           (if attrs (into [tag attrs] expanded) (into [tag] expanded)))
+
+         (contains? expanders tag)
+         ((get expanders tag) attrs children style)
+
+         :else
+         (throw (error/ex :clj-book.fo.expand/unknown-tag
+                          (str "Unknown element tag: " (pr-str tag)
+                               ". Use a known sugar/book tag or a raw "
+                               ":fo/* element.")
+                          {:tag tag}))))
+     (seq? node) (vec (expand-all node style))
+     :else
+     (throw (error/ex :clj-book.fo.expand/invalid-node
+                      (str "Cannot expand node of type "
+                           (some-> node class .getName))
+                      {:node node})))))
 
 ;; --- node parsing ---------------------------------------------------------
 
@@ -536,39 +572,3 @@
        (into [:fo/block (cond-> {:keep-together.within-page "always"}
                           (:id a) (assoc :id (as-id (:id a))))]
              (expand-all c s)))}))
-
-;; --- the public transform -------------------------------------------------
-
-(defn expand
-  "Expand author Hiccup `node` into FO-Hiccup using `style` (defaults to
-   `default-style`). `:fo/*` passes through (children still expanded);
-   known sugar/book tags are expanded; an unknown bare tag throws a
-   structured `:clj-book.fo.expand/unknown-tag` error."
-  ([node] (expand node default-style))
-  ([node style]
-   (cond
-     (nil? node)    nil
-     (string? node) node
-     (number? node) node
-     (vector? node)
-     (let [[tag attrs children] (hiccup/parse-node node)]
-       (cond
-         (and (keyword? tag) (= "fo" (namespace tag)))
-         (let [expanded (expand-all children style)]
-           (if attrs (into [tag attrs] expanded) (into [tag] expanded)))
-
-         (contains? expanders tag)
-         ((get expanders tag) attrs children style)
-
-         :else
-         (throw (error/ex :clj-book.fo.expand/unknown-tag
-                          (str "Unknown element tag: " (pr-str tag)
-                               ". Use a known sugar/book tag or a raw "
-                               ":fo/* element.")
-                          {:tag tag}))))
-     (seq? node) (vec (expand-all node style))
-     :else
-     (throw (error/ex :clj-book.fo.expand/invalid-node
-                      (str "Cannot expand node of type "
-                           (some-> node class .getName))
-                      {:node node})))))
