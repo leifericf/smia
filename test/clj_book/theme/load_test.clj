@@ -29,3 +29,29 @@
             #(theme/validate {:color {} :type {} :spacing {}} "theme.edn"))]
     (is (= :clj-book.theme.load/invalid-tokens (:error/type d)))
     (is (contains? (:errors (:error/context d)) :layout))))
+
+(def ^:private base-groups
+  {:color {} :type {} :spacing {} :layout {}})
+
+(deftest styling-override-groups-are-accepted
+  (is (= (assoc base-groups
+                :fo  {:h1 {:space-before "24pt"}}
+                :css [["p" {:margin "0"}]])
+         (theme/validate (assoc base-groups
+                                :fo  {:h1 {:space-before "24pt"}}
+                                :css [["p" {:margin "0"}]])
+                         "theme.edn"))))
+
+(deftest malformed-fo-override-group-fails
+  (let [d (catch-data
+            #(theme/validate (assoc base-groups :fo {:h1 "nope"}) "theme.edn"))]
+    (is (= :clj-book.theme.load/invalid-tokens (:error/type d)))))
+
+(deftest malformed-css-override-group-fails
+  (let [d (catch-data
+            #(theme/validate (assoc base-groups :css [["p" "nope"]])
+                             "theme.edn"))]
+    (is (= :clj-book.theme.load/invalid-tokens (:error/type d))))
+  (let [d (catch-data
+            #(theme/validate (assoc base-groups :css {"p" {}}) "theme.edn"))]
+    (is (= :clj-book.theme.load/invalid-tokens (:error/type d)))))

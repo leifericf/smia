@@ -47,6 +47,18 @@
     (testing "a page-sequence-master selects them by odd/even"
       (is (some #(= :fo/page-sequence-master (first %)) masters)))))
 
+(deftest fo-override-group-merges-over-the-compiled-style
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc tokens :fo {:h1 {:space-before "99pt"}
+                                             :p  {:color "#bada55"}})
+                          :screen)]
+    (testing "the override wins"
+      (is (= "99pt" (-> style :h1 :space-before)))
+      (is (= "#bada55" (-> style :p :color))))
+    (testing "compiled properties not overridden survive"
+      (is (= "28pt" (-> style :h1 :font-size)))
+      (is (= "8pt" (-> style :p :space-after))))))
+
 (deftest defaults-apply-when-tokens-are-sparse
   (let [{:keys [style masters]} (theme/compile-theme
                                   {:color {} :type {} :spacing {} :layout {}}

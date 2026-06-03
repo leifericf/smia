@@ -23,7 +23,8 @@
   {:keyword "#0033cc" :string "#008800" :comment "#888888"
    :number  "#aa5500" :literal "#7700aa"})
 
-(declare style-from-tokens page-dims regions masters running-regions)
+(declare style-from-tokens fo-overrides page-dims regions masters
+         running-regions)
 
 (defn compile-theme
   "Compile validated `tokens` and a layout `profile` (`:screen` or
@@ -34,6 +35,7 @@
   (let [color (:color tokens)]
     {:profile          profile
      :style            (-> (style-from-tokens tokens)
+                           (fo-overrides (:fo tokens))
                            (assoc :highlight?   (get-in tokens [:type :highlight] false)
                                   :code-colors  (merge default-code-colors
                                                        (:code tokens))))
@@ -45,6 +47,13 @@
      :running-regions  (running-regions profile)}))
 
 ;; --- private helpers -------------------------------------------------------
+
+(defn- fo-overrides
+  "Merge the theme's optional `:fo` styling hatch (tag -> FO property
+   map) over the compiled `style`, per tag — the PDF mirror of the `:css`
+   hatch in `theme.css`."
+  [style overrides]
+  (reduce-kv (fn [s tag props] (update s tag merge props)) style overrides))
 
 (defn- style-from-tokens
   "Override the renderer defaults with token-driven typography."

@@ -154,7 +154,10 @@
         ;; syntax-highlight palette, book :code group over the defaults
         (map (fn [[kind color]]
                [(str ".tok-" (name kind)) {:color color}])
-             (sort-by key palette))))))
+             (sort-by key palette))
+
+        ;; the theme's :css styling hatch, last so user rules win
+        (:css tokens)))))
 
 (defn serialize
   "Serialize `rules` to a CSS string. Properties are sorted by name (via

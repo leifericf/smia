@@ -13,7 +13,32 @@ Define the theme once in `theme.edn` at the book root, beside `book.edn` — `bo
  :layout {:page-size :a4 :margin-outside "20mm"}}
 ```
 
-The tokens compile into the FO properties carried by every block; missing tokens fall back to readable base-14 defaults.
+The tokens compile into the FO properties carried by every block; missing tokens fall back to readable base-14 defaults. The same file drives every output format: for paged output the tokens compile to FO properties, for HTML output to a generated stylesheet. `:layout` is page geometry and applies to paged output only.
+
+## Styling escape hatches
+
+When the tokens cannot express a styling need, `theme.edn` takes two optional override groups. Both are data, mirroring the content escape hatches — content and styling follow the same matrix:
+
+|          | Portable                  | PDF output            | HTML output            |
+|----------|---------------------------|-----------------------|------------------------|
+| Content  | sugar + book extensions   | `[:fo/* …]` Hiccup    | `[:html/* …]` Hiccup   |
+| Styling  | design tokens             | `:fo` group           | `:css` group           |
+
+`:fo` maps a tag to FO properties merged over the compiled style for that tag:
+
+```edn
+:fo {:h1 {:space-before "24pt"}
+     :blockquote {:font-style "normal"}}
+```
+
+`:css` is a vector of `[selector property-map]` rules appended after the generated stylesheet, so they win on equal specificity:
+
+```edn
+:css [["p.fancy" {:color "#bada55"}]
+      [".hero"   {:padding "2em"}]]
+```
+
+Nobody writes raw FO, HTML, or CSS strings — the serializers are internal, and all four cells of the matrix are plain data.
 
 ## Profiles
 

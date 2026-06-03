@@ -69,3 +69,11 @@
 (deftest css-is-deterministic-end-to-end
   (is (= (css/css tokens) (css/css tokens)))
   (is (str/includes? (css/css tokens) "body {")))
+
+(deftest user-css-group-appends-after-the-generated-rules
+  (let [themed (assoc tokens :css [["p.fancy" {:color "#bada55"}]
+                                   [".hero" {:padding "2em"}]])
+        rules  (css/compile-css themed)]
+    (is (= [".hero" {:padding "2em"}] (last rules)))
+    (is (= ["p.fancy" {:color "#bada55"}] (last (butlast rules))))
+    (is (str/ends-with? (css/css themed) ".hero {\n  padding: 2em;\n}\n"))))

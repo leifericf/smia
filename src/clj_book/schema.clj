@@ -49,12 +49,18 @@
    [:book/numbering {:optional true} :map]])
 
 (def Tokens
-  "Parsed and validated `theme.edn` (the book root's theme file)."
+  "Parsed and validated `theme.edn` (the book root's theme file). Beyond
+   the required token groups, two optional data-only styling hatches
+   mirror the content hatches: `:fo` (tag -> FO property map, merged over
+   the compiled PDF style) and `:css` (`[[selector prop-map] …]`,
+   appended after the generated stylesheet rules)."
   [:map
    [:color :map]
    [:type :map]
    [:spacing :map]
-   [:layout :map]])
+   [:layout :map]
+   [:fo {:optional true} [:map-of :keyword :map]]
+   [:css {:optional true} [:sequential [:tuple :string :map]]]])
 
 (def Profile
   "A PDF layout profile clj-book can render."
