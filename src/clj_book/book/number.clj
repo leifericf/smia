@@ -13,7 +13,8 @@
       can render \"Chapter 1\" headings and a numbered table of contents;
    4. rewrites every childless `[:xref {:to id}]` to its composed label
       (\"Chapter 2\", \"Appendix A\", or — for an unnumbered target — its
-      title), leaving the page reference to FO's `fo:page-number-citation`.
+      title), leaving the page reference to FO's `fo:page-number-citation`;
+      an `:xref` to an id no target defines is a hard error.
 
    It is pure and layout-free, so it runs in the pipeline before expansion
    and needs no rendering results. New numbered kinds (figures, tables,
@@ -225,17 +226,21 @@
 (defn- rewrite-refs
   "Resolve cross-references and citations: a childless `:xref` gains the
    target's label/title/kind; a `:cite` gains its bibliography label and
-   `ref-id`. An unknown citation key is a hard error."
+   `ref-id`. An `:xref` to an id no target defines is a hard error, as is an
+   unknown citation key."
   [node registry references]
   (cond
     (and (vector? node) (= :xref (first node)) (map? (second node)))
     (let [a    (second node)
-          kids (children-of node)]
+          kids (children-of node)
+          entry (get registry (name (:to a)))]
+      (when-not entry
+        (throw (error/ex :clj-book.book.number/unresolved-xref
+                         (str "Cross-reference to unknown id: " (:to a))
+                         {:to (:to a)})))
       (if (seq kids)
         (into [:xref a] (map #(rewrite-refs % registry references) kids))
-        (if-let [entry (get registry (name (:to a)))]
-          [:xref (xref-attrs a entry)]
-          node)))
+        [:xref (xref-attrs a entry)]))
 
     (and (vector? node) (= :cite (first node)) (map? (second node)))
     (let [a   (second node)

@@ -127,9 +127,11 @@
   [request]
   (let [{:keys [manuscript request]} (prepare request)
         book      (load-book (:book-root request) manuscript)
+        numbered  (:manuscript (number/assign book))
         the-theme (book-theme/compile-theme (:tokens manuscript) :screen)]
-    ;; Structural check: chapter shape and cross-reference resolution.
-    (assemble/assemble book the-theme)
+    ;; Structural check: numbering resolves every cross-reference and
+    ;; citation (a hard error otherwise); assembly then builds the tree.
+    (assemble/assemble numbered the-theme)
     ;; Vocabulary check: each chapter body element conforms (humanized).
     (doseq [chapter (:chapters book)
             :let    [[_ _ & body] chapter]

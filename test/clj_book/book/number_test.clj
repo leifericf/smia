@@ -170,6 +170,26 @@
                (catch Exception e (clj-book.error/data e)))]
     (is (= :clj-book.book.number/unknown-citation (:error/type d)))))
 
+(deftest an-unresolved-xref-is-a-hard-error
+  (testing "an :xref to an id no target defines fails the numbering pass"
+    (let [d (try (assign {:sections [(chapter-section :a "A"
+                                                      [:p "See " [:xref {:to :nowhere}] "."])]})
+                 nil
+                 (catch Exception e (clj-book.error/data e)))]
+      (is (= :clj-book.book.number/unresolved-xref (:error/type d)))
+      (is (= :nowhere (:to (:error/context d)))))))
+
+(deftest an-xref-to-an-inner-heading-id-resolves
+  (testing ":keys is defined by an inner [:h2 {:id :keys}] heading, so it resolves"
+    (let [out  (assign {:sections [(chapter-section :a "A"
+                                                    [:h2 {:id :keys} "Keys"]
+                                                    [:p "Jump to " [:xref {:to :keys}] "."])]})
+          para (nth (content-for out :a) 3)]
+      (is (= [:p "Jump to "
+              [:xref {:to :keys :title "Keys" :kind :section}]
+              "."]
+             para)))))
+
 (deftest index-marks-collect-terms-with-anchor-ids
   (let [out (number/assign
              {:numbering structure/default-numbering

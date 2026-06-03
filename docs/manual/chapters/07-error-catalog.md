@@ -24,7 +24,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:clj-book.book.load/duplicate-chapter-id` — two chapters resolve to the same `:id`.
 - `:clj-book.book.load/invalid-chapter` — a loaded chapter is not a `[:chapter {…} …]` form.
 - `:clj-book.book.load/missing-chapter-id` / `:clj-book.book.load/missing-chapter-title` — a `:chapter` is missing its `:id` or `:title`.
-- `:clj-book.book.assemble/unresolved-xref` — an `:xref` points at an unknown id.
+- `:clj-book.book.number/unresolved-xref` — an `:xref` points at an unknown id.
 - `:clj-book.fo.expand/unknown-tag` — an element tag is neither known sugar nor a `:fo/*` tag.
 - `:clj-book.fo.expand/invalid-annotation` — a listing's `:annotations` reference a line outside the listing, or more than one note lands on the same line.
 

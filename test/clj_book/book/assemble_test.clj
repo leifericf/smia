@@ -4,7 +4,6 @@
    [clj-book.book.number :as number]
    [clj-book.book.structure :as structure]
    [clj-book.book.theme :as theme]
-   [clj-book.error :as error]
    [clj-book.fo.expand :as expand]
    [clj-book.fo.serialize :as ser]
    [clojure.string :as str]
@@ -30,8 +29,6 @@
 
 (defn- find-all [tag tree]
   (filter (tag= tag) (tree-seq vector? seq tree)))
-
-(defn- catch-data [f] (try (f) nil (catch Exception e (error/data e))))
 
 (deftest assembles-to-fo-root
   (let [out (assemble/assemble manuscript the-theme)]
@@ -81,21 +78,6 @@
         ids    (keep #(:id (second %)) blocks)]
     (is (contains? (set ids) "intro"))
     (is (contains? (set ids) "config"))))
-
-(deftest unresolved-xref-is-a-hard-error
-  (let [bad (assoc manuscript :sections
-                   [{:kind :chapter
-                     :content [:chapter {:id :only :title "Only"}
-                               [:p "See " [:xref {:to :nowhere}] "."]]}])
-        d   (catch-data #(assemble/assemble bad the-theme))]
-    (is (= :clj-book.book.assemble/unresolved-xref (:error/type d)))
-    (is (= ["nowhere"] (:missing (:error/context d))))))
-
-(deftest xref-to-an-inner-heading-id-resolves
-  (testing ":keys is defined by an inner [:h2 {:id :keys}] heading"
-    (let [m (update-in manuscript [:sections 0 :content] conj
-                       [:p "Jump to " [:xref {:to :keys}] "."])]
-      (is (vector? (assemble/assemble m the-theme))))))
 
 (deftest assembled-tree-expands-and-serializes-end-to-end
   (testing "the sugar bodies expand and the whole document serializes"

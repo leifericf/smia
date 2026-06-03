@@ -8,14 +8,12 @@
    `fo:page-sequence` per chapter with running heads (via
    `fo:marker`/`fo:retrieve-marker`) and page numbers. Chapter bodies are
    embedded as authored sugar; the expansion pass that runs afterwards
-   turns that sugar into FO. Cross-references are resolved here: an
-   `[:xref {:to id}]` to an unknown id is a hard error. No IO."
+   turns that sugar into FO. Cross-references and citations are resolved
+   earlier, by the numbering pass (`book.number`), so assembly may assume
+   every `:xref`/`:cite` is already labelled. No IO."
   (:require
    [clj-book.book.structure :as structure]
-   [clj-book.error :as error]
    [clojure.string :as str]))
-
-(defn- as-id [v] (if (keyword? v) (name v) (str v)))
 
 ;; --- chapter parsing ------------------------------------------------------
 
@@ -30,41 +28,6 @@
         attrs (or attrs {})]
     {:id (:id attrs) :title (:title attrs) :body (vec body)
      :number (:number attrs) :label (:label attrs)}))
-
-;; --- cross-reference resolution -------------------------------------------
-
-(defn- collect-ids [node]
-  (cond
-    (vector? node)
-    (let [[_ attrs] node]
-      (concat (when (and (map? attrs) (:id attrs)) [(as-id (:id attrs))])
-              (mapcat collect-ids node)))
-    (seq? node) (mapcat collect-ids node)
-    :else nil))
-
-(defn- collect-xref-targets [node]
-  (cond
-    (vector? node)
-    (let [[tag attrs] node]
-      (concat (when (and (= :xref tag) (map? attrs) (:to attrs))
-                [(as-id (:to attrs))])
-              (mapcat collect-xref-targets node)))
-    (seq? node) (mapcat collect-xref-targets node)
-    :else nil))
-
-(defn- resolve-xrefs!
-  "Throw if any `[:xref {:to id}]` points at an id no chapter or element
-   defines."
-  [chapters]
-  (let [defined (set (concat (map (comp name :id) chapters)
-                             (mapcat #(collect-ids (:body %)) chapters)))
-        used    (mapcat #(collect-xref-targets (:body %)) chapters)
-        missing (vec (distinct (remove defined used)))]
-    (when (seq missing)
-      (throw (error/ex :clj-book.book.assemble/unresolved-xref
-                       (str "Cross-reference(s) to unknown id(s): "
-                            (str/join ", " missing))
-                       {:missing missing :defined (vec (sort defined))})))))
 
 ;; --- sections -------------------------------------------------------------
 
@@ -482,8 +445,6 @@
         {:keys [style master-reference masters profile]} theme
         numbering  (or (:numbering book) structure/default-numbering)
         prepared   (book-sections book)
-        all-parsed (vec (keep :chapter prepared))
-        _          (resolve-xrefs! all-parsed)
         recto?     (and (= profile :print)
                         (= :recto (:start-chapters-on numbering)))
         ctx        {:theme         theme
