@@ -55,6 +55,7 @@
    "src/clj_book/fo/schema.clj"
    "src/clj_book/book/theme.clj"
    "src/clj_book/book/structure.clj"
+   "src/clj_book/book/number.clj"
    "src/clj_book/book/assemble.clj"
    "src/clj_book/md/compile.clj"
    "src/clj_book/md/schema.clj"

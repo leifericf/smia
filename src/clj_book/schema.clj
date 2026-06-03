@@ -98,7 +98,8 @@
                         [:book/slug :string]
                         [:build/profiles [:sequential Profile]]
                         [:metadata :map]]]
-   [:validation {:optional true} :map]])
+   [:validation {:optional true} :map]
+   [:numbering {:optional true} :map]])
 
 (defn valid?
   "True when `value` conforms to `schema`."

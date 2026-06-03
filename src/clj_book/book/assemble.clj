@@ -34,7 +34,9 @@
       (throw (error/ex :clj-book.book.assemble/missing-chapter-title
                        "Each :chapter needs a string :title."
                        {:chapter form})))
-    {:id (:id attrs) :title (:title attrs) :body (vec body)}))
+    ;; :number/:label are attached by the numbering pass (may be absent).
+    {:id (:id attrs) :title (:title attrs) :body (vec body)
+     :number (:number attrs) :label (:label attrs)}))
 
 ;; --- cross-reference resolution -------------------------------------------
 
@@ -177,24 +179,30 @@
                           :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
              (map #(toc-entry % link-color) chapters)))]))
 
-(defn- chapter-heading [id title style rule-color]
-  [:fo/block (merge (get style :h1)
-                    {:id            (name id)
-                     :break-before  "page"
-                     :space-before  "36pt"
-                     :space-before.conditionality "retain"
-                     :space-after   "18pt"
-                     :border-bottom (str "1pt solid " rule-color)
-                     :padding-bottom "6pt"})
-   [:fo/marker {:marker-class-name "chapter-title"} title]
-   title])
+(defn- chapter-heading [{:keys [id title label]} style rule-color muted-color]
+  ;; The running-head marker carries the bare title; the visible heading
+  ;; shows the numbered label (e.g. "Chapter 1") above it when present.
+  (into [:fo/block (merge (get style :h1)
+                          {:id            (name id)
+                           :break-before  "page"
+                           :space-before  "36pt"
+                           :space-before.conditionality "retain"
+                           :space-after   "18pt"
+                           :border-bottom (str "1pt solid " rule-color)
+                           :padding-bottom "6pt"})
+         [:fo/marker {:marker-class-name "chapter-title"} title]]
+        (concat
+          (when label
+            [[:fo/block {:font-size "13pt" :font-weight "normal"
+                         :color muted-color :space-after "2pt"} label]])
+          [title])))
 
 (defn- body-sequence
   "A page-sequence for one parsed chapter (or matter/appendix section):
    running head, page number, the chapter heading, and the body. `page-attrs`
    carries the per-section page-numbering (roman front matter, the arabic
    reset on the first body section, recto parity)."
-  [{:keys [id title body]} master-ref theme page-attrs]
+  [{:keys [body] :as parsed} master-ref theme page-attrs]
   (let [{:keys [style rule-color muted-color]} theme
         body-style (:body style)]
     [:fo/page-sequence (merge {:master-reference master-ref} page-attrs)
@@ -207,7 +215,7 @@
       [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
        [:fo/page-number]]]
      (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-           (cons (chapter-heading id title style rule-color) body))]))
+           (cons (chapter-heading parsed style rule-color muted-color) body))]))
 
 (defn- part-sequence
   "A part-divider page-sequence: the part title, centered and large, on its
@@ -221,11 +229,16 @@
       [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
        [:fo/page-number]]]
      [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)
-      [:fo/block {:id (str "part-" (:index section))
-                  :font-family head-family :font-size "30pt" :font-weight "bold"
-                  :text-align "center" :space-before "144pt"
-                  :space-before.conditionality "retain"}
-       (:title section)]]]))
+      (into [:fo/block {:id (str "part-" (:index section))
+                        :font-family head-family :text-align "center"
+                        :space-before "144pt"
+                        :space-before.conditionality "retain"}]
+            (concat
+              (when-let [label (:label section)]
+                [[:fo/block {:font-size "16pt" :color muted-color
+                             :space-after "8pt"} label]])
+              [[:fo/block {:font-size "30pt" :font-weight "bold"}
+                (:title section)]]))]]))
 
 (defn- body-page-attrs
   "Page-numbering attrs for a body-run section: the first resets to arabic

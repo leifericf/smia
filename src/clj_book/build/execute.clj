@@ -11,6 +11,7 @@
    [clj-book.artifacts :as artifacts]
    [clj-book.book.assemble :as assemble]
    [clj-book.book.load :as book-load]
+   [clj-book.book.number :as number]
    [clj-book.book.theme :as book-theme]
    [clj-book.build.plan :as plan]
    [clj-book.config :as config]
@@ -85,7 +86,8 @@
         book          (load-book book-root manuscript)
         _             (when (:enabled validation)
                         (eval-validate/validate-chapters! (:chapters book)))
-        base          {:book-root book-root :book book :tokens (:tokens manuscript)}
+        numbered      (:manuscript (number/assign book))
+        base          {:book-root book-root :book numbered :tokens (:tokens manuscript)}
         artifacts-out (mapv #(render-profile! base %) profile-steps)
         finished      (Instant/now)]
     (artifacts/write!
@@ -108,14 +110,14 @@
   (let [prepared (prepare request)
         the-plan (plan/plan prepared)]
     (if (:dry-run request)
-      ;; Surface the validation plan (block counts per language) by loading
-      ;; the book; nothing is rendered or evaluated.
-      (cond-> the-plan
-        (get-in the-plan [:validation :enabled])
-        (assoc-in [:validation :plan]
-                  (eval-registry/plan-validation
-                   (:chapters (load-book (:book-root (:request prepared))
-                                         (:manuscript prepared))))))
+      ;; Surface the numbering summary and the validation plan (block counts
+      ;; per language) by loading the book; nothing is rendered or evaluated.
+      (let [book (load-book (:book-root (:request prepared)) (:manuscript prepared))]
+        (cond-> (assoc-in the-plan [:numbering :counts]
+                          (number/counts (number/assign book)))
+          (get-in the-plan [:validation :enabled])
+          (assoc-in [:validation :plan]
+                    (eval-registry/plan-validation (:chapters book)))))
       (execute! the-plan))))
 
 (defn validate
