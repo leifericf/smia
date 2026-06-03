@@ -19,22 +19,15 @@
 
 ;; --- chapter parsing ------------------------------------------------------
 
-(defn- parse-chapter [form]
-  (when-not (and (vector? form) (= :chapter (first form)))
-    (throw (error/ex :clj-book.book.assemble/invalid-chapter
-                     "A chapter must be a [:chapter {:id .. :title ..} ..] form."
-                     {:chapter form})))
+(defn- parse-chapter
+  "Destructure a `[:chapter {…} …]` form into `{:id :title :body :number
+   :label}`. The chapter's shape is validated at the load boundary
+   (`book.load/check-chapter-shape`), so this is a pure non-throwing
+   destructure. `:number`/`:label` are attached by the numbering pass and may
+   be absent."
+  [form]
   (let [[_ attrs & body] form
         attrs (or attrs {})]
-    (when-not (keyword? (:id attrs))
-      (throw (error/ex :clj-book.book.assemble/missing-chapter-id
-                       "Each :chapter needs a keyword :id."
-                       {:chapter form})))
-    (when-not (string? (:title attrs))
-      (throw (error/ex :clj-book.book.assemble/missing-chapter-title
-                       "Each :chapter needs a string :title."
-                       {:chapter form})))
-    ;; :number/:label are attached by the numbering pass (may be absent).
     {:id (:id attrs) :title (:title attrs) :body (vec body)
      :number (:number attrs) :label (:label attrs)}))
 

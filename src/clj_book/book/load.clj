@@ -71,6 +71,28 @@
     (vector? node) (mapv #(resolve-includes book-root %) node)
     :else          node))
 
+(defn- check-chapter-shape
+  "Validate that `form` is a well-formed `[:chapter {:id <keyword>
+   :title <string>} …]` — the contract assembly relies on. Throws a
+   structured error naming `path` otherwise; returns `form` when valid. The
+   load boundary is where chapters are produced, so the shape is checked here
+   rather than during assembly."
+  [form path]
+  (when-not (and (vector? form) (= :chapter (first form)))
+    (throw (error/ex :clj-book.book.load/invalid-chapter
+                     (str "A chapter must be a [:chapter {:id .. :title ..} ..] form: " path)
+                     {:chapter form :path path})))
+  (let [attrs (or (second form) {})]
+    (when-not (keyword? (:id attrs))
+      (throw (error/ex :clj-book.book.load/missing-chapter-id
+                       (str "Each :chapter needs a keyword :id: " path)
+                       {:chapter form :path path})))
+    (when-not (string? (:title attrs))
+      (throw (error/ex :clj-book.book.load/missing-chapter-title
+                       (str "Each :chapter needs a string :title: " path)
+                       {:chapter form :path path}))))
+  form)
+
 (defn- load-markdown-chapter
   "Compile a `.md` chapter file into a `[:chapter {…} …]` form."
   [book-root rel-path ^java.io.File f]
@@ -90,7 +112,7 @@
                                 "'# Heading' or a :title in front-matter: "
                                 (.getPath f))
                            {:path (.getPath f)})))
-        (into [:chapter merged] compiled-body))
+        (check-chapter-shape (into [:chapter merged] compiled-body) (.getPath f)))
       (catch Exception e
         ;; Preserve structured front-matter/compile/schema errors (they
         ;; already carry context and positions); wrap anything else.
@@ -104,13 +126,14 @@
 (defn- load-clojure-chapter
   "Evaluate a `.clj` chapter file; its last form's value is the chapter."
   [^java.io.File f]
-  (try
-    (load-file (.getPath f))
-    (catch Exception e
-      (throw (error/ex :clj-book.book.load/chapter-eval-error
-                       (str "Failed to evaluate chapter " (.getPath f)
-                            ": " (.getMessage e))
-                       {:path (.getPath f) :cause (.getMessage e)})))))
+  (let [form (try
+               (load-file (.getPath f))
+               (catch Exception e
+                 (throw (error/ex :clj-book.book.load/chapter-eval-error
+                                  (str "Failed to evaluate chapter " (.getPath f)
+                                       ": " (.getMessage e))
+                                  {:path (.getPath f) :cause (.getMessage e)}))))]
+    (check-chapter-shape form (.getPath f))))
 
 (defn load-chapter
   "Read one chapter file at `book-root`/`rel-path`, returning its Hiccup

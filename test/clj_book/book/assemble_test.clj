@@ -97,18 +97,6 @@
                        [:p "Jump to " [:xref {:to :keys}] "."])]
       (is (vector? (assemble/assemble m the-theme))))))
 
-(deftest malformed-chapter-is-a-hard-error
-  (is (= :clj-book.book.assemble/invalid-chapter
-         (:error/type (catch-data
-                        #(assemble/assemble
-                          {:sections [{:kind :chapter :content [:p "not a chapter"]}]}
-                          the-theme)))))
-  (is (= :clj-book.book.assemble/missing-chapter-id
-         (:error/type (catch-data
-                        #(assemble/assemble
-                          {:sections [{:kind :chapter :content [:chapter {:title "T"} "x"]}]}
-                          the-theme))))))
-
 (deftest assembled-tree-expands-and-serializes-end-to-end
   (testing "the sugar bodies expand and the whole document serializes"
     (let [out (assemble/assemble manuscript the-theme)

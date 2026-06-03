@@ -57,6 +57,22 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01.clj"))]
       (is (= :clj-book.book.load/chapter-eval-error (:error/type d))))))
 
+(deftest malformed-chapter-is-a-hard-error
+  (testing "the chapter shape is validated at the load boundary"
+    (let [dir (tmp-book "malformed")]
+      (spit-chapter dir "chapters/not-a-chapter.clj" "[:p \"not a chapter\"]")
+      (is (= :clj-book.book.load/invalid-chapter
+             (:error/type (catch-data
+                            #(load/load-chapter (.getPath dir) "chapters/not-a-chapter.clj")))))
+      (spit-chapter dir "chapters/no-id.clj" "[:chapter {:title \"T\"} \"x\"]")
+      (is (= :clj-book.book.load/missing-chapter-id
+             (:error/type (catch-data
+                            #(load/load-chapter (.getPath dir) "chapters/no-id.clj")))))
+      (spit-chapter dir "chapters/no-title.clj" "[:chapter {:id :x} \"x\"]")
+      (is (= :clj-book.book.load/missing-chapter-title
+             (:error/type (catch-data
+                            #(load/load-chapter (.getPath dir) "chapters/no-title.clj"))))))))
+
 ;; --- Markdown front-end ---------------------------------------------------
 
 (deftest loads-a-markdown-chapter
