@@ -59,7 +59,13 @@
    "src/clj_book/book/assemble.clj"
    "src/clj_book/md/compile.clj"
    "src/clj_book/md/schema.clj"
-   "src/clj_book/eval/registry.clj"])
+   "src/clj_book/eval/registry.clj"
+   "src/clj_book/highlight/lexer.clj"
+   "src/clj_book/highlight/registry.clj"
+   "src/clj_book/highlight/clojure.clj"
+   "src/clj_book/highlight/java.clj"
+   "src/clj_book/highlight/kotlin.clj"
+   "src/clj_book/highlight/groovy.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss

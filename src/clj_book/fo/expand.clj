@@ -17,6 +17,7 @@
    This namespace is a pure core: no IO, no FOP."
   (:require
    [clj-book.error :as error]
+   [clj-book.highlight.registry :as highlight]
    [clojure.string :as str]))
 
 (declare expand)
@@ -225,6 +226,50 @@
           (expand-all children style)
           (when (captioned? author) [(caption-block author style)]))))
 
+;; --- code rendering (syntax highlighting, line numbers) -------------------
+
+(defn- code-content
+  "Inline FO for a blob of code: colored highlight runs when the language is
+   supported and the theme enables highlighting (`:highlight?`), otherwise
+   the text verbatim. Whitespace is preserved by the tokenizer."
+  [lang text style]
+  (if-let [toks (and (:highlight? style) lang (highlight/tokenize lang text))]
+    (mapv (fn [{:keys [kind text]}]
+            (if-let [color (get-in style [:code-colors kind])]
+              [:fo/inline {:color color} text]
+              text))
+          toks)
+    [text]))
+
+(defn- code-text [children] (apply str (filter string? children)))
+
+(defn- code-block [author children style]
+  (into [:fo/block (cond-> (get style :pre)
+                     (:id author) (assoc :id (as-id (:id author))))]
+        (code-content (:lang author) (code-text children) style)))
+
+(defn- numbered-code-block
+  "A code block with a muted line-number gutter: one block per line, each
+   prefixed by its right-aligned number."
+  [author children style]
+  (let [lines (str/split (code-text children) #"\n" -1)
+        width (count (str (count lines)))
+        lang  (:lang author)]
+    (into [:fo/block (cond-> (get style :pre)
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (map-indexed
+            (fn [i line]
+              (into [:fo/block {:white-space "pre"}
+                     [:fo/inline {:color "#999999"}
+                      (str (format (str "%" width "d") (inc i)) "  ")]]
+                    (code-content lang line style)))
+            lines))))
+
+(defn- render-code [author children style]
+  (if (:line-numbers author)
+    (numbered-code-block author children style)
+    (code-block author children style)))
+
 (defn- listing-block
   "A code listing: an optional filename header bar above the code block, and
    an optional numbered caption beneath it. The wrapper carries the `:id`."
@@ -235,7 +280,7 @@
         (concat
           (when-let [file (:file author)]
             [[:fo/block (get style :file-bar) file]])
-          [(styled-block :pre (dissoc author :id) children style {})]
+          [(render-code (dissoc author :id) children style)]
           (when (captioned? author) [(caption-block author style)]))))
 
 ;; --- book extensions ------------------------------------------------------
@@ -333,7 +378,7 @@
      :h6         (head :h6)
      :pre        (fn [a c s] (if (or (:file a) (captioned? a))
                                (listing-block a c s)
-                               (styled-block :pre a c s {})))
+                               (render-code a c s)))
      :blockquote (fn [a c s] (styled-block :blockquote a c s {}))
      :li         (fn [a c s] (styled-block :p a c s {}))
      :hr         (fn [_ _ s] [:fo/block (get s :hr)])

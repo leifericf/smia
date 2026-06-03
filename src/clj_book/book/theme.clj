@@ -53,6 +53,12 @@
                                    :color        muted})
         (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
 
+(def default-code-colors
+  "Fallback syntax-highlight palette (token class -> color), overridden by
+   the `:code` token group."
+  {:keyword "#0033cc" :string "#008800" :comment "#888888"
+   :number  "#aa5500" :literal "#7700aa"})
+
 (defn- page-dims [layout]
   (get page-sizes (token layout :page-size :a4) (:a4 page-sizes)))
 
@@ -120,7 +126,10 @@
   [tokens profile]
   (let [color (:color tokens)]
     {:profile          profile
-     :style            (style-from-tokens tokens)
+     :style            (-> (style-from-tokens tokens)
+                           (assoc :highlight?   (get-in tokens [:type :highlight] false)
+                                  :code-colors  (merge default-code-colors
+                                                       (:code tokens))))
      :link-color       (token color :link "#1a0dab")
      :rule-color       (token color :rule "#999999")
      :muted-color      (token color :muted "#666666")

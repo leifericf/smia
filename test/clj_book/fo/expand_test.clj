@@ -196,6 +196,28 @@
       (is (= [:fo/block (get expand/default-style :pre) "code"]
              (ex [:pre "code"]))))))
 
+(deftest code-highlighting-colors-tokens-when-enabled
+  (let [style (assoc expand/default-style :highlight? true
+                     :code-colors {:keyword "#00f" :string "#080"})
+        out   (expand/expand [:pre {:lang :clojure} "(defn f \"s\")"] style)]
+    (is (some #(and (vector? %) (= :fo/inline (first %))
+                    (= "#00f" (:color (second %))) (= "defn" (last %)))
+              (tree-seq vector? seq out))
+        "the keyword 'defn' is colored")
+    (testing "highlighting off leaves a single plain string child"
+      (is (= [:fo/block (get expand/default-style :pre) "(defn f \"s\")"]
+             (expand/expand [:pre {:lang :clojure} "(defn f \"s\")"]
+                            expand/default-style))))))
+
+(deftest line-numbers-add-a-gutter
+  (let [out (expand/expand [:pre {:lang :clojure :line-numbers true} "a\nb\nc"]
+                           expand/default-style)
+        nums (->> (tree-seq vector? seq out)
+                  (filter #(and (vector? %) (= :fo/inline (first %))))
+                  (map last))]
+    (is (some #(str/starts-with? (str %) "1") nums))
+    (is (some #(str/starts-with? (str %) "3") nums))))
+
 (deftest captioned-table-wraps-with-a-caption
   (let [out (ex [:table {:id :grid :label "Table 1" :caption "A grid"}
                  [:tr [:td "x"]]])]
