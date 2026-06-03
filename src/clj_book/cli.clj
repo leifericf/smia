@@ -67,12 +67,9 @@
   "Render a structured clj-book error as a clean diagnostic; fall back to a
    stack trace only for unexpected (non-structured) throwables."
   [^Throwable t]
-  (if-let [{:error/keys [type message context]} (error/data t)]
-    (do (err-println "error:" message)
-        (err-println "       type:" (str type))
-        (when (seq context) (err-println "       context:" (pr-str context))))
-    (do (err-println "unexpected error:" (.getMessage t))
-        (.printStackTrace t))))
+  (run! err-println (error/report-lines t))
+  (when-not (error/data t)
+    (.printStackTrace t)))
 
 (defn- print-usage [header summary]
   (println header)

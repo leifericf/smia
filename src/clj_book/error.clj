@@ -18,3 +18,15 @@
   (let [d (ex-data t)]
     (when (and d (:error/type d))
       d)))
+
+(defn report-lines
+  "Format `t` for human error output: a structured error renders as
+   message/type/context lines (the context line dropped when empty); any
+   other throwable as a one-line fallback. Pure — printing is the shells'
+   business."
+  [^Throwable t]
+  (if-let [{:error/keys [type message context]} (data t)]
+    (cond-> [(str "error: " message)
+             (str "       type: " type)]
+      (seq context) (conj (str "       context: " (pr-str context))))
+    [(str "unexpected error: " (.getMessage t))]))

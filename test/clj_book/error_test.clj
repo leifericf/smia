@@ -20,3 +20,17 @@
   (testing "data returns nil for non-structured exceptions"
     (is (nil? (error/data (ex-info "plain" {}))))
     (is (nil? (error/data (RuntimeException. "boom"))))))
+
+(deftest report-lines-renders-structured-and-fallback
+  (testing "a structured error renders message, type, and context lines"
+    (is (= ["error: boom"
+            "       type: :a/b"
+            "       context: {:k 1}"]
+           (error/report-lines (error/ex :a/b "boom" {:k 1})))))
+  (testing "an empty context drops the context line"
+    (is (= ["error: boom"
+            "       type: :a/b"]
+           (error/report-lines (error/ex :a/b "boom")))))
+  (testing "a non-structured throwable renders the fallback line"
+    (is (= ["unexpected error: nope"]
+           (error/report-lines (RuntimeException. "nope"))))))
