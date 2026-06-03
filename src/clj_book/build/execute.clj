@@ -49,12 +49,10 @@
                                :clj-book.build.execute/invalid-paths)}))
 
 (defn- load-book
-  "Shell: load chapter `.clj` files and shape the assemble-ready
-   manuscript value `{:title :author :chapters}`."
+  "Shell: load the book's structure and chapter files into the typed,
+   assemble-ready manuscript value (see `book.load/load-manuscript`)."
   [book-root {:keys [config]}]
-  {:title    (:book/title config)
-   :author   (:book/author config)
-   :chapters (book-load/load-chapters book-root (:book/chapters config))})
+  (book-load/load-manuscript book-root config))
 
 (defn- render-profile!
   "Assemble -> expand -> serialize -> FOP for one profile. Writes the

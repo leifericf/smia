@@ -16,6 +16,7 @@
    prefix is stripped) and the `:title` from the first H1; front-matter
    overrides both."
   (:require
+   [clj-book.book.structure :as structure]
    [clj-book.error :as error]
    [clj-book.md.compile :as md-compile]
    [clj-book.md.frontmatter :as md-frontmatter]
@@ -138,16 +139,47 @@
        (sort-by name)
        vec))
 
+(defn- check-no-duplicate-ids [chapters]
+  (let [dupes (duplicate-ids chapters)]
+    (when (seq dupes)
+      (throw (error/ex :clj-book.book.load/duplicate-chapter-id
+                       (str "Duplicate chapter :id(s): "
+                            (str/join ", " (map str dupes)))
+                       {:duplicate-ids dupes})))))
+
 (defn load-chapters
   "Load `rel-paths` (relative to `book-root`) in order, returning a vector
    of Hiccup chapter forms. A duplicate chapter `:id` is a hard error
    (assembly would otherwise silently collapse cross-reference targets)."
   [book-root rel-paths]
-  (let [chapters (mapv #(load-chapter book-root %) rel-paths)
-        dupes    (duplicate-ids chapters)]
-    (when (seq dupes)
-      (throw (error/ex :clj-book.book.load/duplicate-chapter-id
-                       (str "Duplicate chapter :id(s): "
-                            (str/join ", " (map str dupes)))
-                       {:duplicate-ids dupes})))
+  (let [chapters (mapv #(load-chapter book-root %) rel-paths)]
+    (check-no-duplicate-ids chapters)
     chapters))
+
+(defn load-manuscript
+  "Shell: normalize `config` into a typed document structure and load every
+   file-backed section into its `[:chapter …]` Hiccup, returning the typed
+   manuscript value:
+
+     `{:title :author :numbering <policy> :sections [<spec+content> …]
+       :chapters [<loaded-hiccup> …]}`
+
+   `:sections` carries the structure (parts, matter, appendices) with each
+   file-backed entry's loaded `:content`; `:chapters` is every loaded form in
+   document order (used by the vocabulary and code-validation passes). A flat
+   `:book/chapters` book yields a body of chapters with no parts. A duplicate
+   chapter `:id` anywhere in the book is a hard error."
+  [book-root config]
+  (let [{:keys [numbering sections]} (structure/normalize config)
+        loaded   (mapv (fn [s]
+                         (if-let [f (:file s)]
+                           (assoc s :content (load-chapter book-root f))
+                           s))
+                       sections)
+        chapters (vec (keep :content loaded))]
+    (check-no-duplicate-ids chapters)
+    {:title     (:book/title config)
+     :author    (:book/author config)
+     :numbering numbering
+     :sections  loaded
+     :chapters  chapters}))
