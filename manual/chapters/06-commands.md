@@ -22,6 +22,28 @@ clojure -M:run build manual --profile screen --profile print
 
 Outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, plus an `artifacts.edn` manifest listing the profiles, paths, and build metadata. See `clojure -M:run build --help` for the full option list.
 
+## preview
+
+Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes — around 150 ms a save, where each cold `build` pays a few seconds of JVM start-up first:
+
+```
+clojure -M:run preview manual
+```
+
+The whole book tree is watched — chapters, `book.edn`, `styles/tokens.edn`, references, included code files, and images — while editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and, on some platforms, faster too.
+
+Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--profile` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
+
+A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. A PDF viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
+
+At the REPL the same engine is `clj-book.build.preview/preview!`, which returns a handle whose `:stop!` ends the session:
+
+```clojure
+(def h (preview! {:book-root "manual"}))
+;; … write, save, watch it rebuild …
+((:stop! h))
+```
+
 ## Dry run
 
 Add `--dry-run` to a build to print the inspectable build plan without rendering or writing anything.

@@ -42,6 +42,8 @@ clojure -M:run build my-book
 
 With no `--profile` given, both the screen and print editions are produced under `build/my-book/pdf/`, alongside a machine-readable `artifacts.edn` manifest. Run it from inside the book directory and you can drop the path entirely: `clojure -M:run build`.
 
+While writing, `clojure -M:run preview my-book` rebuilds the screen edition on every save — see [the commands chapter](#commands).
+
 :::admonition {:kind :note}
 Read [the authoring chapter](#authoring) next to learn both front-ends: the Markdown surface and the Hiccup vocabulary it compiles to.
 :::

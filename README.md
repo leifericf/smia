@@ -29,6 +29,11 @@ and `clojure -M:run build --help` for the full option list. Scripts and other to
 can call the same engine through the `-X` map API
 (`clojure -X clj-book.api/build :book-root '"manual"'`).
 
+For a live authoring loop, `clojure -M:run preview manual` builds the screen
+edition and then rebuilds it on every save in the same warm JVM — around 150 ms
+a save. A save that fails prints the error and keeps watching; stop with
+Ctrl-C.
+
 ## Documentation
 
 The manual is itself a clj-book manuscript, under `manual/`. Build it (the
