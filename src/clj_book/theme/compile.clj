@@ -17,31 +17,29 @@
    :letter {:width "8.5in" :height "11in"}
    :digest {:width "140mm" :height "216mm"}})
 
-(defn- token [m k default] (get m k default))
-
 (defn- style-from-tokens
   "Override the renderer defaults with token-driven typography."
   [{:keys [color type spacing]}]
-  (let [body-family (token type :body-family "serif")
-        head-family (token type :heading-family "sans-serif")
-        mono-family (token type :mono-family "monospace")
-        text        (token color :text "#1a1a1a")
-        muted       (token color :muted "#666666")
-        rule        (token color :rule "#999999")
-        link        (token color :link "#1a0dab")
-        code-bg     (token color :code-background "#f4f4f4")]
+  (let [body-family (get type :body-family "serif")
+        head-family (get type :heading-family "sans-serif")
+        mono-family (get type :mono-family "monospace")
+        text        (get color :text "#1a1a1a")
+        muted       (get color :muted "#666666")
+        rule        (get color :rule "#999999")
+        link        (get color :link "#1a0dab")
+        code-bg     (get color :code-background "#f4f4f4")]
     (-> expand/default-style
         (assoc :body {:font-family body-family
-                      :font-size   (token type :base-size "11pt")
-                      :line-height (token type :line-height "1.4")
+                      :font-size   (get type :base-size "11pt")
+                      :line-height (get type :line-height "1.4")
                       :color       text})
-        (update :p merge {:space-after (token spacing :paragraph "6pt")})
+        (update :p merge {:space-after (get spacing :paragraph "6pt")})
         (update :h1 merge {:font-family head-family :color text
-                           :font-size   (token type :h1-size "20pt")})
+                           :font-size   (get type :h1-size "20pt")})
         (update :h2 merge {:font-family head-family :color text
-                           :font-size   (token type :h2-size "16pt")})
+                           :font-size   (get type :h2-size "16pt")})
         (update :h3 merge {:font-family head-family :color text
-                           :font-size   (token type :h3-size "13pt")})
+                           :font-size   (get type :h3-size "13pt")})
         (update :code merge {:font-family mono-family})
         (update :pre merge {:font-family   mono-family
                             :background-color code-bg
@@ -60,7 +58,7 @@
    :number  "#aa5500" :literal "#7700aa"})
 
 (defn- page-dims [layout]
-  (get page-sizes (token layout :page-size :a4) (:a4 page-sizes)))
+  (get page-sizes (get layout :page-size :a4) (:a4 page-sizes)))
 
 (defn- regions
   "Body, header, and footer regions. `before-name`/`after-name` give the
@@ -76,12 +74,12 @@
    `master-reference` \"book\"."
   [profile layout]
   (let [{:keys [width height]} (page-dims layout)
-        mt      (token layout :margin-top "22mm")
-        mb      (token layout :margin-bottom "22mm")
-        inside  (token layout :margin-inside "26mm")
-        outside (token layout :margin-outside "20mm")
-        header  (token layout :header-extent "12mm")
-        footer  (token layout :footer-extent "12mm")]
+        mt      (get layout :margin-top "22mm")
+        mb      (get layout :margin-bottom "22mm")
+        inside  (get layout :margin-inside "26mm")
+        outside (get layout :margin-outside "20mm")
+        header  (get layout :header-extent "12mm")
+        footer  (get layout :footer-extent "12mm")]
     (if (= profile :print)
       [(into [:fo/simple-page-master
               {:master-name "book-recto" :page-width width :page-height height
@@ -130,9 +128,9 @@
                            (assoc :highlight?   (get-in tokens [:type :highlight] false)
                                   :code-colors  (merge default-code-colors
                                                        (:code tokens))))
-     :link-color       (token color :link "#1a0dab")
-     :rule-color       (token color :rule "#999999")
-     :muted-color      (token color :muted "#666666")
+     :link-color       (get color :link "#1a0dab")
+     :rule-color       (get color :rule "#999999")
+     :muted-color      (get color :muted "#666666")
      :master-reference "book"
      :masters          (masters profile (:layout tokens))
      :running-regions  (running-regions profile)}))

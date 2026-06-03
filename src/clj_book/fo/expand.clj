@@ -506,10 +506,10 @@
                                 (:height a) (assoc :content-height (:height a)))])
      :ul         (fn [a c s] (list-block :ul a c s))
      :ol         (fn [a c s] (list-block :ol a c s))
-     :dl         (fn [a c s] (dl-block a c s))
+     :dl         dl-block
      :dt         (fn [a c s] (styled-block :dt a c s {}))
      :dd         (fn [a c s] (styled-block :dd a c s {}))
-     :figure     (fn [a c s] (figure-block a c s))
+     :figure     figure-block
      :table      (fn [a c s]
                    (let [tbl (table-block a c s)]
                      (if (captioned? a)
@@ -523,11 +523,11 @@
      :td         (fn [a c s] (styled-block :p a c s {}))
      :th         (fn [a c s] (styled-block :p a c s {}))
      :admonition (fn [a c s] (sidebar-block (update a :kind #(or % :note)) c s))
-     :sidebar    (fn [a c s] (sidebar-block a c s))
-     :overview   (fn [a c s] (overview-block a c s))
-     :epigraph   (fn [a c s] (epigraph-block a c s))
-     :footnote   (fn [a c s] (footnote a c s))
-     :xref       (fn [a c s] (xref a c s))
+     :sidebar    sidebar-block
+     :overview   overview-block
+     :epigraph   epigraph-block
+     :footnote   footnote
+     :xref       xref
      :cite       (fn [a _ _] (cite a))
      :index      (fn [a _ _] (index-mark a))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
