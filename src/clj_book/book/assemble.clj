@@ -104,10 +104,18 @@
 (defn- book-sections [{:keys [sections chapters]}]
   (prepare-sections (or sections (legacy-sections chapters))))
 
-(defn- body-chapters
-  "Parsed body chapters (kind `:chapter`), in order — the TOC's entries."
-  [prepared]
-  (->> prepared (filter #(= :chapter (:kind %))) (map :chapter)))
+(defn- heading-text [node]
+  (apply str (filter string? (tree-seq vector? seq node))))
+
+(defn- section-headings
+  "Top-level `:h2` headings in a chapter body that carry an `:id` — the
+   chapter's navigable sections, in order. Each is `{:id :text}`."
+  [{:keys [body]}]
+  (keep (fn [node]
+          (when (and (vector? node) (= :h2 (first node))
+                     (map? (second node)) (:id (second node)))
+            {:id (name (:id (second node))) :text (heading-text node)}))
+        body))
 
 ;; --- fragments ------------------------------------------------------------
 
@@ -118,41 +126,94 @@
          [:fo/bookmark-title title]]
         children))
 
+(defn- chapter-bookmark
+  "A chapter's bookmark, nesting a child bookmark for each navigable
+   section. A chapter with no id-bearing sections (the common case) yields
+   exactly the flat bookmark of before."
+  [parsed]
+  (bookmark (:id parsed) (:title parsed)
+            (map #(bookmark (:id %) (:text %) nil) (section-headings parsed))))
+
 (defn- bookmark-tree
-  "A nested PDF bookmark tree: parts contain their chapters; every other
-   section is a top-level bookmark. A flat book (no parts) yields the same
-   flat list as before."
+  "A nested PDF bookmark tree: parts contain their chapters, chapters
+   contain their sections; every other section is a top-level bookmark. A
+   flat book (no parts, no section ids) yields the same flat list as before."
   [prepared]
   (into [:fo/bookmark-tree]
         (loop [ss prepared, acc []]
           (if (empty? ss)
             acc
             (let [s (first ss)]
-              (if (= :part (:kind s))
+              (cond
+                (= :part (:kind s))
                 (let [idx (:index s)
                       [kids more] (split-with #(and (= :chapter (:kind %))
                                                     (= idx (:part %)))
-                                              (rest ss))
-                      child-bms (map #(bookmark (:id (:chapter %))
-                                                (:title (:chapter %)) nil)
-                                     kids)]
-                  (recur more (conj acc (bookmark (str "part-" idx)
-                                                  (:title s) child-bms))))
+                                              (rest ss))]
+                  (recur more (conj acc (bookmark (str "part-" idx) (:title s)
+                                                  (map #(chapter-bookmark (:chapter %)) kids)))))
+
+                (:chapter s)
+                (recur (rest ss) (conj acc (chapter-bookmark (:chapter s))))
+
+                :else
                 (let [{:keys [id title]} (section->parsed s)]
                   (recur (rest ss) (conj acc (bookmark id title nil))))))))))
 
-(defn- toc-entry [{:keys [id title]} link-color]
+(defn- numbered-text [number title]
+  (if number (str number "  " title) title))
+
+(defn- toc-entries
+  "Flatten the prepared sections into table-of-contents entries
+   `{:id :text :level :bold?}`: parts (bold, level 0) with their chapters
+   (level 1) and each chapter's sections (level 2); flat chapters at level
+   0; appendices and named matter at level 0."
+  [prepared]
+  (loop [ss prepared, acc []]
+    (if (empty? ss)
+      acc
+      (let [s (first ss)]
+        (case (:kind s)
+          :part
+          (recur (rest ss)
+                 (conj acc {:id (str "part-" (:index s)) :level 0 :bold? true
+                            :text (numbered-text (:label s) (:title s))}))
+
+          :chapter
+          (let [p     (:chapter s)
+                level (if (:part s) 1 0)
+                entry {:id (name (:id p)) :level level
+                       :text (numbered-text (:number p) (:title p))}
+                secs  (map (fn [h] {:id (:id h) :level (inc level) :text (:text h)})
+                           (section-headings p))]
+            (recur (rest ss) (into (conj acc entry) secs)))
+
+          :appendix
+          (let [p (:chapter s)]
+            (recur (rest ss)
+                   (conj acc {:id (name (:id p)) :level 0
+                              :text (numbered-text (:number p) (:title p))})))
+
+          :matter
+          (let [{:keys [id title]} (section->parsed s)]
+            (recur (rest ss) (conj acc {:id (name id) :level 0 :text title})))
+
+          (recur (rest ss) acc))))))
+
+(defn- toc-entry [{:keys [id text level bold?]} link-color]
   ;; text-align-last="justify" pushes the page number flush right; the
   ;; leader must be free to stretch (maximum 100%) so it absorbs all the
   ;; slack. A fixed-length leader would instead leave the line short and
   ;; spill the leftover space into the title's word spacing.
-  [:fo/block {:text-align-last "justify" :space-after "5pt"}
-   [:fo/basic-link {:internal-destination (name id) :color link-color} title]
+  [:fo/block (cond-> {:text-align-last "justify" :space-after "5pt"}
+               (pos? level) (assoc :start-indent (str (* level 16) "pt"))
+               bold?        (assoc :font-weight "bold"))
+   [:fo/basic-link {:internal-destination id :color link-color} text]
    [:fo/leader {:leader-pattern         "dots"
                 :leader-length.minimum  "12pt"
                 :leader-length.optimum  "12pt"
                 :leader-length.maximum  "100%"}]
-   [:fo/page-number-citation {:ref-id (name id)}]])
+   [:fo/page-number-citation {:ref-id id}]])
 
 (defn- title-page [title author head-family muted-color]
   [:fo/block {:text-align "center" :space-before "108pt"
@@ -162,7 +223,7 @@
    (when author
      [:fo/block {:font-size "13pt" :color muted-color} author])])
 
-(defn- toc-furniture [title author chapters master-ref theme]
+(defn- toc-furniture [title author prepared master-ref theme]
   (let [{:keys [style link-color rule-color muted-color]} theme
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
@@ -177,7 +238,7 @@
                           :font-weight "bold" :break-before "page"
                           :border-bottom (str "0.5pt solid " rule-color)
                           :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
-             (map #(toc-entry % link-color) chapters)))]))
+             (map #(toc-entry % link-color) (toc-entries prepared))))]))
 
 (defn- chapter-heading [{:keys [id title label]} style rule-color muted-color]
   ;; The running-head marker carries the bare title; the visible heading
@@ -296,7 +357,6 @@
         prepared   (book-sections book)
         all-parsed (vec (keep :chapter prepared))
         _          (resolve-xrefs! all-parsed)
-        body-chs   (body-chapters prepared)
         recto?     (and (= profile :print)
                         (= :recto (:start-chapters-on numbering)))
         body-style (get style :body)]
@@ -306,5 +366,5 @@
           (concat
             [(into [:fo/layout-master-set] masters)]
             [(bookmark-tree prepared)]
-            [(toc-furniture title author body-chs master-reference theme)]
+            [(toc-furniture title author prepared master-reference theme)]
             (section-sequences prepared master-reference theme recto?)))))

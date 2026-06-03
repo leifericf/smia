@@ -1,6 +1,7 @@
 (ns clj-book.book.assemble-test
   (:require
    [clj-book.book.assemble :as assemble]
+   [clj-book.book.number :as number]
    [clj-book.book.structure :as structure]
    [clj-book.book.theme :as theme]
    [clj-book.error :as error]
@@ -51,11 +52,18 @@
           "a fixed-length leader would spill slack into the title spacing"))))
 
 (deftest bookmark-tree-lists-chapters
-  (let [out (assemble/assemble manuscript the-theme)
-        bms (find-all :fo/bookmark out)]
+  (let [out  (assemble/assemble manuscript the-theme)
+        tree (first (find-all :fo/bookmark-tree out))
+        tops (filter (tag= :fo/bookmark) (rest tree))]
     (is (= 1 (count (find-all :fo/bookmark-tree out))))
     (is (= #{"intro" "config"}
-           (set (map #(:internal-destination (second %)) bms))))))
+           (set (map #(:internal-destination (second %)) tops)))
+        "chapters are the top-level bookmarks")
+    (testing "the config chapter's :keys section nests beneath it"
+      (let [config (first (filter #(= "config" (:internal-destination (second %))) tops))]
+        (is (= #{"keys"}
+               (set (map #(:internal-destination (second %))
+                         (filter (tag= :fo/bookmark) (rest config))))))))))
 
 (deftest running-head-markers-carry-chapter-titles
   (let [out (assemble/assemble manuscript the-theme)
@@ -187,6 +195,40 @@
                   screen)
           attrs  (map second (page-sequences out))]
       (is (not-any? #(= "auto-odd" (:initial-page-number %)) attrs)))))
+
+;; --- multi-level table of contents and nested outline --------------------
+
+(def toc-src
+  {:title  "T" :author "A" :numbering structure/default-numbering
+   :sections [{:kind :part :title "Foundations" :index 0}
+              {:kind :chapter :part 0
+               :content (chapter :intro "Introduction"
+                                 [:h2 {:id :setup} "Setup"]
+                                 [:p "x"])}
+              {:kind :appendix :content (chapter :gloss "Glossary")}]})
+
+(defn- toc-link-text [out id]
+  (->> (find-all :fo/basic-link out)
+       (filter #(= id (:internal-destination (second %))))
+       first
+       (drop 2)
+       (apply str)))
+
+(deftest table-of-contents-is-multilevel-and-numbered
+  (let [out (assemble/assemble (:manuscript (number/assign toc-src)) the-theme)]
+    (testing "the part, its chapter, the chapter's section, and the appendix all link"
+      (is (= "Part I  Foundations" (toc-link-text out "part-0")))
+      (is (= "1  Introduction" (toc-link-text out "intro")))
+      (is (= "Setup" (toc-link-text out "setup")))
+      (is (= "A  Glossary" (toc-link-text out "gloss"))))))
+
+(deftest outline-nests-sections-under-chapters
+  (let [out  (assemble/assemble (:manuscript (number/assign toc-src)) the-theme)
+        bms  (find-all :fo/bookmark out)
+        intro (first (filter #(= "intro" (:internal-destination (second %))) bms))
+        kids (filter (tag= :fo/bookmark) (rest intro))]
+    (is (= #{"setup"} (set (map #(:internal-destination (second %)) kids)))
+        "the chapter's section is a nested bookmark")))
 
 (deftest generated-back-matter-renders-a-titled-placeholder
   (let [out    (assemble/assemble structured the-theme)
