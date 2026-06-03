@@ -111,6 +111,25 @@
             (java.nio.file.Files/readAllBytes (.toPath (io/file a)))
             (java.nio.file.Files/readAllBytes (.toPath (io/file b))))))))
 
+(deftest ^:integration manual-builds-the-print-x-edition
+  (let [man  (build! [:print-x])
+        path (artifact-path man :print-x)]
+    (is (str/ends-with? path "clj-book-manual-print-x.pdf"))
+    (with-open [doc (Loader/loadPDF (io/file path))]
+      (let [catalog (.getDocumentCatalog doc)]
+        (testing "the document identifies as PDF/X-4"
+          (let [xmp (slurp (.exportXMPMetadata (.getMetadata catalog)))]
+            (is (str/includes? xmp "PDF/X-4"))))
+        (testing "an output intent is embedded"
+          (is (seq (.getOutputIntents catalog))))
+        (testing "every font on every page is embedded"
+          (doseq [page (.getPages doc)
+                  :let [res (.getResources page)]
+                  fname (.getFontNames res)]
+            (let [font (.getFont res fname)]
+              (is (.isEmbedded font)
+                  (str (.getName font) " must be embedded for PDF/X")))))))))
+
 (deftest ^:integration manual-build-is-structurally-reproducible
   (testing "two builds of the same manuscript agree on pages and text"
     (let [a (artifact-path (build! [:screen]) :screen)

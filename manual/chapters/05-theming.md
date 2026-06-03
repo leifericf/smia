@@ -46,6 +46,7 @@ The same manuscript builds into **editions** — the deliverable forms of the bo
 
 - `:screen` — a PDF with comfortable, symmetric margins for on-screen reading.
 - `:print` — a PDF with mirrored recto/verso margins and a binding gutter on the inside edge.
+- `:print-x` — the print layout as press-ready PDF/X-4.
 - `:site` — a static HTML site styled by the same theme.
 - `:epub` — an accessible EPUB3 package over the same pages.
 
@@ -53,4 +54,4 @@ Both PDF editions are built by default; pass `:editions '[:print]'` (or repeat `
 
 ## Fonts
 
-The default theme uses the PDF base-14 font families, so output is zero-config and always reproducible. Authors who want their own fonts register them through configuration; clj-book bundles no fonts.
+With no font configuration, PDF output uses the base-14 font families, so a new book is zero-config and always reproducible. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn` (see [the editions chapter](#editions)); once registered they are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics — a list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. The clj-book platform bundles no fonts; the manual's manuscript ships its own under their SIL Open Font License, beside the files.

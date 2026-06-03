@@ -3,9 +3,13 @@
            :muted "#666666"
            :rule "#bbbbbb"
            :code-background "#f4f4f4"}
- :type    {:body-family    "serif"
-           :heading-family "sans-serif"
-           :mono-family    "monospace"
+ ;; The families lead with the embedded print fonts (see :book/print-x in
+ ;; book.edn) and fall back to the generic faces. PDF/X requires every
+ ;; glyph to come from an embedded font, so the leading family must match
+ ;; a registered name; the same list is valid CSS for the HTML editions.
+ :type    {:body-family    "Crimson Text, serif"
+           :heading-family "Crimson Text, serif"
+           :mono-family    "Space Mono, monospace"
            :base-size      "11pt"
            :line-height    "1.45"
            :h1-size        "22pt"
@@ -25,4 +29,8 @@
            :margin-inside  "26mm"
            :margin-outside "20mm"
            :header-extent  "12mm"
-           :footer-extent  "12mm"}}
+           :footer-extent  "12mm"}
+ ;; PDF furniture set in faces the tokens do not reach. These point at a
+ ;; registered family so PDF/X conformance covers every glyph.
+ :fo      {:file-bar        {:font-family "Space Mono, monospace"}
+           :annotation-mark {:font-family "Space Mono, monospace"}}}

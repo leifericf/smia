@@ -8,6 +8,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:clj-book.build.request/invalid-value` — `:book-root`, `:config-path`, or `:output-root` was given as a non-string. A missing or blank `:book-root` is not an error: it defaults to `.`, the current directory, and a non-existent book then surfaces as `:clj-book.book.config/missing`.
 - `:clj-book.build.request/unknown-edition` — an edition outside the supported set was requested.
 - `:clj-book.build.request/invalid-editions` — `:editions` was not a vector of keywords.
+- `:clj-book.build.request/print-x-requires-config` — `:print-x` was requested but `book.edn` has no `:book/print-x` map; PDF/X needs embedded fonts and an ICC output intent.
 
 ## Configuration and tokens
 

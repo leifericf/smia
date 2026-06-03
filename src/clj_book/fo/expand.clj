@@ -82,6 +82,13 @@
 (defn- as-id [v]
   (when (some? v) (if (keyword? v) (name v) (str v))))
 
+(defn- links?
+  "Should references render as live links? On unless the style says
+   `:links? false` — PDF/X forbids link annotations, so the print-x
+   edition renders reference text (and page citations) without them."
+  [style]
+  (not (false? (:links? style))))
+
 ;; --- default (base-14) style ----------------------------------------------
 
 (def default-style
@@ -507,14 +514,16 @@
         (:page author) (conj ", on page " [:fo/page-number-citation {:ref-id dest}]))
       [[:fo/page-number-citation {:ref-id dest}]])))
 
-(defn- cite [author]
+(defn- cite [author style]
   (let [key (:key author)]
     (when-not key
       (throw (error/ex :clj-book.fo.expand/invalid-cite
                        ":cite requires a :key." {:attrs author})))
     (let [ref-id (or (:ref-id author) (str "ref-" (name key)))
           label  (or (:label author) (name key))]
-      [:fo/basic-link {:internal-destination ref-id :color "#1a0dab"} label])))
+      (if (links? style)
+        [:fo/basic-link {:internal-destination ref-id :color "#1a0dab"} label]
+        [:fo/inline label]))))
 
 (defn- index-mark [author]
   ;; A zero-width anchor the index page-cites; invisible in the flow.
@@ -526,7 +535,9 @@
       (throw (error/ex :clj-book.fo.expand/invalid-xref
                        ":xref requires a :to target id."
                        {:attrs author})))
-    (into [:fo/basic-link {:internal-destination dest :color "#1a0dab"}]
+    (into (if (links? style)
+            [:fo/basic-link {:internal-destination dest :color "#1a0dab"}]
+            [:fo/inline])
           (if (seq (flatten-children children))
             (expand-all children style)
             (composed-xref author dest)))))
@@ -555,10 +566,12 @@
      :code       (fn [_ c s] (styled-inline (get s :code) c s))
      :span       (fn [_ c s] (into [:fo/inline] (expand-all c s)))
      :br         (fn [_ _ _] [:fo/block])
-     :a          (fn [a c s] (styled-inline
-                              {:external-destination (str "url('" (:href a) "')")
-                               :color "#1a0dab" :text-decoration "underline"}
-                              c s))
+     :a          (fn [a c s] (if (links? s)
+                               (styled-inline
+                                {:external-destination (str "url('" (:href a) "')")
+                                 :color "#1a0dab" :text-decoration "underline"}
+                                c s)
+                               (styled-inline {} c s)))
      :img        (fn [a _ _] [:fo/external-graphic
                               (cond-> {:src (str "url('" (:src a) "')")}
                                 (:width a)  (assoc :content-width (:width a))
@@ -587,7 +600,7 @@
      :epigraph   epigraph-block
      :footnote   footnote
      :xref       xref
-     :cite       (fn [a _ _] (cite a))
+     :cite       (fn [a _ s] (cite a s))
      :index      (fn [a _ _] (index-mark a))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together

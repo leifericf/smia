@@ -256,6 +256,16 @@
       (is (some #(= "idx-1" (:ref-id (second %))) cites))
       (is (some #(= "idx-3" (:ref-id (second %))) cites)))))
 
+(deftest linkless-theme-assembles-without-link-annotations
+  ;; The print-x edition forbids PDF link annotations; the assembled
+  ;; furniture (TOC, float lists) keeps text and page citations only.
+  (let [linkless (assoc the-theme :links? false)
+        out      (assemble/assemble (:manuscript (number/assign manuscript))
+                                    linkless)]
+    (is (empty? (find-all :fo/basic-link out)))
+    (testing "TOC entries still resolve page numbers"
+      (is (seq (find-all :fo/page-number-citation out))))))
+
 (deftest generated-lists-of-floats-render-with-links-and-page-numbers
   (let [src  {:title "B" :author "A" :numbering structure/default-numbering
               :sections [{:kind :matter :matter :front :role :list-of-figures}

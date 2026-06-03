@@ -397,6 +397,36 @@
     (is (= :clj-book.fo.expand/html-tag-in-pdf (:error/type d)))
     (is (= :html/aside (:tag (:error/context d))))))
 
+(deftest linkless-style-renders-references-as-plain-text
+  ;; PDF/X forbids link annotations in the printable area; the press
+  ;; edition keeps the words and page citations and drops the links.
+  (let [linkless (assoc expand/default-style :links? false)]
+    (testing "a childless xref keeps its label and page citation"
+      (is (= [:fo/inline "Chapter 2" ", on page "
+              [:fo/page-number-citation {:ref-id "ch-config"}]]
+             (expand/expand [:xref {:to :ch-config :label "Chapter 2"
+                                    :page true}]
+                            linkless))))
+    (testing "an xref with a body keeps the body"
+      (is (= [:fo/inline "the config"]
+             (expand/expand [:xref {:to :ch-config} "the config"] linkless))))
+    (testing "a citation keeps its label"
+      (is (= [:fo/inline "Smith 2020"]
+             (expand/expand [:cite {:key :smith :label "Smith 2020"}]
+                            linkless))))
+    (testing "an external link keeps its text"
+      (let [out (expand/expand [:a {:href "https://x.example"} "the site"]
+                               linkless)]
+        (is (= :fo/inline (first out)))
+        (is (= "the site" (last out)))
+        (is (nil? (:external-destination (second out))))))
+    (testing "no basic-link is emitted anywhere"
+      (doseq [node [[:xref {:to :x :label "L"}]
+                    [:cite {:key :k}]
+                    [:a {:href "https://x"} "t"]]]
+        (is (empty? (filter #(and (vector? %) (= :fo/basic-link (first %)))
+                            (tree-seq vector? seq (expand/expand node linkless)))))))))
+
 (deftest code-block-preserves-pre-whitespace-through-serialization
   (let [xml (ser/serialize (ex [:pre "(defn f [x]\n  x)"])
                            {:xml-declaration? false})]

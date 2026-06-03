@@ -24,4 +24,17 @@
 
  :book/appendices ["chapters/07-error-catalog.md"]
 
- :book/back-matter [{:role :bibliography} {:role :index}]}
+ :book/back-matter [{:role :bibliography} {:role :index}]
+
+ :book/print-x
+ {:output-intent {:icc "assets/icc/sRGB-v2.icc" :profile-name "sRGB"}
+  :fonts [{:family      "Crimson Text"
+           :normal      "assets/fonts/crimson-text/CrimsonText-Regular.ttf"
+           :bold        "assets/fonts/crimson-text/CrimsonText-Bold.ttf"
+           :italic      "assets/fonts/crimson-text/CrimsonText-Italic.ttf"
+           :bold-italic "assets/fonts/crimson-text/CrimsonText-BoldItalic.ttf"}
+          {:family      "Space Mono"
+           :normal      "assets/fonts/space-mono/SpaceMono-Regular.ttf"
+           :bold        "assets/fonts/space-mono/SpaceMono-Bold.ttf"
+           :italic      "assets/fonts/space-mono/SpaceMono-Italic.ttf"
+           :bold-italic "assets/fonts/space-mono/SpaceMono-BoldItalic.ttf"}]}}

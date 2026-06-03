@@ -153,7 +153,11 @@
    `:print-x` descriptor additionally turns on PDF/X conformance. Writes
    the intermediate FO and the final PDF; returns the artifact entry."
   [{:keys [book-root book tokens config]} {:keys [edition fo-path pdf-path]} descriptor]
-  (let [the-theme (theme-compile/compile-theme tokens (:layout descriptor))
+  (let [the-theme (cond-> (theme-compile/compile-theme tokens (:layout descriptor))
+                    ;; PDF/X forbids link annotations: render references
+                    ;; as text and let the page citations locate them.
+                    (:pdf-x descriptor) (-> (assoc :links? false)
+                                            (assoc-in [:style :links?] false)))
         fo-xml    (-> (assemble/assemble book the-theme)
                       (expand/expand (:style the-theme))
                       (serialize/serialize))]

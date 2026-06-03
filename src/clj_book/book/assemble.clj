@@ -228,7 +228,16 @@
   [prepared]
   (mapcat node->toc-entries (outline prepared)))
 
-(defn- toc-entry [{:keys [id text level bold?]} link-color]
+(defn- maybe-link
+  "A live internal link, or — when the theme says `:links? false` (the
+   print-x edition; PDF/X forbids link annotations) — the bare text. The
+   page citation beside it does the locating either way."
+  [{:keys [link-color links?]} id text]
+  (if (false? links?)
+    [:fo/inline text]
+    [:fo/basic-link {:internal-destination id :color link-color} text]))
+
+(defn- toc-entry [{:keys [id text level bold?]} theme]
   ;; text-align-last="justify" pushes the page number flush right; the
   ;; leader must be free to stretch (maximum 100%) so it absorbs all the
   ;; slack. A fixed-length leader would instead leave the line short and
@@ -236,7 +245,7 @@
   [:fo/block (cond-> {:text-align-last "justify" :space-after "5pt"}
                (pos? level) (assoc :start-indent (str (* level 16) "pt"))
                bold?        (assoc :font-weight "bold"))
-   [:fo/basic-link {:internal-destination id :color link-color} text]
+   (maybe-link theme id text)
    [:fo/leader {:leader-pattern         "dots"
                 :leader-length.minimum  "12pt"
                 :leader-length.optimum  "12pt"
@@ -307,7 +316,7 @@
                  flow-children)])))
 
 (defn- toc-furniture [title author prepared ctx]
-  (let [{:keys [style link-color rule-color muted-color]} (:theme ctx)
+  (let [{:keys [style rule-color muted-color]} (:theme ctx)
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
     (page-sequence
@@ -318,7 +327,7 @@
                      :font-weight "bold" :break-before "page"
                      :border-bottom (str "0.5pt solid " rule-color)
                      :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
-        (map #(toc-entry % link-color) (toc-entries prepared))))))
+        (map #(toc-entry % (:theme ctx)) (toc-entries prepared))))))
 
 (defn- chapter-heading [{:keys [id title label]} style rule-color muted-color]
   ;; The running-head marker carries the bare title; the visible heading
@@ -402,12 +411,12 @@
   "A list of figures/tables/listings: every numbered float of `kind`, in
    document order, linked to its anchor with a dotted leader and resolved
    page number (the TOC-entry pattern)."
-  [floats want-kind link-color]
+  [floats want-kind theme]
   (for [{:keys [kind id label title]} floats
         :when (= kind want-kind)]
     (let [text (if title (str label ". " title) label)]
       [:fo/block {:text-align-last "justify" :space-after "5pt"}
-       [:fo/basic-link {:internal-destination id :color link-color} text]
+       (maybe-link theme id text)
        [:fo/leader {:leader-pattern        "dots"
                     :leader-length.minimum "12pt"
                     :leader-length.optimum "12pt"
@@ -420,16 +429,16 @@
    An author `:title` on the section overrides the role's default title."
   [section ctx]
   (or (:chapter section)
-      (let [role       (:role section)
-            link-color (get-in ctx [:theme :link-color])]
+      (let [role  (:role section)
+            theme (:theme ctx)]
         {:id    role
          :title (or (:title section) (structure/role-title role))
          :body  (case role
                   :bibliography     (vec (bibliography-blocks (:references ctx)))
                   :index            (vec (index-blocks (:index ctx)))
-                  :list-of-figures  (vec (float-list-blocks (:floats ctx) :figure link-color))
-                  :list-of-tables   (vec (float-list-blocks (:floats ctx) :table link-color))
-                  :list-of-listings (vec (float-list-blocks (:floats ctx) :listing link-color))
+                  :list-of-figures  (vec (float-list-blocks (:floats ctx) :figure theme))
+                  :list-of-tables   (vec (float-list-blocks (:floats ctx) :table theme))
+                  :list-of-listings (vec (float-list-blocks (:floats ctx) :listing theme))
                   [])})))
 
 (defn- body-page-attrs

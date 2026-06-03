@@ -1,0 +1,17 @@
+sRGB-v2.icc
+
+A compact sRGB ICC v2 color profile, used as the PDF/X output intent for
+the manual's print-x edition.
+
+Source: the Compact ICC Profiles collection
+(https://github.com/saucecontrol/Compact-ICC-Profiles), file
+profiles/sRGB-v2-magic.icc, renamed here to sRGB-v2.icc.
+
+Modifications: the header device class is changed from monitor (mntr)
+to output device (prtr), and the header profile ID checksum is zeroed
+accordingly. PDF/X requires the DestOutputProfile in an output intent
+to be an output-device profile; the color data is unchanged.
+
+License: Creative Commons Zero v1.0 Universal (CC0-1.0). The profile is
+dedicated to the public domain and may be used, modified, and
+redistributed without restriction.

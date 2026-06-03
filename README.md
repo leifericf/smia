@@ -41,6 +41,9 @@ repeatable `--edition` flag:
 
 - `screen` — a PDF with symmetric margins for on-screen reading (default).
 - `print` — a PDF with mirrored recto/verso margins and a binding gutter (default).
+- `print-x` — the print layout hardened to PDF/X-4 for press submission:
+  embedded fonts, an ICC output intent, and no link annotations. Gated on a
+  `:book/print-x` map in `book.edn` naming the fonts and profile.
 - `site` — a static HTML site under `build/<slug>/site/`: a table-of-contents
   home page, one page per chapter, a stylesheet generated from the same
   `theme.edn`, and copies of referenced images. Cross-references become links,

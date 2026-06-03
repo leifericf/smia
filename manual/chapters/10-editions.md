@@ -4,6 +4,7 @@ A build produces **editions** — deliverable forms of the same manuscript. One 
 
 - `:screen` — a PDF with symmetric margins for on-screen reading.
 - `:print` — a PDF with mirrored recto/verso margins and a binding gutter.
+- `:print-x` — the print PDF hardened to PDF/X-4 for press submission.
 - `:site` — a static HTML site.
 - `:epub` — an EPUB3 package for e-readers.
 
@@ -45,3 +46,28 @@ The edition is accessible by construction. Schema.org accessibility metadata is 
 Two optional `book.edn` keys feed the package metadata: `:book/identifier` (default `urn:clj-book:<slug>`) and `:book/language` (default `"en"`).
 
 The package is byte-reproducible: the modification stamp and every archive entry's timestamp are pinned, so the same manuscript and theme always produce an identical `.epub`. Send the file to any modern reader or store pipeline — EPUB3 is the accepted submission format everywhere that matters.
+
+## The print-x edition
+
+`--edition print-x` produces the print layout as a PDF/X-4 file — the conformance level print-on-demand services and presses ask for. PDF/X is the print edition plus hard guarantees: every font embedded (the base-14 substitutes are not allowed), an ICC output intent describing the target color space, pinned identification metadata, and no interactive features. Cross-references, citations, and table-of-contents entries render as plain text with their page citations — PDF/X forbids link annotations, and on paper the page number is the link.
+
+The edition is gated on a `:book/print-x` map in `book.edn` naming the fonts to embed and the output intent:
+
+```edn
+:book/print-x
+{:output-intent {:icc "assets/icc/sRGB-v2.icc" :profile-name "sRGB"}
+ :fonts [{:family      "Crimson Text"
+          :normal      "assets/fonts/crimson-text/CrimsonText-Regular.ttf"
+          :bold        "assets/fonts/crimson-text/CrimsonText-Bold.ttf"
+          :italic      "assets/fonts/crimson-text/CrimsonText-Italic.ttf"
+          :bold-italic "assets/fonts/crimson-text/CrimsonText-BoldItalic.ttf"}]}
+```
+
+Requesting `:print-x` without the map fails fast with `:clj-book.build.request/print-x-requires-config`. When the map is present, the fonts are embedded in *every* PDF edition — the book's typography should not change with the conformance mode — while the PDF/X mode and output intent apply to `:print-x` alone.
+
+Two things must line up with the config:
+
+- The theme's `:type` families must lead with registered family names (the manual's `theme.edn` uses `"Crimson Text, serif"`), and any furniture faces the tokens do not reach are pointed at registered families through the theme's `:fo` override group. PDF/X requires every glyph to come from an embedded font; an unregistered family falls back to a base-14 font and fails the build with a clear error.
+- A press usually mandates its own CMYK output intent. The manual ships a public-domain RGB profile suitable for digital print-on-demand; for offset work, drop the press's profile into the book and point `:output-intent` at it. Press CMYK characterizations are generally not freely redistributable, so clj-book cannot bundle one.
+
+The manual's shipped assets stay under their own licenses, beside the files: the fonts are SIL Open Font License (each family directory carries `OFL.txt` — the OFL requires the license to travel with the fonts, and they are never covered by clj-book's EPL), and the ICC profile is CC0 with its provenance in `NOTICE.txt`.
