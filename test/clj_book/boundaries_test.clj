@@ -37,7 +37,7 @@
   "Rendering-context namespaces the interface must not reach into; it
    routes through clj-book.build.execute instead."
   ["clj-book.fo.render" "clj-book.book.assemble" "clj-book.book.load"
-   "clj-book.md." "clj-book.eval."])
+   "clj-book.md." "clj-book.eval." "clj-book.html." "clj-book.site."])
 
 (deftest interface-routes-through-build
   (doseq [path interface-nss

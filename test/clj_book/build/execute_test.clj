@@ -73,6 +73,20 @@
   ;; the request has been normalized.
   (is true))
 
+(deftest site-edition-build-writes-the-page-map
+  (let [req (request "site" :editions [:site])
+        man (execute/build req)
+        art (first (:artifacts man))]
+    (is (= [:site] (:build/editions man)))
+    (is (= :site (:edition art)))
+    (testing "the artifact names the directory and its index"
+      (is (.isDirectory (io/file (:path art))))
+      (is (= (:path art) (get-in art [:paths :dir])))
+      (is (.exists (io/file (get-in art [:paths :index]))))
+      (is (str/includes? (slurp (get-in art [:paths :index])) "Tiny Synthetic Book")))
+    (testing "the stylesheet lands beside the pages"
+      (is (.exists (io/file (:path art) "styles.css"))))))
+
 ;; --- opt-in code validation -----------------------------------------------
 
 (def ^:private chapter-with-passing-block

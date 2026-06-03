@@ -7,6 +7,7 @@
    performing any IO. clj-book.build.execute performs it, and `--dry-run`
    prints it. Decision is thereby separated from execution."
   (:require
+   [clj-book.build.request :as request]
    [clj-book.schema :as schema]))
 
 (declare edition-step)
@@ -33,7 +34,12 @@
 
 ;; --- private helpers -------------------------------------------------------
 
-(defn- edition-step [edition slug paths]
-  {:edition  edition
-   :fo-path  (str (:intermediate-dir paths) "/book-" (name edition) ".fo")
-   :pdf-path (str (:pdf-output-dir paths) "/" slug "-" (name edition) ".pdf")})
+(defn- edition-step
+  "One edition's step, shaped by its descriptor's output format."
+  [edition slug paths]
+  (case (:format (request/edition-descriptors edition))
+    :pdf  {:edition  edition
+           :fo-path  (str (:intermediate-dir paths) "/book-" (name edition) ".fo")
+           :pdf-path (str (:pdf-output-dir paths) "/" slug "-" (name edition) ".pdf")}
+    :html {:edition edition
+           :out-dir (str (:book-output-dir paths) "/site")}))

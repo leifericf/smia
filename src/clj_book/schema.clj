@@ -64,7 +64,7 @@
 
 (def Edition
   "A deliverable edition clj-book can build."
-  [:enum :screen :print])
+  [:enum :screen :print :site])
 
 (def Request
   "A normalized public request map (see `clj-book.build.request`)."
@@ -85,14 +85,25 @@
    [:intermediate-dir :string]
    [:pdf-output-dir :string]])
 
-(def EditionStep
-  "A single edition's place in the plan: which edition, and where its
-   output files are written (a PDF edition names its intermediate FO and
-   final PDF)."
+(def PdfEditionStep
+  "A PDF edition's place in the plan: where its intermediate FO and final
+   PDF are written."
   [:map
    [:edition Edition]
    [:fo-path :string]
    [:pdf-path :string]])
+
+(def SiteEditionStep
+  "The site edition's place in the plan: the directory its page map is
+   written into."
+  [:map
+   [:edition [:enum :site]]
+   [:out-dir :string]])
+
+(def EditionStep
+  "A single edition's place in the plan; the shape follows the edition's
+   output format."
+  [:or PdfEditionStep SiteEditionStep])
 
 (def Plan
   "An inspectable, pure description of a build: which editions, where each

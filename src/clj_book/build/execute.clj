@@ -23,6 +23,8 @@
    [clj-book.fo.schema :as fo-schema]
    [clj-book.fo.serialize :as serialize]
    [clj-book.schema :as schema]
+   [clj-book.site.assemble :as site-assemble]
+   [clj-book.site.emit :as site-emit]
    [clj-book.theme.compile :as theme-compile]
    [clj-book.theme.load :as theme]
    [clojure.java.io :as io])
@@ -153,9 +155,24 @@
        :paths    {:pdf pdf-path :fo fo-path}
        :warnings (:warnings result)})))
 
+(defn- render-site!
+  "Assemble the static site (pure) and write its page map (shell).
+   Returns the artifact entry."
+  [{:keys [book-root book tokens]} {:keys [edition out-dir]}]
+  (let [{:keys [pages resources]} (site-assemble/assemble book tokens)
+        result (site-emit/emit! {:out-dir   out-dir
+                                 :book-root book-root
+                                 :pages     pages
+                                 :resources resources})]
+    {:edition  edition
+     :path     out-dir
+     :paths    {:dir out-dir :index (str out-dir "/index.html")}
+     :warnings (:warnings result)}))
+
 (defn- render-edition!
   "Render one edition step, dispatching on its descriptor's `:format`."
   [base {:keys [edition] :as step}]
   (let [descriptor (get request/edition-descriptors edition)]
     (case (:format descriptor)
-      :pdf (render-pdf-edition! base step descriptor))))
+      :pdf  (render-pdf-edition! base step descriptor)
+      :html (render-site! base step))))

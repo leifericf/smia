@@ -69,6 +69,11 @@
     (doseq [e request/supported-editions]
       (is (keyword? (:format (request/edition-descriptors e)))))))
 
+(deftest site-edition-is-supported
+  (let [out (request/normalize (assoc valid-base :editions [:site]) :build)]
+    (is (= [:site] (:editions out)))
+    (is (= :html (:format (request/edition-descriptors :site))))))
+
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]
     (is (= :clj-book.build.request/invalid-request (:error/type d)))))

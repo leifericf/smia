@@ -15,7 +15,8 @@
    dispatches on, and for PDF editions the page `:layout` the theme
    compiles for."
   {:screen {:format :pdf :layout :screen}
-   :print  {:format :pdf :layout :print}})
+   :print  {:format :pdf :layout :print}
+   :site   {:format :html}})
 
 (def supported-editions
   "Editions clj-book can build."

@@ -52,6 +52,9 @@
   (testing "A dry-run build returns 0 and renders nothing"
     (is (= 0 (run-code ["build" fixture "--dry-run"])))))
 
+(deftest site-edition-is-accepted-on-the-command-line
+  (is (= 0 (run-code ["build" fixture "--edition" "site" "--dry-run"]))))
+
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
 

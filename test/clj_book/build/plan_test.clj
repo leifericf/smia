@@ -39,3 +39,13 @@
   (let [p (plan/plan (assoc-in prepared [:request :editions] [:print]))]
     (is (= [:print] (:editions p)))
     (is (= 1 (count (:edition-steps p))))))
+
+(deftest site-edition-plans-an-output-directory
+  (let [p (plan/plan (assoc-in prepared [:request :editions] [:screen :site]))]
+    (is (schema/valid? schema/Plan p))
+    (testing "the site step names a directory, not FO/PDF paths"
+      (is (= {:edition :site :out-dir "build/x/site"}
+             (-> p :edition-steps second))))
+    (testing "the PDF step is unchanged beside it"
+      (is (= "build/x/pdf/x-screen.pdf"
+             (-> p :edition-steps first :pdf-path))))))
