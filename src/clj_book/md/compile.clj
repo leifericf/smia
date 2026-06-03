@@ -55,6 +55,35 @@
     (:soft-line-break :hard-line-break) " "
     (apply str (map inline-text (:children node)))))
 
+;; --- heading attributes ----------------------------------------------------
+
+(defn- split-trailing-edn-map
+  "If string `s` ends with a bare EDN map (`… {:id :x}`), return `[text-before
+   attrs]`; otherwise nil. Additive to CommonMark: a heading with no trailing
+   map is untouched."
+  [s]
+  (when (string? s)
+    (let [t (str/trimr s)]
+      (when-let [open (and (str/ends-with? t "}") (str/index-of t "{"))]
+        (let [parsed (try (edn/read-string (subs t open)) (catch Exception _ nil))]
+          (when (map? parsed)
+            [(str/trimr (subs t 0 open)) parsed]))))))
+
+(defn- clean-heading-text
+  "Strip a trailing EDN attribute map from heading text (used for the
+   chapter `:title`)."
+  [s]
+  (if-let [[text _] (split-trailing-edn-map s)] text s))
+
+(defn- extract-heading-attrs
+  "Pull a trailing EDN attribute map off a heading's compiled inline
+   children, returning `[attrs children']` (attrs nil when none)."
+  [kids]
+  (let [last-child (last kids)]
+    (if-let [[text attrs] (and (string? last-child) (split-trailing-edn-map last-child))]
+      [attrs (cond-> (vec (butlast kids)) (seq text) (conj text))]
+      [nil kids])))
+
 ;; --- inline raw escapes ----------------------------------------------------
 
 (def ^:private inline-escape-re #"^\{=(hiccup|fo)\}")
@@ -240,7 +269,10 @@
   "Node `:type` -> `(fn [node] -> author-hiccup)`. A plain map so the
    vocabulary can be introspected and extended as data."
   {:paragraph           (fn [n] (into [:p] (compile-inline-seq (:children n))))
-   :heading             (fn [n] (into [(keyword (str "h" (:level n)))] (compile-inline-seq (:children n))))
+   :heading             (fn [n] (let [tag (keyword (str "h" (:level n)))
+                                       [attrs kids] (extract-heading-attrs
+                                                     (compile-inline-seq (:children n)))]
+                                   (into (if attrs [tag attrs] [tag]) kids)))
    :text                (fn [n] (:literal n))
    :strong              (fn [n] (into [:strong] (compile-inline-seq (:children n))))
    :emphasis            (fn [n] (into [:em] (compile-inline-seq (:children n))))
@@ -312,7 +344,7 @@
                            (fn [i b] (when (and (= :heading (:type b))
                                                 (= 1 (:level b))) i))
                            blocks))
-          title    (when h1-index (inline-text (nth blocks h1-index)))
+          title    (when h1-index (clean-heading-text (inline-text (nth blocks h1-index))))
           body     (compile-block-seq
                     (if h1-index
                       (concat (subvec blocks 0 h1-index) (subvec blocks (inc h1-index)))

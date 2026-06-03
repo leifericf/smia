@@ -29,6 +29,17 @@
   (is (= [[:h2 "Two"] [:h3 "Three"]]
          (md->body "## Two\n\n### Three\n"))))
 
+(deftest heading-trailing-edn-map-becomes-attributes
+  (testing "a trailing bare EDN map on a heading line is pulled out as attrs"
+    (is (= [[:h2 {:id :setup} "Setup"]]
+           (md->body "## Setup {:id :setup}\n")))
+    (is (= [[:h3 {:id :keys} "The Keys"]]
+           (md->body "### The Keys {:id :keys}\n"))))
+  (testing "a heading with no trailing map is plain CommonMark"
+    (is (= [[:h2 "Plain heading"]] (md->body "## Plain heading\n"))))
+  (testing "the H1 title strips its attribute map too"
+    (is (= "Quickstart" (:title (second (md->chapter "# Quickstart {:id :qs}\n")))))))
+
 (deftest bullet-and-ordered-lists
   (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n")))
   (is (= [[:ol [:li "one"] [:li "two"]]] (md->body "1. one\n2. two\n"))))
