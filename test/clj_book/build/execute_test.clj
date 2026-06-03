@@ -49,26 +49,26 @@
       (is (= :ok (:status out))))))
 
 (deftest dry-run-returns-plan-without-building
-  (testing "Dry run validates and plans but performs no profile render"
-    (let [p (execute/build (request "dry" :profiles [:screen :print]
+  (testing "Dry run validates and plans but performs no edition render"
+    (let [p (execute/build (request "dry" :editions [:screen :print]
                                     :dry-run true))]
-      (is (= [:screen :print] (:profiles p)))
-      (is (= 2 (count (:profile-steps p))))
+      (is (= [:screen :print] (:editions p)))
+      (is (= 2 (count (:edition-steps p))))
       (is (= "tiny-book" (-> p :manifest-skeleton :book/slug))))))
 
-(deftest ^:integration single-profile-build-writes-pdf-and-manifest
-  (let [req (request "build" :profiles [:screen])
+(deftest ^:integration single-edition-build-writes-pdf-and-manifest
+  (let [req (request "build" :editions [:screen])
         man (execute/build req)
         art (first (:artifacts man))]
     (is (= "tiny-book" (:book/slug man)))
-    (is (= [:screen] (:build/profiles man)))
-    (is (= :screen (:profile art)))
+    (is (= [:screen] (:build/editions man)))
+    (is (= :screen (:edition art)))
     (is (.exists (io/file (:path art))) "the PDF is written to disk")
     (is (str/ends-with? (:path art) "tiny-book-screen.pdf"))
     (is (.exists (io/file (-> art :paths :fo))) "the intermediate FO is written")
     (is (.exists (io/file (:manifest/path man))))))
 
-(deftest invalid-profile-blocked-by-request-normalization
+(deftest invalid-edition-blocked-by-request-normalization
   ;; This is asserted at the public api/request layer; execute assumes
   ;; the request has been normalized.
   (is true))
@@ -105,12 +105,12 @@
 (deftest build-aborts-on-a-failing-block-before-rendering
   (let [root (tmp-book-with-chapter "buildfail" chapter-with-failing-block)
         d    (catch-data #(execute/build (request "buildfail" :book-root root
-                                                  :profiles [:screen] :validate-code true)))]
+                                                  :editions [:screen] :validate-code true)))]
     (is (= :clj-book.eval/validation-failed (:error/type d)))))
 
 (deftest dry-run-surfaces-the-validation-plan
   (let [root (tmp-book-with-chapter "valdry" chapter-with-passing-block)
-        p    (execute/build (request "valdry" :book-root root :profiles [:screen]
+        p    (execute/build (request "valdry" :book-root root :editions [:screen]
                                      :dry-run true :validate-code true))]
     (is (true? (get-in p [:validation :enabled])))
     (is (= 1 (get-in p [:validation :plan :total])))

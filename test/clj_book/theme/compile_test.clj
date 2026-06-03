@@ -24,7 +24,7 @@
     (testing "paragraph spacing is token-driven"
       (is (= "8pt" (-> style :p :space-after))))))
 
-(deftest screen-profile-has-one-symmetric-master
+(deftest screen-layout-has-one-symmetric-master
   (let [{:keys [masters master-reference]} (theme/compile-theme tokens :screen)
         spm (filter #(= :fo/simple-page-master (first %)) masters)]
     (is (= "book" master-reference))
@@ -34,7 +34,7 @@
       (is (= "18mm" (:margin-right attrs)))
       (is (= "8.5in" (:page-width attrs)) "letter trim size from tokens"))))
 
-(deftest print-profile-mirrors-recto-and-verso
+(deftest print-layout-mirrors-recto-and-verso
   (let [{:keys [masters]} (theme/compile-theme tokens :print)
         by-name (into {} (for [m masters
                                :when (= :fo/simple-page-master (first m))]

@@ -22,7 +22,7 @@ Maven dependency. To build the manual that ships with the repo:
 clojure -M:run build manual
 ```
 
-With no `--profile` option, both the screen and print editions are produced under
+With no `--edition` option, both the screen and print editions are produced under
 `build/clj-book-manual/pdf/`, next to a machine-readable `artifacts.edn` manifest.
 Run `clojure -M:run validate manual` to check a manuscript without rendering,
 and `clojure -M:run build --help` for the full option list. Scripts and other tools
@@ -39,7 +39,7 @@ Ctrl-C.
 The manual is itself a clj-book manuscript, under `manual/`. Build it (the
 command above) and read the PDFs in `build/clj-book-manual/pdf/`. It walks through
 the quickstart, the Markdown and Hiccup authoring vocabulary, `book.edn`
-configuration, theming and profiles, the build commands, producing a finished
+configuration, theming and editions, the build commands, producing a finished
 book, and the error catalog. The design and architecture are covered in the
 manual's own design chapter.
 

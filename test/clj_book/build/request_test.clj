@@ -26,43 +26,48 @@
     (let [d (catch-error #(request/normalize {:book-root 'manual} :build))]
       (is (= :clj-book.build.request/invalid-value (:error/type d))))))
 
-(deftest build-defaults-to-both-profiles
-  (testing "A build with no :profiles renders both editions"
+(deftest build-defaults-to-both-pdf-editions
+  (testing "A build with no :editions builds screen and print"
     (let [out (request/normalize valid-base :build)]
-      (is (= [:screen :print] (:profiles out))))))
+      (is (= [:screen :print] (:editions out))))))
 
-(deftest empty-profiles-defaults-to-both
-  (let [out (request/normalize (assoc valid-base :profiles []) :build)]
-    (is (= [:screen :print] (:profiles out)))))
+(deftest empty-editions-defaults-to-both
+  (let [out (request/normalize (assoc valid-base :editions []) :build)]
+    (is (= [:screen :print] (:editions out)))))
 
-(deftest unknown-profile-is-hard-error
+(deftest unknown-edition-is-hard-error
   (let [d (catch-error
-            #(request/normalize (assoc valid-base :profiles [:screen :wat])
+            #(request/normalize (assoc valid-base :editions [:screen :wat])
                                 :build))]
-    (is (= :clj-book.build.request/unknown-profile (:error/type d)))
-    (is (= [:wat] (:unknown-profiles (:error/context d))))))
+    (is (= :clj-book.build.request/unknown-edition (:error/type d)))
+    (is (= [:wat] (:unknown-editions (:error/context d))))))
 
-(deftest non-keyword-profile-is-hard-error
+(deftest non-keyword-edition-is-hard-error
   (let [d (catch-error
-            #(request/normalize (assoc valid-base :profiles ["screen"])
+            #(request/normalize (assoc valid-base :editions ["screen"])
                                 :build))]
-    (is (= :clj-book.build.request/invalid-profiles (:error/type d)))))
+    (is (= :clj-book.build.request/invalid-editions (:error/type d)))))
 
-(deftest valid-single-profile-request
-  (let [out (request/normalize (assoc valid-base :profiles [:print]) :build)]
-    (is (= [:print] (:profiles out)))
+(deftest valid-single-edition-request
+  (let [out (request/normalize (assoc valid-base :editions [:print]) :build)]
+    (is (= [:print] (:editions out)))
     (is (= "test/fixtures/synthetic/valid-book" (:book-root out)))
     (is (= "build" (:output-root out)))
     (is (= "book.edn" (:config-path out)))))
 
-(deftest valid-multi-profile-request
+(deftest valid-multi-edition-request
   (let [out (request/normalize
-              (assoc valid-base :profiles [:screen :print]) :build)]
-    (is (= [:screen :print] (:profiles out)))))
+              (assoc valid-base :editions [:screen :print]) :build)]
+    (is (= [:screen :print] (:editions out)))))
 
-(deftest validate-command-leaves-profiles-nil
+(deftest validate-command-leaves-editions-nil
   (let [out (request/normalize valid-base :validate)]
-    (is (nil? (:profiles out)))))
+    (is (nil? (:editions out)))))
+
+(deftest every-edition-has-a-descriptor
+  (testing "the internal descriptor names a format for every edition"
+    (doseq [e request/supported-editions]
+      (is (keyword? (:format (request/edition-descriptors e)))))))
 
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]

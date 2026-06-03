@@ -1,6 +1,6 @@
 # Writing in Markdown
 
-A chapter whose filename ends in `.md` is written in a curated CommonMark dialect and compiled to the same author Hiccup a `.clj` chapter produces. Everything downstream — assembly, expansion, theming, and the screen and print profiles — is identical. Markdown is prose-first, so it removes the string-escaping friction of writing prose and code samples directly in Hiccup.
+A chapter whose filename ends in `.md` is written in a curated CommonMark dialect and compiled to the same author Hiccup a `.clj` chapter produces. Everything downstream — assembly, expansion, theming, and the screen and print editions — is identical. Markdown is prose-first, so it removes the string-escaping friction of writing prose and code samples directly in Hiccup.
 
 ## Title, id, and front-matter
 

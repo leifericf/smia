@@ -29,10 +29,10 @@
    authored sugar for the later expansion pass."
   [book theme]
   (let [{:keys [title author]} book
-        {:keys [style master-reference masters profile]} theme
+        {:keys [style master-reference masters layout]} theme
         numbering  (or (:numbering book) structure/default-numbering)
         prepared   (book-sections book)
-        recto?     (and (= profile :print)
+        recto?     (and (= layout :print)
                         (= :recto (:start-chapters-on numbering)))
         ctx        {:theme         theme
                     :master-ref    master-reference

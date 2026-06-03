@@ -62,8 +62,8 @@
    [:fo {:optional true} [:map-of :keyword :map]]
    [:css {:optional true} [:sequential [:tuple :string :map]]]])
 
-(def Profile
-  "A PDF layout profile clj-book can render."
+(def Edition
+  "A deliverable edition clj-book can build."
   [:enum :screen :print])
 
 (def Request
@@ -75,37 +75,38 @@
    [:output-root :string]
    [:dry-run {:optional true} :boolean]
    [:validate-code {:optional true} :boolean]
-   [:profiles [:maybe [:sequential :keyword]]]])
+   [:editions [:maybe [:sequential :keyword]]]])
 
 (def Paths
   "Resolved output directories for a build, derived from the request and
-   slug. Per-profile file paths are computed in the plan."
+   slug. Per-edition file paths are computed in the plan."
   [:map
    [:book-output-dir :string]
    [:intermediate-dir :string]
    [:pdf-output-dir :string]])
 
-(def ProfileStep
-  "A single profile's place in the plan: which profile, where its
-   intermediate FO and final PDF are written."
+(def EditionStep
+  "A single edition's place in the plan: which edition, and where its
+   output files are written (a PDF edition names its intermediate FO and
+   final PDF)."
   [:map
-   [:profile Profile]
+   [:edition Edition]
    [:fo-path :string]
    [:pdf-path :string]])
 
 (def Plan
-  "An inspectable, pure description of a build: which profiles, where each
-   writes its FO and PDF, and the manifest skeleton. Produced by
+  "An inspectable, pure description of a build: which editions, where each
+   writes its output, and the manifest skeleton. Produced by
    clj-book.build.plan; performed by clj-book.build.execute."
   [:map
    [:book-root :string]
-   [:profiles [:sequential Profile]]
+   [:editions [:sequential Edition]]
    [:manuscript :map]
    [:paths Paths]
-   [:profile-steps [:sequential ProfileStep]]
+   [:edition-steps [:sequential EditionStep]]
    [:manifest-skeleton [:map
                         [:book/slug :string]
-                        [:build/profiles [:sequential Profile]]
+                        [:build/editions [:sequential Edition]]
                         [:metadata :map]]]
    [:validation {:optional true} :map]
    [:numbering {:optional true} :map]])

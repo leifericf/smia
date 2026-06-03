@@ -19,16 +19,16 @@
   (testing "Absent flags are omitted so normalize owns the defaults"
     (is (= {:book-root "."} (args->request "." {})))
     (is (= {:book-root "manual"
-            :profiles  [:screen]
+            :editions  [:screen]
             :dry-run   true
             :validate-code true}
            (args->request "manual"
-                          {:profile [:screen] :dry-run true :validate-code true})))))
+                          {:edition [:screen] :dry-run true :validate-code true})))))
 
 (deftest args->request-output-is-accepted-by-normalize
   (testing "The translation layer stays in sync with the normalize seam"
-    (let [req (args->request fixture {:profile [:print]})]
-      (is (= [:print] (:profiles (request/normalize req :build))))
+    (let [req (args->request fixture {:edition [:print]})]
+      (is (= [:print] (:editions (request/normalize req :build))))
       (is (= fixture (:book-root (request/normalize req :build)))))))
 
 (deftest no-command-prints-help-and-succeeds
@@ -55,6 +55,6 @@
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
 
-(deftest unknown-profile-is-a-runtime-error
+(deftest unknown-edition-is-a-runtime-error
   (testing "A structured pipeline error maps to exit 1, not a stack trace"
-    (is (= 1 (run-code ["build" fixture "--profile" "bogus" "--dry-run"])))))
+    (is (= 1 (run-code ["build" fixture "--edition" "bogus" "--dry-run"])))))

@@ -95,8 +95,8 @@ gutter. [](#lst-build) builds a book from the command line:
 
 ```bash {:id :lst-build :file "build.sh" :caption "Building both editions" :line-numbers true :annotations [{:line 1 :note "The book directory that holds book.edn"} {:line 2 :note "Render the on-screen edition"} {:line 3 :note "Render the print edition, with mirrored margins"}]}
 clojure -M:run build my-book \
-  --profile screen \
-  --profile print
+  --edition screen \
+  --edition print
 ```
 
 Highlighting is a pure, in-process tokenizer — no subprocess — so builds stay

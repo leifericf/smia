@@ -9,11 +9,11 @@
    build. `started-at`/`finished-at` are clock readings supplied by the
    caller (an `Instant` or an ISO-8601 string); they are stringified so
    the manifest is readable EDN. Pure: takes no clock of its own."
-  [{:keys [config profiles artifacts started-at finished-at metadata]}]
+  [{:keys [config editions artifacts started-at finished-at metadata]}]
   {:book/slug         (:book/slug config)
    :build/started-at  (str started-at)
    :build/finished-at (str finished-at)
-   :build/profiles    (vec profiles)
+   :build/editions    (vec editions)
    :artifacts         (vec artifacts)
    :build/metadata    (merge {:tool "clj-book"} metadata)})
 

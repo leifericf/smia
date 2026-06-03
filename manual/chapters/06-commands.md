@@ -14,13 +14,13 @@ The `book-root` argument is optional and defaults to `.`, so from inside a book 
 
 ## build
 
-Render the requested profiles to PDF. With no `--profile`, both editions build:
+Build the requested editions. With no `--edition`, both PDF editions build:
 
 ```
-clojure -M:run build manual --profile screen --profile print
+clojure -M:run build manual --edition screen --edition print
 ```
 
-Outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, plus an `artifacts.edn` manifest listing the profiles, paths, and build metadata. See `clojure -M:run build --help` for the full option list.
+Outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, plus an `artifacts.edn` manifest listing the editions, paths, and build metadata. See `clojure -M:run build --help` for the full option list.
 
 ## preview
 
@@ -32,7 +32,7 @@ clojure -M:run preview manual
 
 The whole book tree is watched — chapters, `book.edn`, `theme.edn`, references, included code files, and images — while editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and, on some platforms, faster too.
 
-Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--profile` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
+Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
 
 A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. A PDF viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
 
@@ -67,7 +67,7 @@ The CLI returns a meaningful exit code, so it composes in scripts and CI:
 Tools that assemble the request themselves call `clj-book.api/build` and `clj-book.api/validate` with `-X`, passing an EDN map. Because `-X` reads its arguments as EDN, string values carry both shell and EDN quotes:
 
 ```
-clojure -X clj-book.api/build :book-root '"manual"' :profiles '[:screen :print]'
+clojure -X clj-book.api/build :book-root '"manual"' :editions '[:screen :print]'
 ```
 
-The keys mirror the CLI options: `:book-root` (default `.`), `:profiles`, `:config-path`, `:output-root`, `:dry-run`, and `:validate-code`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.
+The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, and `:validate-code`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.

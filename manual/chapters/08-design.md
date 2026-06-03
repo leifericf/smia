@@ -25,7 +25,7 @@ The FO-Hiccup tree becomes XSL-FO XML.
 
 **render**
 
-Apache FOP turns XSL-FO into PDF, once per profile.
+Apache FOP turns XSL-FO into PDF, once per PDF edition.
 :::
 
 The middle three steps — assemble, expand, serialize — are **pure functions** over plain Clojure data. The only effects are reading inputs at the start and FOP writing bytes at the end.
@@ -64,7 +64,7 @@ Identical inputs should produce equivalent output. clj-book serializes FO withou
 
 ## Styling without CSS
 
-XSL-FO has no CSS cascade: every block carries its own properties. So styling is a **style map** — tag to FO properties — derived from your tokens and the active profile, applied as the sugar expands. There is no CSS to interpret and no stylesheet language to learn beyond the tokens described in [the theming chapter](#theming).
+XSL-FO has no CSS cascade: every block carries its own properties. So styling is a **style map** — tag to FO properties — derived from your tokens and the edition's page layout, applied as the sugar expands. There is no CSS to interpret and no stylesheet language to learn beyond the tokens described in [the theming chapter](#theming).
 
 ## Chapters are programs
 

@@ -6,7 +6,8 @@
    clj-book.build.plan and the pure cores (book assembly, FO expansion
    and serialization); all IO — reading inputs, evaluating chapters, and
    FOP writing PDF bytes — happens here. Chapters are loaded once and
-   reused across profiles."
+   reused across editions; each edition step dispatches on its
+   descriptor's `:format`."
   (:require
    [clj-book.book.assemble :as assemble]
    [clj-book.book.config :as config]
@@ -14,6 +15,7 @@
    [clj-book.book.number :as number]
    [clj-book.build.artifacts :as artifacts]
    [clj-book.build.plan :as plan]
+   [clj-book.build.request :as request]
    [clj-book.eval.registry :as eval-registry]
    [clj-book.eval.validate :as eval-validate]
    [clj-book.fo.expand :as expand]
@@ -27,7 +29,7 @@
   (:import
    (java.time Instant)))
 
-(declare build-paths load-book render-profile!)
+(declare build-paths load-book render-edition!)
 
 (defn prepare
   "Shell: load and validate the manuscript and resolve output paths.
@@ -45,30 +47,30 @@
                                :clj-book.build.execute/invalid-paths)}))
 
 (defn execute!
-  "Perform a Plan: load the book once, render each profile, and write the
+  "Perform a Plan: load the book once, render each edition, and write the
    manifest. Returns the manifest map. When the plan enables code
    validation, the `:test` blocks are checked after loading and before
    assembly — a failing block aborts the build."
-  [{:keys [book-root manuscript paths profile-steps manifest-skeleton validation]}]
+  [{:keys [book-root manuscript paths edition-steps manifest-skeleton validation]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
         _             (when (:enabled validation)
                         (eval-validate/validate-chapters! (:chapters book)))
         numbered      (:manuscript (number/assign book))
         base          {:book-root book-root :book numbered :tokens (:tokens manuscript)}
-        artifacts-out (mapv #(render-profile! base %) profile-steps)
+        artifacts-out (mapv #(render-edition! base %) edition-steps)
         finished      (Instant/now)]
     (artifacts/write!
       {:output-dir  (:book-output-dir paths)
        :config      (:config manuscript)
-       :profiles    (:build/profiles manifest-skeleton)
+       :editions    (:build/editions manifest-skeleton)
        :artifacts   artifacts-out
        :started-at  started
        :finished-at finished
        :metadata    (:metadata manifest-skeleton)})))
 
 (defn build
-  "Execute the requested profile builds and return the manifest map.
+  "Execute the requested edition builds and return the manifest map.
    build = execute! ∘ plan ∘ prepare.
 
    With `:dry-run` truthy in the request, return the inspectable plan
@@ -129,11 +131,12 @@
   [book-root {:keys [config]}]
   (book-load/load-manuscript book-root config))
 
-(defn- render-profile!
-  "Assemble -> expand -> serialize -> FOP for one profile. Writes the
-   intermediate FO and the final PDF; returns the artifact entry."
-  [{:keys [book-root book tokens]} {:keys [profile fo-path pdf-path]}]
-  (let [the-theme (theme-compile/compile-theme tokens profile)
+(defn- render-pdf-edition!
+  "Assemble -> expand -> serialize -> FOP for one PDF edition. The page
+   layout comes from the edition's descriptor. Writes the intermediate FO
+   and the final PDF; returns the artifact entry."
+  [{:keys [book-root book tokens]} {:keys [edition fo-path pdf-path]} descriptor]
+  (let [the-theme (theme-compile/compile-theme tokens (:layout descriptor))
         fo-xml    (-> (assemble/assemble book the-theme)
                       (expand/expand (:style the-theme))
                       (serialize/serialize))]
@@ -145,7 +148,14 @@
                                        {:base-dir book-root
                                         :title    (:title book)
                                         :author   (:author book)}))]
-      {:profile  profile
+      {:edition  edition
        :path     pdf-path
        :paths    {:pdf pdf-path :fo fo-path}
        :warnings (:warnings result)})))
+
+(defn- render-edition!
+  "Render one edition step, dispatching on its descriptor's `:format`."
+  [base {:keys [edition] :as step}]
+  (let [descriptor (get request/edition-descriptors edition)]
+    (case (:format descriptor)
+      :pdf (render-pdf-edition! base step descriptor))))

@@ -50,12 +50,13 @@
       (is (not (some #(str/includes? % banned) deps))
           (str "PDF-first build must not depend on " banned)))))
 
-(deftest profiles-are-pdf-layouts-not-formats
+(deftest deliverables-are-flat-editions
+  ;; No profile/target split: an edition is the only deliverable concept,
+  ;; and the structure it implies lives in the internal descriptors.
   (let [src (slurp (io/file "src/clj_book/build/request.clj"))]
-    (is (str/includes? src "#{:screen :print}")
-        "the supported profiles are the two PDF layouts")
-    (is (not (re-find #":site|:epub" src))
-        "no site or epub output targets")))
+    (is (str/includes? src "edition-descriptors"))
+    (is (not (re-find #"(?i)profile" src))
+        "no profile vocabulary in the request seam")))
 
 (deftest license-is-epl-2-0
   (let [license (slurp (io/file "LICENSE"))]

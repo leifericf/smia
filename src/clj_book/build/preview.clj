@@ -6,8 +6,8 @@
    a difference — because the JDK WatchService is itself a poller on macOS
    (with worse latency) and a snapshot diff is a pure function. FOP has no
    incremental layout, so every save re-renders the whole edition
-   (~150 ms warm for one profile); preview therefore defaults to the
-   `:screen` edition only.
+   (~150 ms warm for one); preview therefore defaults to the `:screen`
+   edition only.
 
    The pure decisions (what to ignore, how to diff, what is relevant) sit
    at the top of the namespace; the polling loop and the rebuild side
@@ -27,7 +27,7 @@
 
 (defn preview!
   "Start a live preview for `request-map` (the public request shape; the
-   profile defaults to `[:screen]` for a fast loop). Builds once
+   editions default to `[:screen]` for a fast loop). Builds once
    synchronously — a failure propagates to the caller — then polls the
    book tree every 250 ms in a daemon thread, rebuilding on any change and
    reporting a failed rebuild without stopping. Returns
@@ -36,7 +36,7 @@
    … `((:stop! h))`)."
   [request-map]
   (let [request (cond-> request-map
-                  (nil? (:profiles request-map)) (assoc :profiles [:screen]))
+                  (nil? (:editions request-map)) (assoc :editions [:screen]))
         ctx     (watch-ctx (request/normalize request :build))
         stop?   (atom false)]
     (rebuild! request)
@@ -151,4 +151,4 @@
         stamp    (.format (LocalTime/now) (DateTimeFormatter/ofPattern "HH:mm:ss"))]
     (doseq [artifact (:artifacts manifest)]
       (println (format "%s  built %s in %dms  %s"
-                       stamp (name (:profile artifact)) ms (:path artifact))))))
+                       stamp (name (:edition artifact)) ms (:path artifact))))))

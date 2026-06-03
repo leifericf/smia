@@ -1,6 +1,7 @@
 (ns clj-book.cli
   "Human-facing command-line front-end, invoked via `clojure -M:run`.
-   Parses argv into the same request map consumed by `clj-book.build.request`
+   Parses argv (the repeatable `--edition` selects deliverables) into the
+   same request map consumed by `clj-book.build.request`
    and delegates to `clj-book.api`. The `-X` map API (`clj-book.api`)
    remains for programmatic callers; both front-ends share the single
    `clj-book.build.request/normalize` seam, which owns all defaults and
@@ -21,7 +22,7 @@
    ["-h" "--help"             "Show this help."]])
 
 (def ^:private build-options
-  (into [["-p" "--profile PROFILE" "Edition to build (screen|print); repeatable."
+  (into [["-e" "--edition EDITION" "Edition to build (screen|print); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
          [nil "--dry-run" "Print the build plan; render nothing."]]
@@ -30,7 +31,7 @@
 (def ^:private validate-options common-options)
 
 (def ^:private preview-options
-  (into [["-p" "--profile PROFILE" "Edition to preview (screen|print); repeatable."
+  (into [["-e" "--edition EDITION" "Edition to preview (screen|print); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]]
         common-options))
@@ -43,7 +44,7 @@
     "Usage: clojure -M:run <command> [book-root] [options]"
     ""
     "Commands:"
-    "  build      Render the requested profiles to PDF."
+    "  build      Build the requested editions."
     "  validate   Check a manuscript without rendering anything."
     "  preview    Rebuild the book on every save while you write."
     ""
@@ -57,10 +58,10 @@
    map `clj-book.build.request/normalize` expects. Only keys the user actually
    supplied are set, so normalize applies its own defaults — this is the
    contract that keeps the `-M` and `-X` front-ends in sync."
-  [book-root {:keys [profile config-path output-root dry-run validate-code]}]
+  [book-root {:keys [edition config-path output-root dry-run validate-code]}]
   (cond-> {}
     book-root      (assoc :book-root book-root)
-    (seq profile)  (assoc :profiles profile)
+    (seq edition)  (assoc :editions edition)
     config-path    (assoc :config-path config-path)
     output-root    (assoc :output-root output-root)
     dry-run        (assoc :dry-run true)

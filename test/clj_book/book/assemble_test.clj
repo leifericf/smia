@@ -163,7 +163,7 @@
               the-theme)
         attrs (map second (page-sequences out))]
     (is (some #(= "auto-odd" (:initial-page-number %)) attrs)))
-  (testing "screen profile inserts no parity blanks"
+  (testing "screen layout inserts no parity blanks"
     (let [screen (theme/compile-theme {:color {} :type {} :spacing {} :layout {}} :screen)
           out    (assemble/assemble
                   (assoc structured :numbering

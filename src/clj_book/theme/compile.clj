@@ -1,13 +1,14 @@
 (ns clj-book.theme.compile
-  "Pure core: compile design tokens plus a layout profile into the FO
+  "Pure core: compile design tokens plus a page layout into the FO
    styling the book layer needs.
 
    Produces (a) a `style` map (tag -> FO property map) that overrides the
    renderer's base-14 defaults from `clj-book.fo.expand`, and (b) the
-   page geometry: `simple-page-master` fragments for the profile and the
-   `master-reference` chapters point at. `:screen` uses one symmetric
-   master; `:print` uses mirrored recto/verso masters (binding gutter on
-   the inside edge) selected by a `page-sequence-master`. No IO."
+   page geometry: `simple-page-master` fragments for the layout and the
+   `master-reference` chapters point at. The `:screen` layout uses one
+   symmetric master; `:print` uses mirrored recto/verso masters (binding
+   gutter on the inside edge) selected by a `page-sequence-master`. An
+   edition's descriptor names the layout it renders with. No IO."
   (:require
    [clj-book.fo.expand :as expand]))
 
@@ -27,13 +28,13 @@
          running-regions)
 
 (defn compile-theme
-  "Compile validated `tokens` and a layout `profile` (`:screen` or
-   `:print`) into `{:profile :style :master-reference :masters
+  "Compile validated `tokens` and a page `layout` (`:screen` or
+   `:print`) into `{:layout :style :master-reference :masters
    :link-color :rule-color :muted-color}`. The palette colors are
    surfaced for the assembled furniture (title page, TOC, rules)."
-  [tokens profile]
+  [tokens layout]
   (let [color (:color tokens)]
-    {:profile          profile
+    {:layout           layout
      :style            (-> (style-from-tokens tokens)
                            (fo-overrides (:fo tokens))
                            (assoc :highlight?   (get-in tokens [:type :highlight] false)
@@ -43,8 +44,8 @@
      :rule-color       (get color :rule "#999999")
      :muted-color      (get color :muted "#666666")
      :master-reference "book"
-     :masters          (masters profile (:layout tokens))
-     :running-regions  (running-regions profile)}))
+     :masters          (masters layout (:layout tokens))
+     :running-regions  (running-regions layout)}))
 
 ;; --- private helpers -------------------------------------------------------
 
@@ -102,17 +103,17 @@
    [:fo/region-after  (cond-> {:extent footer} after-name  (assoc :region-name after-name))]])
 
 (defn- masters
-  "Page-master fragments for `profile`, all reachable through the
-   `master-reference` \"book\"."
-  [profile layout]
-  (let [{:keys [width height]} (page-dims layout)
-        mt      (get layout :margin-top "22mm")
-        mb      (get layout :margin-bottom "22mm")
-        inside  (get layout :margin-inside "26mm")
-        outside (get layout :margin-outside "20mm")
-        header  (get layout :header-extent "12mm")
-        footer  (get layout :footer-extent "12mm")]
-    (if (= profile :print)
+  "Page-master fragments for the page `layout`, all reachable through
+   the `master-reference` \"book\"."
+  [layout geometry]
+  (let [{:keys [width height]} (page-dims geometry)
+        mt      (get geometry :margin-top "22mm")
+        mb      (get geometry :margin-bottom "22mm")
+        inside  (get geometry :margin-inside "26mm")
+        outside (get geometry :margin-outside "20mm")
+        header  (get geometry :header-extent "12mm")
+        footer  (get geometry :footer-extent "12mm")]
+    (if (= layout :print)
       [(into [:fo/simple-page-master
               {:master-name "book-recto" :page-width width :page-height height
                :margin-top mt :margin-bottom mb
@@ -136,11 +137,11 @@
              (regions header footer nil nil))])))
 
 (defn- running-regions
-  "Describe the header/footer regions for a profile: which `:flow-name` a
+  "Describe the header/footer regions for a layout: which `:flow-name` a
    page-sequence's static content targets, and the page parity it shows on.
    `:print` carries distinct recto/verso content; `:screen` is symmetric."
-  [profile]
-  (if (= profile :print)
+  [layout]
+  (if (= layout :print)
     [{:slot :before :name "head-recto" :parity :recto}
      {:slot :before :name "head-verso" :parity :verso}
      {:slot :after  :name "foot-recto" :parity :recto}

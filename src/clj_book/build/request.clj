@@ -1,35 +1,48 @@
 (ns clj-book.build.request
-  "Normalization and validation of public request maps."
+  "Normalization and validation of public request maps.
+
+   A build's deliverables are **editions** — flat names for the forms the
+   book ships in (`:screen`, `:print`, …). The real structure an edition
+   implies (output format, page layout) lives in the internal
+   `edition-descriptors`, never in the user-facing vocabulary, so nonsense
+   combinations are unrepresentable."
   (:require
    [clj-book.error :as error]
    [clojure.string :as str]))
 
-(def supported-profiles
-  "PDF layout profiles clj-book can render."
-  #{:screen :print})
+(def edition-descriptors
+  "Edition -> internal descriptor: the output `:format` the build
+   dispatches on, and for PDF editions the page `:layout` the theme
+   compiles for."
+  {:screen {:format :pdf :layout :screen}
+   :print  {:format :pdf :layout :print}})
 
-(def default-profiles
-  "Profiles built when a build request does not name any. Both editions
-   are produced by default; a request may select a subset."
+(def supported-editions
+  "Editions clj-book can build."
+  (set (keys edition-descriptors)))
+
+(def default-editions
+  "Editions built when a build request does not name any. Both PDF
+   editions are produced by default; a request may select any subset."
   [:screen :print])
 
 (def ^:private default-output-root "build")
 (def ^:private default-config-path "book.edn")
 (def ^:private default-book-root ".")
 
-(declare string-or-throw normalize-profiles resolve-profiles resolve-book-root)
+(declare string-or-throw normalize-editions resolve-editions resolve-book-root)
 
 (defn normalize
   "Normalize and validate a public request map for the given `command`
    (`:validate` or `:build`). Returns a normalized map or throws a
-   structured `ex-info`. A build with no `:profiles` defaults to both
+   structured `ex-info`. A build with no `:editions` defaults to both PDF
    editions; a subset may be selected."
   [request-map command]
   (when-not (map? request-map)
     (throw (error/ex :clj-book.build.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
-  (let [{:keys [book-root config-path profiles output-root dry-run
+  (let [{:keys [book-root config-path editions output-root dry-run
                 validate-code]} request-map
         normalized {:command       command
                     :book-root     (resolve-book-root book-root)
@@ -39,9 +52,9 @@
                                        default-output-root)
                     :dry-run       (boolean dry-run)
                     :validate-code (boolean validate-code)
-                    :profiles      (normalize-profiles profiles)}]
+                    :editions      (normalize-editions editions)}]
     (cond-> normalized
-      (= command :build) (update :profiles resolve-profiles))))
+      (= command :build) (update :editions resolve-editions))))
 
 ;; --- private helpers -------------------------------------------------------
 
@@ -52,34 +65,34 @@
                      {k v})))
   v)
 
-(defn- normalize-profiles [profiles]
+(defn- normalize-editions [editions]
   (cond
-    (nil? profiles) nil
-    (sequential? profiles) (vec profiles)
+    (nil? editions) nil
+    (sequential? editions) (vec editions)
     :else
-    (throw (error/ex :clj-book.build.request/invalid-profiles
-                     ":profiles must be a vector of keywords."
-                     {:profiles profiles}))))
+    (throw (error/ex :clj-book.build.request/invalid-editions
+                     ":editions must be a vector of keywords."
+                     {:editions editions}))))
 
-(defn- resolve-profiles
-  "Resolve the profiles to build: default to both editions when none are
-   named, otherwise validate the requested subset."
-  [profiles]
-  (let [profiles (if (empty? profiles) default-profiles profiles)
-        bad      (remove keyword? profiles)]
+(defn- resolve-editions
+  "Resolve the editions to build: default to both PDF editions when none
+   are named, otherwise validate the requested subset."
+  [editions]
+  (let [editions (if (empty? editions) default-editions editions)
+        bad      (remove keyword? editions)]
     (when (seq bad)
-      (throw (error/ex :clj-book.build.request/invalid-profiles
-                       ":profiles must contain only keywords."
-                       {:profiles profiles :non-keywords (vec bad)})))
-    (let [unknown (remove supported-profiles profiles)]
+      (throw (error/ex :clj-book.build.request/invalid-editions
+                       ":editions must contain only keywords."
+                       {:editions editions :non-keywords (vec bad)})))
+    (let [unknown (remove supported-editions editions)]
       (when (seq unknown)
-        (throw (error/ex :clj-book.build.request/unknown-profile
-                         (str "Unsupported profile(s): "
+        (throw (error/ex :clj-book.build.request/unknown-edition
+                         (str "Unsupported edition(s): "
                               (str/join ", " (map pr-str unknown)))
-                         {:profiles         profiles
-                          :unknown-profiles (vec unknown)
-                          :supported        (vec (sort supported-profiles))}))))
-    (vec profiles)))
+                         {:editions         editions
+                          :unknown-editions (vec unknown)
+                          :supported        (vec (sort supported-editions))}))))
+    (vec editions)))
 
 (defn- resolve-book-root
   "Resolve `:book-root` to a directory path. A missing or blank value

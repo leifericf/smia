@@ -17,19 +17,19 @@
   (str (System/getProperty "java.io.tmpdir")
        "/clj-book-char-" (System/nanoTime)))
 
-(defn- build! [profiles]
-  (api/build {:book-root manual-root :profiles profiles :output-root (out-root)}))
+(defn- build! [editions]
+  (api/build {:book-root manual-root :editions editions :output-root (out-root)}))
 
-(defn- artifact-path [man profile]
-  (:path (first (filter #(= profile (:profile %)) (:artifacts man)))))
+(defn- artifact-path [man edition]
+  (:path (first (filter #(= edition (:edition %)) (:artifacts man)))))
 
-(deftest ^:integration manual-builds-for-both-profiles
+(deftest ^:integration manual-builds-for-both-pdf-editions
   (let [man (build! [:screen :print])]
     (is (= "clj-book-manual" (:book/slug man)))
-    (is (= [:screen :print] (:build/profiles man)))
+    (is (= [:screen :print] (:build/editions man)))
     (is (= 2 (count (:artifacts man))))
     (doseq [art (:artifacts man)]
-      (is (.exists (io/file (:path art))) "each profile's PDF exists"))
+      (is (.exists (io/file (:path art))) "each edition's PDF exists"))
     (is (.exists (io/file (:manifest/path man))) "manifest is written")))
 
 (deftest ^:integration manual-pdf-has-expected-structure

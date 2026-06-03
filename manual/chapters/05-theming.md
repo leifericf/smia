@@ -1,6 +1,6 @@
-# Theming and profiles
+# Theming and editions
 
-Styling comes from design **tokens** plus a layout **profile** — never from arbitrary CSS. FOP is not a CSS engine, and clj-book does not pretend it is.
+Styling comes from design **tokens** — never from arbitrary stylesheet strings. For paged output FOP is not a CSS engine, and clj-book does not pretend it is.
 
 ## theme.edn
 
@@ -40,14 +40,14 @@ When the tokens cannot express a styling need, `theme.edn` takes two optional ov
 
 Nobody writes raw FO, HTML, or CSS strings — the serializers are internal, and all four cells of the matrix are plain data.
 
-## Profiles
+## Editions
 
-The same manuscript renders into two layout profiles:
+The same manuscript builds into **editions** — the deliverable forms of the book:
 
-- `:screen` — comfortable, symmetric margins for on-screen reading.
-- `:print` — mirrored recto/verso margins with a binding gutter on the inside edge.
+- `:screen` — a PDF with comfortable, symmetric margins for on-screen reading.
+- `:print` — a PDF with mirrored recto/verso margins and a binding gutter on the inside edge.
 
-Both are built by default; pass `:profiles '[:print]'` to select one. See [the commands chapter](#commands).
+Both PDF editions are built by default; pass `:editions '[:print]'` (or repeat `--edition` on the command line) to select a subset. See [the commands chapter](#commands).
 
 ## Fonts
 
