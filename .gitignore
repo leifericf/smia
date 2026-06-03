@@ -9,3 +9,7 @@ target/
 /build/
 *.log
 .DS_Store
+# Local agent/MCP configuration — not part of the project.
+CLAUDE.md
+.mcp.json
+.claude/

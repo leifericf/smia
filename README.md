@@ -35,9 +35,8 @@ The manual is itself a clj-book manuscript, under `docs/manual/`. Build it (the
 command above) and read the PDFs in `build/clj-book-manual/pdf/`. It walks through
 the quickstart, the Markdown and Hiccup authoring vocabulary, `book.edn`
 configuration, theming and profiles, the build commands, producing a finished
-book, and the error catalog.
-
-Design notes and the architecture live in `docs/plans/`.
+book, and the error catalog. The design and architecture are covered in the
+manual's own design chapter.
 
 ## License
 
