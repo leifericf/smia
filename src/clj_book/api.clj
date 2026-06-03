@@ -13,8 +13,10 @@
       build/validate))
 
 (defn build
-  "Build the requested targets. Required keys: `:book-root`, `:targets`.
-   With `:dry-run true`, print and return the plan without building."
+  "Build a book to PDF. All keys optional: `:book-root` (default \".\"),
+   `:config-path` (default \"book.edn\"), `:output-root` (default \"build\"),
+   `:profiles` (default [:screen :print]). With `:dry-run true`, print and
+   return the plan without building."
   [request-map]
   (let [req    (request/normalize request-map :build)
         result (build/build req)]
