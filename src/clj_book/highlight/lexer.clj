@@ -10,12 +10,7 @@
   (:require
    [clojure.string :as str]))
 
-(defn- merge-runs
-  "Coalesce adjacent tokens of the same kind into one."
-  [toks]
-  (->> toks
-       (partition-by :kind)
-       (map (fn [g] {:kind (:kind (first g)) :text (apply str (map :text g))}))))
+(declare merge-runs)
 
 (defn scan
   "Tokenize `code` with ordered `rules`: a vector of `[pattern kind]`, where
@@ -64,3 +59,12 @@
                   (conj [(re-pattern "[A-Za-z_$][A-Za-z0-9_$]*")
                          (keyword-classifier keywords)]))]
     (fn [code] (scan code rules))))
+
+;; --- private helpers -------------------------------------------------------
+
+(defn- merge-runs
+  "Coalesce adjacent tokens of the same kind into one."
+  [toks]
+  (->> toks
+       (partition-by :kind)
+       (map (fn [g] {:kind (:kind (first g)) :text (apply str (map :text g))}))))
