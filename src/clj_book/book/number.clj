@@ -90,6 +90,8 @@
    anchor id, collecting `term -> [ids]`."
   [body ctx chapter-number]
   (let [{:keys [policy registry counters index idx-counter floats]} ctx
+        ;; `sec` is a call-local section counter for this one chapter body; like
+        ;; the ctx atoms it never escapes the walk below.
         sec (volatile! 0)]
     (letfn [(number-float [node kind]
               (let [a         (or (attrs-of node) {})
@@ -179,6 +181,11 @@
         section)))
 
 (defn- number-sections [sections policy]
+  ;; The atoms below are call-local accumulators: created fresh on every
+  ;; `number-sections` call and never escaping it — only their derefed values
+  ;; do (the map returned at the foot of this fn). Threading five accumulators
+  ;; through the recursive walk would be more code and less clear; local
+  ;; mutable accumulation keeps `number-sections`/`number-body` pure in effect.
   (let [ctx {:policy      policy
              :registry    (atom {})
              :counters    (atom {})
