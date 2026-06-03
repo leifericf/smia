@@ -15,12 +15,8 @@
 
 (defn- first-non-ws
   "The first non-whitespace character of `s`, or nil."
-  [^String s]
-  (loop [i 0]
-    (cond
-      (>= i (.length s))                    nil
-      (Character/isWhitespace (.charAt s i)) (recur (inc i))
-      :else                                  (.charAt s i))))
+  [s]
+  (some (fn [c] (when-not (Character/isWhitespace (char c)) c)) s))
 
 (defn split
   "Return `{:attrs <map|nil> :body <string>}`. When `source` begins (after

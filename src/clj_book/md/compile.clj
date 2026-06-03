@@ -28,8 +28,11 @@
 (declare compile-node compile-inline-seq compile-block-seq)
 
 (def ^:dynamic *footnote-defs*
-  "Label -> footnote-definition node, bound during a `compile` call so an
-   inline `[^label]` reference can inline its definition's content."
+  "Label -> footnote-definition node: the read-only compile-time environment
+   an inline `[^label]` reference uses to inline its definition's content.
+   Bound exactly once per `compile` call (never mutated) so the data-driven
+   `compilers` dispatch table can stay a map of single-argument `(fn [node])`
+   entries rather than threading an environment through every node compiler."
   {})
 
 ;; --- helpers --------------------------------------------------------------
