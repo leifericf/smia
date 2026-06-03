@@ -3,7 +3,10 @@
  :book/author     "The clj-book authors"
  :book/references "references.edn"
 
- :book/front-matter [{:role :preface :file "front/preface.md"}]
+ :book/front-matter [{:role :preface :file "front/preface.md"}
+                     {:role :list-of-figures}
+                     {:role :list-of-tables}
+                     {:role :list-of-listings}]
 
  :book/parts
  [{:part/title    "Authoring"

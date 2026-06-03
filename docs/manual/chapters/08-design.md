@@ -6,13 +6,27 @@ clj-book is small because it leans on two ideas: everything is plain data, and t
 
 A build is a short series of transforms from your Hiccup to PDF bytes:
 
-```
-load       read book.edn + tokens.edn; compile each Markdown or .clj chapter
-assemble   chapters + metadata + theme -> one :fo/root tree
-expand     HTML sugar + book extensions -> FO; :fo/* passes through
-serialize  FO-hiccup -> XSL-FO XML
-render     Apache FOP: XSL-FO -> PDF, once per profile
-```
+:::deflist
+**load**
+
+Read `book.edn` and `tokens.edn`; compile each Markdown or `.clj` chapter.
+
+**assemble**
+
+Chapters plus metadata plus theme become one `:fo/root` tree.
+
+**expand**
+
+HTML sugar and book extensions become FO; any `:fo/*` tag passes through.
+
+**serialize**
+
+The FO-Hiccup tree becomes XSL-FO XML.
+
+**render**
+
+Apache FOP turns XSL-FO into PDF, once per profile.
+:::
 
 The middle three steps — assemble, expand, serialize — are **pure functions** over plain Clojure data. The only effects are reading inputs at the start and FOP writing bytes at the end.
 

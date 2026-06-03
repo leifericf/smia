@@ -21,6 +21,8 @@ Beyond base CommonMark, a small, curated set of constructs maps one-to-one onto 
 | Need | Markdown | Author Hiccup |
 |---|---|---|
 | admonition | a `:::admonition {:kind :tip}` … `:::` block | `[:admonition {:kind :tip} …]` |
+| overview | a `:::overview` … `:::` block | `[:overview …]` |
+| description list | a `:::deflist` block of **bold term** lines and definitions | `[:dl [:dt …] [:dd …] …]` |
 | cross-reference | a link whose target is `#id` | `[:xref {:to :id} …]` |
 | footnote | `text[^1]` plus a `[^1]:` definition | `[:footnote …]` |
 | code block | a fence whose info is `clojure {:test true}` | `[:pre {:lang :clojure :test true} …]` |
@@ -34,6 +36,44 @@ A code fence's info string is a language token followed by an optional EDN map. 
 :::admonition {:kind :note}
 The `{=hiccup}` escape is strictly more powerful than `{=fo}`: spliced author Hiccup re-enters expansion, so sugar nested inside it still expands, whereas raw FO is terminal.
 :::
+
+## Overviews and description lists
+
+Open a chapter with a summary panel using `:::overview`; an optional `:title` replaces the default "Overview" label:
+
+```
+:::overview {:title "In this chapter"}
+- What you will build
+- The two front-ends
+:::
+```
+
+A `:::deflist` block becomes a description list. Inside it, a paragraph that is a single **bold** span is a term; the block that follows is its definition:
+
+```
+:::deflist
+**Manuscript**
+
+The normalized document structure.
+
+**Profile**
+
+A layout variant such as screen or print.
+:::
+```
+
+## Annotating code
+
+A code listing can carry numbered notes anchored to specific lines, without touching the sample itself. Add an `:annotations` vector to the fence's EDN map — each entry names a 1-based `:line` and a `:note`. clj-book appends a small numbered mark at the end of each referenced line and emits a matching numbered list beneath the listing:
+
+````
+```clojure {:id :ex :caption "The reducing core" :annotations [{:line 1 :note "Defines the accumulator"} {:line 2 :note "Folds the sequence with +"}]}
+(def xs [1 2 3])
+(reduce + xs)
+```
+````
+
+Because the notes are data, the code stays pristine and copy-pasteable — no in-text markers. A `:note` may be a plain string or inline markup (for example ``[:span "Folds with " [:code "reduce"]]`` in Hiccup). Each line carries at most one note, and every `:line` must fall within the listing.
 
 ## Validating code examples
 
