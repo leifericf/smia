@@ -96,6 +96,16 @@
 (defn- styled-inline [props children style]
   (into [:fo/inline props] (expand-all children style)))
 
+(defn- heading-with-marker
+  "A styled heading block that also emits an `fo:marker` carrying its plain
+   text, so running heads can retrieve the current section title."
+  [tag marker-class author children style]
+  (let [expanded (expand-all children style)
+        text     (apply str (filter string? (tree-seq vector? seq (vec expanded))))]
+    (into [:fo/block (cond-> (get style tag)
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (cons [:fo/marker {:marker-class-name marker-class} text] expanded))))
+
 ;; --- lists ----------------------------------------------------------------
 
 (defn- list-items [children]
@@ -242,7 +252,7 @@
   (let [head (fn [tag] (fn [a c s] (styled-block tag a c s {})))]
     {:p          (fn [a c s] (styled-block :p a c s {}))
      :h1         (head :h1)
-     :h2         (head :h2)
+     :h2         (fn [a c s] (heading-with-marker :h2 "section-title" a c s))
      :h3         (head :h3)
      :h4         (head :h4)
      :h5         (head :h5)

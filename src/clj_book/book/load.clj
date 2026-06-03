@@ -178,8 +178,9 @@
                        sections)
         chapters (vec (keep :content loaded))]
     (check-no-duplicate-ids chapters)
-    {:title     (:book/title config)
-     :author    (:book/author config)
-     :numbering numbering
-     :sections  loaded
-     :chapters  chapters}))
+    {:title         (:book/title config)
+     :author        (:book/author config)
+     :numbering     numbering
+     :running-heads (:book/running-heads config)
+     :sections      loaded
+     :chapters      chapters}))

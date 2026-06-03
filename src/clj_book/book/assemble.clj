@@ -223,22 +223,74 @@
    (when author
      [:fo/block {:font-size "13pt" :color muted-color} author])])
 
-(defn- toc-furniture [title author prepared master-ref theme]
-  (let [{:keys [style link-color rule-color muted-color]} theme
+;; --- running heads and footers --------------------------------------------
+
+(def ^:private default-running-heads
+  "Default running content per page parity: the chapter title on a verso
+   (left) page, the current section on a recto (right) page, the page number
+   in both footers. A book overrides any slot via `:book/running-heads`."
+  {:verso  {:before :chapter :after :page}
+   :recto  {:before :section :after :page}
+   :screen {:before :chapter :after :page}})
+
+(defn- parity-key [parity] (if (#{:recto :verso} parity) parity :screen))
+
+(defn- slot->inline [content-slot book-title]
+  (case content-slot
+    :page       [:fo/page-number]
+    :chapter    [:fo/retrieve-marker {:retrieve-class-name "chapter-title"}]
+    :section    [:fo/retrieve-marker {:retrieve-class-name "section-title"}]
+    :book-title book-title
+    nil))
+
+(defn- region-block [slot parity inline muted-color rule-color]
+  (let [align (if (= slot :after)
+                "center"
+                (case parity :recto "right" :verso "left" "center"))]
+    (into [:fo/block (cond-> {:text-align align :font-size "9pt" :color muted-color}
+                       (= slot :before)
+                       (assoc :border-bottom (str "0.25pt solid " rule-color)
+                              :padding-bottom "3pt" :space-before "4pt"))]
+          [inline])))
+
+(defn- static-contents
+  "The `fo:static-content` for every running region the theme declares,
+   choosing each region's content from the running-heads config. With
+   `headers?` false (front matter, part dividers) only footers are emitted."
+  [{:keys [theme running-heads book-title headers?]}]
+  (let [{:keys [running-regions muted-color rule-color]} theme]
+    (keep (fn [{:keys [slot name parity]}]
+            (let [cfg-slot (when (or headers? (= slot :after))
+                             (get-in running-heads [(parity-key parity) slot]))
+                  inline   (slot->inline cfg-slot book-title)]
+              (when inline
+                (into [:fo/static-content {:flow-name name}]
+                      [(region-block slot parity inline muted-color rule-color)]))))
+          running-regions)))
+
+(defn- page-sequence
+  "Build a `fo:page-sequence`: its page attrs, the running static content
+   (headers + footers, or footers only), and the body flow."
+  [page-attrs ctx headers? body-style flow-children]
+  (into [:fo/page-sequence (merge {:master-reference (:master-ref ctx)} page-attrs)]
+        (concat
+          (static-contents (assoc ctx :headers? headers?))
+          [(into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
+                 flow-children)])))
+
+(defn- toc-furniture [title author prepared ctx]
+  (let [{:keys [style link-color rule-color muted-color]} (:theme ctx)
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
-    [:fo/page-sequence {:master-reference master-ref :format "i"}
-     [:fo/static-content {:flow-name "xsl-region-after"}
-      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
-       [:fo/page-number]]]
-     (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-           (concat
-             [(title-page title author head-family muted-color)]
-             [[:fo/block {:font-family head-family :font-size "18pt"
-                          :font-weight "bold" :break-before "page"
-                          :border-bottom (str "0.5pt solid " rule-color)
-                          :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
-             (map #(toc-entry % link-color) (toc-entries prepared))))]))
+    (page-sequence
+      {:format "i"} ctx false body-style
+      (concat
+        [(title-page title author head-family muted-color)]
+        [[:fo/block {:font-family head-family :font-size "18pt"
+                     :font-weight "bold" :break-before "page"
+                     :border-bottom (str "0.5pt solid " rule-color)
+                     :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
+        (map #(toc-entry % link-color) (toc-entries prepared))))))
 
 (defn- chapter-heading [{:keys [id title label]} style rule-color muted-color]
   ;; The running-head marker carries the bare title; the visible heading
@@ -260,46 +312,34 @@
 
 (defn- body-sequence
   "A page-sequence for one parsed chapter (or matter/appendix section):
-   running head, page number, the chapter heading, and the body. `page-attrs`
+   running heads, footers, the chapter heading, and the body. `page-attrs`
    carries the per-section page-numbering (roman front matter, the arabic
    reset on the first body section, recto parity)."
-  [{:keys [body] :as parsed} master-ref theme page-attrs]
-  (let [{:keys [style rule-color muted-color]} theme
+  [{:keys [body] :as parsed} ctx page-attrs]
+  (let [{:keys [style rule-color muted-color]} (:theme ctx)
         body-style (:body style)]
-    [:fo/page-sequence (merge {:master-reference master-ref} page-attrs)
-     [:fo/static-content {:flow-name "xsl-region-before"}
-      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color
-                  :border-bottom (str "0.25pt solid " rule-color)
-                  :padding-bottom "3pt" :space-before "4pt"}
-       [:fo/retrieve-marker {:retrieve-class-name "chapter-title"}]]]
-     [:fo/static-content {:flow-name "xsl-region-after"}
-      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
-       [:fo/page-number]]]
-     (into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-           (cons (chapter-heading parsed style rule-color muted-color) body))]))
+    (page-sequence page-attrs ctx true body-style
+                   (cons (chapter-heading parsed style rule-color muted-color) body))))
 
 (defn- part-sequence
   "A part-divider page-sequence: the part title, centered and large, on its
    own page. Its `:id` (`part-N`) is the bookmark/cross-reference target."
-  [section master-ref theme page-attrs]
-  (let [{:keys [style muted-color]} theme
+  [section ctx page-attrs]
+  (let [{:keys [style muted-color]} (:theme ctx)
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
-    [:fo/page-sequence (merge {:master-reference master-ref} page-attrs)
-     [:fo/static-content {:flow-name "xsl-region-after"}
-      [:fo/block {:text-align "center" :font-size "9pt" :color muted-color}
-       [:fo/page-number]]]
-     [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)
-      (into [:fo/block {:id (str "part-" (:index section))
-                        :font-family head-family :text-align "center"
-                        :space-before "144pt"
-                        :space-before.conditionality "retain"}]
-            (concat
-              (when-let [label (:label section)]
-                [[:fo/block {:font-size "16pt" :color muted-color
-                             :space-after "8pt"} label]])
-              [[:fo/block {:font-size "30pt" :font-weight "bold"}
-                (:title section)]]))]]))
+    (page-sequence
+      page-attrs ctx false body-style
+      [(into [:fo/block {:id (str "part-" (:index section))
+                         :font-family head-family :text-align "center"
+                         :space-before "144pt"
+                         :space-before.conditionality "retain"}]
+             (concat
+               (when-let [label (:label section)]
+                 [[:fo/block {:font-size "16pt" :color muted-color
+                              :space-after "8pt"} label]])
+               [[:fo/block {:font-size "30pt" :font-weight "bold"}
+                 (:title section)]]))])))
 
 (defn- body-page-attrs
   "Page-numbering attrs for a body-run section: the first resets to arabic
@@ -314,30 +354,29 @@
   "Walk the prepared sections, emitting a page-sequence for each: roman
    front matter, part dividers and chapters/appendices (arabic, the first
    resetting the page count), and back matter."
-  [prepared master-ref theme recto?]
-  (loop [ss prepared, seen-body? false, acc []]
-    (if (empty? ss)
-      acc
-      (let [s (first ss), k (:kind s)]
-        (cond
-          (and (= k :matter) (= :front (:matter s)))
-          (recur (rest ss) seen-body?
-                 (conj acc (body-sequence (section->parsed s) master-ref theme
-                                          {:format "i"})))
+  [prepared ctx]
+  (let [recto? (:recto? ctx)]
+    (loop [ss prepared, seen-body? false, acc []]
+      (if (empty? ss)
+        acc
+        (let [s (first ss), k (:kind s)]
+          (cond
+            (and (= k :matter) (= :front (:matter s)))
+            (recur (rest ss) seen-body?
+                   (conj acc (body-sequence (section->parsed s) ctx {:format "i"})))
 
-          (and (= k :matter) (= :back (:matter s)))
-          (recur (rest ss) seen-body?
-                 (conj acc (body-sequence (section->parsed s) master-ref theme {})))
+            (and (= k :matter) (= :back (:matter s)))
+            (recur (rest ss) seen-body?
+                   (conj acc (body-sequence (section->parsed s) ctx {})))
 
-          (= k :part)
-          (recur (rest ss) true
-                 (conj acc (part-sequence s master-ref theme
-                                          (body-page-attrs (not seen-body?) recto?))))
+            (= k :part)
+            (recur (rest ss) true
+                   (conj acc (part-sequence s ctx (body-page-attrs (not seen-body?) recto?))))
 
-          :else
-          (recur (rest ss) true
-                 (conj acc (body-sequence (:chapter s) master-ref theme
-                                          (body-page-attrs (not seen-body?) recto?)))))))))
+            :else
+            (recur (rest ss) true
+                   (conj acc (body-sequence (:chapter s) ctx
+                                            (body-page-attrs (not seen-body?) recto?))))))))))
 
 ;; --- assembly -------------------------------------------------------------
 
@@ -359,6 +398,12 @@
         _          (resolve-xrefs! all-parsed)
         recto?     (and (= profile :print)
                         (= :recto (:start-chapters-on numbering)))
+        ctx        {:theme         theme
+                    :master-ref    master-reference
+                    :recto?        recto?
+                    :book-title    title
+                    :running-heads (merge-with merge default-running-heads
+                                               (:running-heads book))}
         body-style (get style :body)]
     (into [:fo/root {:font-family (:font-family body-style)
                      :font-size   (:font-size body-style)
@@ -366,5 +411,5 @@
           (concat
             [(into [:fo/layout-master-set] masters)]
             [(bookmark-tree prepared)]
-            [(toc-furniture title author prepared master-reference theme)]
-            (section-sequences prepared master-reference theme recto?)))))
+            [(toc-furniture title author prepared ctx)]
+            (section-sequences prepared ctx)))))

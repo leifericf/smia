@@ -196,6 +196,37 @@
           attrs  (map second (page-sequences out))]
       (is (not-any? #(= "auto-odd" (:initial-page-number %)) attrs)))))
 
+;; --- running heads and footers -------------------------------------------
+
+(deftest print-has-distinct-recto-and-verso-running-content
+  (let [out   (assemble/assemble manuscript the-theme)
+        flows (set (map #(:flow-name (second %)) (find-all :fo/static-content out)))]
+    (is (= #{"head-recto" "head-verso" "foot-recto" "foot-verso"} flows)
+        "print emits separate header/footer content per page parity")
+    (testing "verso shows the chapter, recto shows the section, both number the page"
+      (let [sc (fn [name] (first (filter #(= name (:flow-name (second %)))
+                                         (find-all :fo/static-content out))))
+            classes (fn [name] (set (map #(:retrieve-class-name (second %))
+                                         (find-all :fo/retrieve-marker (sc name)))))]
+        (is (= #{"chapter-title"} (classes "head-verso")))
+        (is (= #{"section-title"} (classes "head-recto")))
+        (is (seq (find-all :fo/page-number (sc "foot-recto"))))))))
+
+(deftest screen-keeps-a-single-symmetric-running-head
+  (let [screen (theme/compile-theme {:color {} :type {} :spacing {} :layout {}} :screen)
+        out    (assemble/assemble manuscript screen)
+        flows  (set (map #(:flow-name (second %)) (find-all :fo/static-content out)))]
+    (is (= #{"xsl-region-before" "xsl-region-after"} flows))))
+
+(deftest running-heads-config-overrides-the-defaults
+  (let [out (assemble/assemble (assoc manuscript :running-heads
+                                      {:verso {:before :book-title}})
+                               the-theme)
+        verso (first (filter #(= "head-verso" (:flow-name (second %)))
+                             (find-all :fo/static-content out)))]
+    (is (some #{"A Book"} (tree-seq vector? seq verso))
+        "the verso header now carries the book title")))
+
 ;; --- multi-level table of contents and nested outline --------------------
 
 (def toc-src

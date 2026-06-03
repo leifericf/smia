@@ -56,10 +56,14 @@
 (defn- page-dims [layout]
   (get page-sizes (token layout :page-size :a4) (:a4 page-sizes)))
 
-(defn- regions [header footer]
+(defn- regions
+  "Body, header, and footer regions. `before-name`/`after-name` give the
+   header/footer regions explicit names so a page-sequence can target
+   distinct recto/verso running content; nil keeps the FO default names."
+  [header footer before-name after-name]
   [[:fo/region-body {:margin-top header :margin-bottom footer}]
-   [:fo/region-before {:extent header}]
-   [:fo/region-after {:extent footer}]])
+   [:fo/region-before (cond-> {:extent header} before-name (assoc :region-name before-name))]
+   [:fo/region-after  (cond-> {:extent footer} after-name  (assoc :region-name after-name))]])
 
 (defn- masters
   "Page-master fragments for `profile`, all reachable through the
@@ -71,19 +75,18 @@
         inside  (token layout :margin-inside "26mm")
         outside (token layout :margin-outside "20mm")
         header  (token layout :header-extent "12mm")
-        footer  (token layout :footer-extent "12mm")
-        region  (regions header footer)]
+        footer  (token layout :footer-extent "12mm")]
     (if (= profile :print)
       [(into [:fo/simple-page-master
               {:master-name "book-recto" :page-width width :page-height height
                :margin-top mt :margin-bottom mb
                :margin-left inside :margin-right outside}]
-             region)
+             (regions header footer "head-recto" "foot-recto"))
        (into [:fo/simple-page-master
               {:master-name "book-verso" :page-width width :page-height height
                :margin-top mt :margin-bottom mb
                :margin-left outside :margin-right inside}]
-             region)
+             (regions header footer "head-verso" "foot-verso"))
        [:fo/page-sequence-master {:master-name "book"}
         [:fo/repeatable-page-master-alternatives
          [:fo/conditional-page-master-reference
@@ -94,7 +97,20 @@
               {:master-name "book" :page-width width :page-height height
                :margin-top mt :margin-bottom mb
                :margin-left outside :margin-right outside}]
-             region)])))
+             (regions header footer nil nil))])))
+
+(defn- running-regions
+  "Describe the header/footer regions for a profile: which `:flow-name` a
+   page-sequence's static content targets, and the page parity it shows on.
+   `:print` carries distinct recto/verso content; `:screen` is symmetric."
+  [profile]
+  (if (= profile :print)
+    [{:slot :before :name "head-recto" :parity :recto}
+     {:slot :before :name "head-verso" :parity :verso}
+     {:slot :after  :name "foot-recto" :parity :recto}
+     {:slot :after  :name "foot-verso" :parity :verso}]
+    [{:slot :before :name "xsl-region-before" :parity :any}
+     {:slot :after  :name "xsl-region-after" :parity :any}]))
 
 (defn compile-theme
   "Compile validated `tokens` and a layout `profile` (`:screen` or
@@ -109,4 +125,5 @@
      :rule-color       (token color :rule "#999999")
      :muted-color      (token color :muted "#666666")
      :master-reference "book"
-     :masters          (masters profile (:layout tokens))}))
+     :masters          (masters profile (:layout tokens))
+     :running-regions  (running-regions profile)}))
