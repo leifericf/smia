@@ -125,10 +125,14 @@
    :listing    {:space-before "6pt" :space-after "8pt"}
    :file-bar   {:font-family "monospace" :font-size "8pt" :font-weight "bold"
                 :background-color "#e8e8e8" :padding "3pt 6pt"}
+   ;; The badge box is the inline's background: the digit's glyph box sits
+   ;; flush at the font ascent with the descent's empty space below, so the
+   ;; top padding carries the descent's worth extra to center it optically.
    :annotation-mark {:font-family "sans-serif" :font-size "7.5pt"
                      :font-weight "bold" :color "#ffffff"
-                     :background-color "#555555" :padding "0pt 3pt"
-                     :baseline-shift "super"}
+                     :background-color "#555555"
+                     :padding-top "2pt" :padding-bottom "0.5pt"
+                     :padding-left "2pt" :padding-right "2pt"}
    :annotation-list {:provisional-distance-between-starts "20pt"
                      :provisional-label-separation "6pt"
                      :font-size "9.5pt" :space-before "4pt" :space-after "6pt"}})
