@@ -64,7 +64,7 @@
 
 (def Edition
   "A deliverable edition clj-book can build."
-  [:enum :screen :print :site])
+  [:enum :screen :print :site :epub])
 
 (def Request
   "A normalized public request map (see `clj-book.build.request`)."
@@ -100,10 +100,16 @@
    [:edition [:enum :site]]
    [:out-dir :string]])
 
+(def EpubEditionStep
+  "The EPUB edition's place in the plan: where the package is written."
+  [:map
+   [:edition [:enum :epub]]
+   [:epub-path :string]])
+
 (def EditionStep
   "A single edition's place in the plan; the shape follows the edition's
    output format."
-  [:or PdfEditionStep SiteEditionStep])
+  [:or PdfEditionStep SiteEditionStep EpubEditionStep])
 
 (def Plan
   "An inspectable, pure description of a build: which editions, where each

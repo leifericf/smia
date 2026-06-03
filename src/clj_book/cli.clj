@@ -22,7 +22,7 @@
    ["-h" "--help"             "Show this help."]])
 
 (def ^:private build-options
-  (into [["-e" "--edition EDITION" "Edition to build (screen|print|site); repeatable."
+  (into [["-e" "--edition EDITION" "Edition to build (screen|print|site|epub); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
          [nil "--dry-run" "Print the build plan; render nothing."]]
@@ -31,7 +31,7 @@
 (def ^:private validate-options common-options)
 
 (def ^:private preview-options
-  (into [["-e" "--edition EDITION" "Edition to preview (screen|print|site); repeatable."
+  (into [["-e" "--edition EDITION" "Edition to preview (screen|print|site|epub); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]]
         common-options))

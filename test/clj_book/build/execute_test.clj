@@ -73,6 +73,16 @@
   ;; the request has been normalized.
   (is true))
 
+(deftest epub-edition-build-writes-the-package
+  (let [req (request "epub" :editions [:epub])
+        man (execute/build req)
+        art (first (:artifacts man))]
+    (is (= [:epub] (:build/editions man)))
+    (is (= :epub (:edition art)))
+    (is (.exists (io/file (:path art))))
+    (is (str/ends-with? (:path art) "tiny-book.epub"))
+    (is (= (:path art) (get-in art [:paths :epub])))))
+
 (deftest site-edition-build-writes-the-page-map
   (let [req (request "site" :editions [:site])
         man (execute/build req)

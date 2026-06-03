@@ -42,4 +42,6 @@
            :fo-path  (str (:intermediate-dir paths) "/book-" (name edition) ".fo")
            :pdf-path (str (:pdf-output-dir paths) "/" slug "-" (name edition) ".pdf")}
     :html {:edition edition
-           :out-dir (str (:book-output-dir paths) "/site")}))
+           :out-dir (str (:book-output-dir paths) "/site")}
+    :epub {:edition   edition
+           :epub-path (str (:book-output-dir paths) "/epub/" slug ".epub")}))

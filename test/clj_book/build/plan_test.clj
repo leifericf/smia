@@ -40,6 +40,12 @@
     (is (= [:print] (:editions p)))
     (is (= 1 (count (:edition-steps p))))))
 
+(deftest epub-edition-plans-a-package-path
+  (let [p (plan/plan (assoc-in prepared [:request :editions] [:epub]))]
+    (is (schema/valid? schema/Plan p))
+    (is (= {:edition :epub :epub-path "build/x/epub/x.epub"}
+           (-> p :edition-steps first)))))
+
 (deftest site-edition-plans-an-output-directory
   (let [p (plan/plan (assoc-in prepared [:request :editions] [:screen :site]))]
     (is (schema/valid? schema/Plan p))

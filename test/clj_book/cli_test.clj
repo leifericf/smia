@@ -55,6 +55,9 @@
 (deftest site-edition-is-accepted-on-the-command-line
   (is (= 0 (run-code ["build" fixture "--edition" "site" "--dry-run"]))))
 
+(deftest epub-edition-is-accepted-on-the-command-line
+  (is (= 0 (run-code ["build" fixture "--edition" "epub" "--dry-run"]))))
+
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
 

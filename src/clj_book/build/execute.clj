@@ -16,6 +16,8 @@
    [clj-book.build.artifacts :as artifacts]
    [clj-book.build.plan :as plan]
    [clj-book.build.request :as request]
+   [clj-book.epub.assemble :as epub-assemble]
+   [clj-book.epub.zip :as epub-zip]
    [clj-book.eval.registry :as eval-registry]
    [clj-book.eval.validate :as eval-validate]
    [clj-book.fo.expand :as expand]
@@ -59,7 +61,9 @@
         _             (when (:enabled validation)
                         (eval-validate/validate-chapters! (:chapters book)))
         numbered      (:manuscript (number/assign book))
-        base          {:book-root book-root :book numbered :tokens (:tokens manuscript)}
+        base          {:book-root book-root :book numbered
+                       :tokens (:tokens manuscript)
+                       :config (:config manuscript)}
         artifacts-out (mapv #(render-edition! base %) edition-steps)
         finished      (Instant/now)]
     (artifacts/write!
@@ -169,10 +173,30 @@
      :paths    {:dir out-dir :index (str out-dir "/index.html")}
      :warnings (:warnings result)}))
 
+(defn- render-epub!
+  "Assemble the EPUB package contents (pure) and write the deterministic
+   archive (shell). Returns the artifact entry."
+  [{:keys [book-root book tokens config]} {:keys [edition epub-path]}]
+  (let [{:keys [entries]}
+        (epub-assemble/assemble
+          book tokens
+          {:identifier    (or (:book/identifier config)
+                              (str "urn:clj-book:" (:book/slug config)))
+           :language      (:book/language config)
+           :accessibility (:book/accessibility config)})
+        result (epub-zip/write! {:entries   entries
+                                 :epub-path epub-path
+                                 :book-root book-root})]
+    {:edition  edition
+     :path     epub-path
+     :paths    {:epub epub-path}
+     :warnings (:warnings result)}))
+
 (defn- render-edition!
   "Render one edition step, dispatching on its descriptor's `:format`."
   [base {:keys [edition] :as step}]
   (let [descriptor (get request/edition-descriptors edition)]
     (case (:format descriptor)
       :pdf  (render-pdf-edition! base step descriptor)
-      :html (render-site! base step))))
+      :html (render-site! base step)
+      :epub (render-epub! base step))))

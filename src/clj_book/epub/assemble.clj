@@ -31,7 +31,7 @@
    vary run to run."
   "1970-01-01T00:00:00Z")
 
-(declare package-doc nav-doc)
+(declare svg-referenced? package-doc nav-doc)
 
 (def ^:private container-xml
   (str "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -72,10 +72,11 @@
                 :extension "xhtml"
                 :highlight? (get-in tokens [:type :highlight] false)})
         page-entries  (mapv (fn [{:keys [file hiccup]}]
-                              {:path    (str "OEBPS/" file)
-                               :id      (str/replace file #"\.xhtml$" "")
-                               :content (html-serialize/serialize
-                                          hiccup {:mode :xhtml :doctype? true})})
+                              (cond-> {:path    (str "OEBPS/" file)
+                                       :id      (str/replace file #"\.xhtml$" "")
+                                       :content (html-serialize/serialize
+                                                  hiccup {:mode :xhtml :doctype? true})}
+                                (svg-referenced? hiccup) (assoc :properties "svg")))
                             pages)
         image-entries (mapv (fn [{:keys [src]}]
                               {:path     (str "OEBPS/" src)
@@ -103,7 +104,7 @@
                        :method  :stored}
                       {:path "META-INF/container.xml" :content container-xml}
                       opf]
-                     (map #(dissoc % :id) manifest)))}))
+                     (map #(dissoc % :id :properties) manifest)))}))
 
 ;; --- the package document --------------------------------------------------------
 
@@ -120,6 +121,16 @@
 (defn- media-type [path]
   (get media-types (str/lower-case (last (str/split path #"\.")))
        "application/octet-stream"))
+
+(defn- svg-referenced?
+  "True when a page references an SVG image — its manifest item must
+   then declare the `svg` property."
+  [hiccup]
+  (boolean
+    (some #(and (vector? %) (= :img (first %)) (map? (second %))
+                (str/ends-with? (str/lower-case (str (:src (second %))))
+                                ".svg"))
+          (tree-seq vector? seq hiccup))))
 
 (defn- a11y-metas
   "schema.org accessibility metadata with computed defaults: textual
@@ -158,11 +169,12 @@
               [:meta {:property "dcterms:modified"} pinned-modified]]
              (a11y-metas accessibility images?)))
      (into [:manifest]
-           (map (fn [{:keys [path id]}]
+           (map (fn [{:keys [path id properties]}]
                   [:item (cond-> {:id         id
                                   :href       (subs path (count "OEBPS/"))
                                   :media-type (media-type path)}
-                           (= id "nav") (assoc :properties "nav"))])
+                           (= id "nav") (assoc :properties "nav")
+                           properties   (assoc :properties properties))])
                 manifest))
      (into [:spine]
            (map (fn [{:keys [id]}] [:itemref {:idref id}]) pages))]))
@@ -172,19 +184,21 @@
 (defn- nav-ol
   "Nest the flat contents entries (by `:level`) into the `ol` tree the
    EPUB navigation document requires. A part entry has no page of its
-   own; it links to its anchor on the home page."
-  [entries home-file]
+   own, so it becomes an unlinked `span` heading — the toc nav's links
+   must follow spine order, which a link back to the home page's part
+   anchor would break."
+  [entries]
   (loop [es entries, lis []]
     (if (empty? es)
       (into [:ol {}] lis)
       (let [e           (first es)
             [kids more] (split-with #(> (:level %) (:level e)) (rest es))
-            a           [:a {:href (or (:href e)
-                                       (str home-file "#" (:id e)))}
-                         (:text e)]
+            label       (if (:href e)
+                          [:a {:href (:href e)} (:text e)]
+                          [:span {} (:text e)])
             li          (if (seq kids)
-                          [:li {} a (nav-ol kids home-file)]
-                          [:li {} a])]
+                          [:li {} label (nav-ol kids)]
+                          [:li {} label])]
         (recur more (conj lis li))))))
 
 (defn- nav-doc
@@ -202,11 +216,11 @@
        [:body {}
         [:nav {:epub/type "toc" :role "doc-toc"}
          [:h1 {} "Contents"]
-         (nav-ol contents home-file)]
+         (nav-ol contents)]
         [:nav {:epub/type "landmarks" :hidden "hidden"}
          [:h2 {} "Landmarks"]
          [:ol {}
-          [:li {} [:a {:epub/type "toc" :href "nav.xhtml"}
+          [:li {} [:a {:epub/type "toc" :href home-file}
                    "Table of contents"]]
           [:li {} [:a {:epub/type "bodymatter" :href body-start}
                    "Start of content"]]]]]]

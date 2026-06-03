@@ -16,7 +16,8 @@
    compiles for."
   {:screen {:format :pdf :layout :screen}
    :print  {:format :pdf :layout :print}
-   :site   {:format :html}})
+   :site   {:format :html}
+   :epub   {:format :epub}})
 
 (def supported-editions
   "Editions clj-book can build."

@@ -134,6 +134,20 @@
   (let [e (entry "OEBPS/images/cat.png")]
     (is (= "images/cat.png" (:resource e)))))
 
+(deftest svg-referencing-page-declares-the-svg-property
+  (let [svg-book (:manuscript
+                   (number/assign
+                     (assoc manuscript :sections
+                            [{:kind :chapter
+                              :content [:chapter {:id :ch :title "T"}
+                                        [:p [:img {:src "images/d.svg"
+                                                   :alt "a diagram"}]]]}])))
+        r   (epub/assemble svg-book tokens {:identifier "x"})
+        opf (:content (first (filter #(= "OEBPS/content.opf" (:path %))
+                                     (:entries r))))]
+    (is (str/includes? opf "href=\"chapter-01.xhtml\" id=\"chapter-01\" media-type=\"application/xhtml+xml\" properties=\"svg\""))
+    (is (str/includes? opf "media-type=\"image/svg+xml\""))))
+
 (deftest assembly-is-deterministic
   (is (= entries
          (:entries (epub/assemble book tokens
