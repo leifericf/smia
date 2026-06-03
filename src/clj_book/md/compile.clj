@@ -209,6 +209,12 @@
                                          :clj-book.md.compile/invalid-admonition)]
       (into [:admonition attrs] (compile-block-seq (:children node))))
 
+    "sidebar"
+    (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node)))
+
+    "epigraph"
+    (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node)))
+
     "keep-together"
     (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node)))
 

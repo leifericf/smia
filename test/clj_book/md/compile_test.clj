@@ -29,6 +29,12 @@
   (is (= [[:h2 "Two"] [:h3 "Three"]]
          (md->body "## Two\n\n### Three\n"))))
 
+(deftest sidebar-and-epigraph-directives-compile
+  (is (= [[:sidebar {:title "Aside"} [:p "Body."]]]
+         (md->body ":::sidebar {:title \"Aside\"}\nBody.\n:::\n")))
+  (is (= [[:epigraph {:attribution "A. Hacker"} [:p "Make it work."]]]
+         (md->body ":::epigraph {:attribution \"A. Hacker\"}\nMake it work.\n:::\n"))))
+
 (deftest page-mechanics-directives-compile
   (testing ":::page-break compiles to the page-break element"
     (is (= [[:page-break]] (md->body ":::page-break\n:::\n"))))
@@ -116,7 +122,7 @@
     (is (some #(and (vector? %) (= :pre (first %))) (tree-seq vector? seq adm)))))
 
 (deftest unknown-directive-is-an-error
-  (let [d (catch-data #(md->body ":::sidebar {:x 1}\nhi\n:::\n"))]
+  (let [d (catch-data #(md->body ":::flummox {:x 1}\nhi\n:::\n"))]
     (is (= :clj-book.md.compile/unknown-directive (:error/type d)))))
 
 (deftest admonition-kind-must-be-a-keyword

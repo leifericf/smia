@@ -200,12 +200,42 @@
   {:note "Note" :tip "Tip" :warning "Warning"
    :important "Important" :caution "Caution"})
 
-(defn- admonition-block [author children style]
-  (let [kind  (or (:kind author) :note)
-        label (get admonition-labels kind (str/capitalize (name kind)))]
-    (into [:fo/block (get style :admonition)]
-          (cons [:fo/block {:font-weight "bold" :space-after "3pt"} label]
-                (expand-all children style)))))
+(defn- sidebar-title
+  "The title bar text for a sidebar/admonition: an explicit `:title`, else
+   the label for a known `:kind`, else the capitalized kind, else nil."
+  [{:keys [title kind]}]
+  (cond
+    title title
+    kind  (get admonition-labels kind (str/capitalize (name kind)))
+    :else nil))
+
+(defn- sidebar-block
+  "A bordered callout with an optional bold title bar (with optional icon)
+   and a rich body. Generalizes the admonition: `:admonition` is the
+   kind-titled special case, `:sidebar` adds an arbitrary `:title`."
+  [author children style]
+  (let [title (sidebar-title author)
+        icon  (:icon author)]
+    (into [:fo/block (cond-> (get style :admonition)
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (concat
+            (when title
+              [[:fo/block {:font-weight "bold" :space-after "3pt"}
+                (if icon (str icon " " title) title)]])
+            (expand-all children style)))))
+
+(defn- epigraph-block
+  "A chapter/part opening quotation: the quote in italic, with an optional
+   right-aligned attribution beneath it."
+  [author children style]
+  (into [:fo/block (cond-> {:start-indent "24pt" :font-style "italic"
+                            :space-before "12pt" :space-after "18pt"}
+                     (:id author) (assoc :id (as-id (:id author))))]
+        (concat
+          (expand-all children style)
+          (when-let [attr (:attribution author)]
+            [[:fo/block {:font-style "normal" :text-align "end"
+                         :space-before "4pt"} (str "— " attr)]]))))
 
 (defn- footnote [_author children style]
   [:fo/footnote
@@ -281,7 +311,9 @@
      :tr         (fn [a c s] (styled-block :p a c s {}))
      :td         (fn [a c s] (styled-block :p a c s {}))
      :th         (fn [a c s] (styled-block :p a c s {}))
-     :admonition (fn [a c s] (admonition-block a c s))
+     :admonition (fn [a c s] (sidebar-block (update a :kind #(or % :note)) c s))
+     :sidebar    (fn [a c s] (sidebar-block a c s))
+     :epigraph   (fn [a c s] (epigraph-block a c s))
      :footnote   (fn [a c s] (footnote a c s))
      :xref       (fn [a c s] (xref a c s))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])

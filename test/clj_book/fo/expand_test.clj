@@ -170,6 +170,21 @@
   (let [d (catch-data #(ex [:xref {} "x"]))]
     (is (= :clj-book.fo.expand/invalid-xref (:error/type d)))))
 
+(deftest sidebar-has-an-arbitrary-title
+  (let [out (ex [:sidebar {:title "On Determinism"} [:p "Stuff."]])]
+    (is (= :fo/block (first out)))
+    (is (some #(= "On Determinism" (last %)) (filter vector? out)))))
+
+(deftest sidebar-icon-prefixes-the-title
+  (let [out (ex [:sidebar {:title "Heads up" :icon "!"} [:p "x"]])]
+    (is (some #(= "! Heads up" (last %)) (filter vector? out)))))
+
+(deftest epigraph-renders-quote-and-attribution
+  (let [out (ex [:epigraph {:attribution "A. Hacker"} [:p "Make it work."]])]
+    (is (= :fo/block (first out)))
+    (is (= "italic" (:font-style (second out))))
+    (is (some #(= "— A. Hacker" (last %)) (filter vector? (tree-seq vector? seq out))))))
+
 (deftest page-break-forces-a-break-before
   (is (= [:fo/block {:break-before "page"}] (ex [:page-break]))))
 
