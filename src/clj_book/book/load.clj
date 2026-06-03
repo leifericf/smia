@@ -45,31 +45,56 @@
        (take (inc (- to from)))
        (str/join "\n")))
 
-(defn- resolve-include
-  "Slurp the source named by a `[:pre {:include …}]` node, returning a
-   `[:pre attrs source]` with the include keys stripped. `:lines [from to]`
-   selects a 1-based inclusive range."
-  [book-root attrs]
-  (let [f (io/file book-root (:include attrs))]
+(defn- include-pre?
+  "True for a `[:pre {:include …} …]` node — a code block that pulls its
+   source from a file."
+  [node]
+  (and (vector? node) (= :pre (first node))
+       (map? (second node)) (:include (second node))))
+
+(defn- include-paths
+  "Pure: every `:include` source path referenced in a chapter tree, in
+   document order and deduplicated."
+  [node]
+  (into [] (comp (filter include-pre?)
+                 (map (comp :include second))
+                 (distinct))
+        (tree-seq vector? seq node)))
+
+(defn- substitute-includes
+  "Pure: replace every `[:pre {:include …}]` node with `[:pre <attrs without
+   the include keys> <source>]`, taking the text from `sources`
+   (path -> full source) and applying any `:lines [from to]` range."
+  [sources node]
+  (cond
+    (include-pre? node)
+    (let [attrs (second node)
+          text  (get sources (:include attrs))
+          text  (if-let [lines (:lines attrs)] (select-lines text lines) text)]
+      [:pre (dissoc attrs :include :lines) text])
+
+    (vector? node) (mapv #(substitute-includes sources %) node)
+    :else          node))
+
+(defn- read-include
+  "Shell: slurp the include source at `book-root`/`path`. A missing file is
+   a hard error."
+  [book-root path]
+  (let [f (io/file book-root path)]
     (when-not (.exists f)
       (throw (error/ex :clj-book.book.load/missing-include
                        (str "Included source file not found: " (.getPath f))
-                       {:book-root book-root :include (:include attrs)})))
-    (let [text (slurp f)
-          text (if-let [lines (:lines attrs)] (select-lines text lines) text)]
-      [:pre (dissoc attrs :include :lines) text])))
+                       {:book-root book-root :include path})))
+    (slurp f)))
 
 (defn- resolve-includes
-  "Walk a chapter Hiccup tree, replacing every body-less
-   `[:pre {:include …}]` with the slurped source."
+  "Shell: resolve every `[:pre {:include …}]` in a chapter tree. Collecting
+   the source paths and substituting the text back are pure steps; only the
+   read between them touches the filesystem."
   [book-root node]
-  (cond
-    (and (vector? node) (= :pre (first node))
-         (map? (second node)) (:include (second node)))
-    (resolve-include book-root (second node))
-
-    (vector? node) (mapv #(resolve-includes book-root %) node)
-    :else          node))
+  (let [sources (into {} (map (fn [p] [p (read-include book-root p)]))
+                      (include-paths node))]
+    (substitute-includes sources node)))
 
 (defn- check-chapter-shape
   "Validate that `form` is a well-formed `[:chapter {:id <keyword>

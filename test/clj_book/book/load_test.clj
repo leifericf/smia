@@ -140,3 +140,22 @@
                   "# X\n\n```clojure {:include \"src/nope.clj\"}\n```\n")
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :clj-book.book.load/missing-include (:error/type d))))))
+
+;; The collect and substitute halves of include resolution are pure, so they
+;; can be exercised directly — no disk, no slurp.
+
+(deftest include-paths-are-collected-in-order-and-deduplicated
+  (let [tree [:chapter {:id :x :title "X"}
+              [:pre {:lang :clojure :include "a.clj" :lines [1 2]}]
+              [:p "prose"]
+              [:pre {:lang :clojure :include "b.clj"}]
+              [:pre {:lang :clojure :include "a.clj" :lines [5 6]}]]]
+    (is (= ["a.clj" "b.clj"] (#'load/include-paths tree))
+        "each source path appears once, in document order")))
+
+(deftest substitute-includes-injects-source-and-strips-include-keys
+  (let [sources {"a.clj" "line-1\nline-2\nline-3\nline-4"}
+        tree    [:p [:pre {:lang :clojure :include "a.clj" :lines [2 3]}]]]
+    (is (= [:p [:pre {:lang :clojure} "line-2\nline-3"]]
+           (#'load/substitute-includes sources tree))
+        "the :lines range is applied and :include/:lines are dropped")))
