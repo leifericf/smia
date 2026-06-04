@@ -1,4 +1,3 @@
-{:id :distribution}
 # Distributing your book
 
 :::overview {:title "What this chapter covers"}

@@ -1,4 +1,3 @@
-{:id :preface}
 # Preface
 
 This manual is a Smia manuscript. Every page you are reading was produced by

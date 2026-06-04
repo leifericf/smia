@@ -1,4 +1,3 @@
-{:id :book-production}
 # Producing a Book
 
 :::overview {:title "What this chapter covers"}
