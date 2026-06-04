@@ -307,6 +307,28 @@
             (when title [[:div {:class "overview-title"} title]])
             (expand-all children ctx)))))
 
+(defn- example-block [author children ctx]
+  (into [:div (assoc (id-attrs author) :class "example")]
+        (concat
+          (when-let [title (:title author)] [[:div {:class "example-title"} title]])
+          (expand-all children ctx))))
+
+(defn- disclosure
+  "A foldable `<details>` with a `<summary>` label (from `:summary`, falling
+   back to `:title`). `open?` renders it expanded. With JavaScript disabled
+   the browser's native disclosure still works."
+  [author children ctx open?]
+  (let [summary (or (:summary author) (:title author) "Details")]
+    (into [:details (cond-> (id-attrs author) open? (assoc :open "open"))]
+          (cons [:summary {} summary] (expand-all children ctx)))))
+
+(defn- menu-path
+  "A menu path: the segments separated by a small caret in a classed span so
+   the stylesheet can restyle or hide the separator."
+  [children ctx]
+  (into [:span {:class "menu"}]
+        (interpose [:span {:class "menu-sep"} " ▸ "] (expand-all children ctx))))
+
 (defn- epigraph-block [author children ctx]
   (into [:blockquote (assoc (id-attrs author) :class "epigraph")]
         (concat
@@ -391,6 +413,12 @@
    :em         (passthrough :em)
    :code       (passthrough :code)
    :span       (passthrough :span)
+   :kbd        (passthrough :kbd)
+   :mark       (passthrough :mark)
+   :sub        (passthrough :sub)
+   :sup        (passthrough :sup)
+   :menu       (fn [_ c ctx] (menu-path c ctx))
+   :button     (fn [_ c ctx] (into [:span {:class "button"}] (expand-all c ctx)))
    :blockquote (passthrough :blockquote)
    :thead      (passthrough :thead)
    :tbody      (passthrough :tbody)
@@ -416,6 +444,9 @@
    :admonition admonition-block
    :sidebar    sidebar-block
    :overview   overview-block
+   :example    example-block
+   :details    (fn [a c ctx] (disclosure a c ctx false))
+   :open       (fn [a c ctx] (disclosure a c ctx true))
    :epigraph   epigraph-block
    :footnote   (fn [a _ _] (footnote-ref a))
    :xref       xref

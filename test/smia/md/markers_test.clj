@@ -5,7 +5,7 @@
   (:require
    [smia.error :as error]
    [smia.md.markers :as markers]
-   [clojure.test :refer [deftest is]]))
+   [clojure.test :refer [deftest is testing]]))
 
 (defn- catch-data [f] (try (f) nil (catch Exception e (error/data e))))
 
@@ -18,6 +18,20 @@
 
 (deftest a-string-kind-resolves-like-a-keyword
   (is (= [:cite {:key :x}] (markers/marker-form "cite" "x"))))
+
+(deftest ui-markers-build-the-interface-vocabulary
+  (testing "a single-key chord is one kbd; a multi-key chord joins with +"
+    (is (= [:kbd "Enter"] (markers/marker-form :kbd "[\"Enter\"]")))
+    (is (= [:span [:kbd "Ctrl"] "+" [:kbd "S"]]
+           (markers/marker-form :kbd "[\"Ctrl\" \"S\"]"))))
+  (testing "a menu path is the segments under :menu"
+    (is (= [:menu "File" "Export" "PDF"]
+           (markers/marker-form :menu "[\"File\" \"Export\" \"PDF\"]"))))
+  (testing "button, mark, sub, and sup wrap a literal label"
+    (is (= [:button "Save"] (markers/marker-form :button " Save ")))
+    (is (= [:mark "key idea"] (markers/marker-form :mark "key idea")))
+    (is (= [:sub "2"] (markers/marker-form :sub "2")))
+    (is (= [:sup "n"] (markers/marker-form :sup "n")))))
 
 (deftest marker-names-are-the-sorted-registry-keys
   (is (= (->> (keys markers/inline-markers) (map name) sort vec)

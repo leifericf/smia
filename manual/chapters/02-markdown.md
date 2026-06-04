@@ -23,9 +23,14 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 |---|---|---|
 | admonition | a `:::admonition {:kind :tip}` … `:::` block | `[:admonition {:kind :tip} …]` |
 | overview | a `:::overview` … `:::` block | `[:overview …]` |
+| example | a `:::example {:title "…"}` … `:::` block | `[:example {…} …]` |
+| disclosure | a `:::details {:summary "…"}` (or `:::open`) block | `[:details {…} …]` |
 | description list | a `:::deflist` block of **bold term** lines and definitions | `[:dl [:dt …] [:dd …] …]` |
 | cross-reference | a link whose target is `#id` | `[:xref {:to :id} …]` |
 | footnote | `text[^1]` plus a `[^1]:` definition | `[:footnote …]` |
+| keyboard chord | a code span `["Ctrl" "S"]` followed by `{=kbd}` | `[:kbd …]` (joined with `+`) |
+| menu path | a code span `["File" "Export"]` followed by `{=menu}` | `[:menu "File" "Export"]` |
+| button, highlight, sub/superscript | a code span followed by `{=button}`, `{=mark}`, `{=sub}`, or `{=sup}` | `[:button …]`, `[:mark …]`, `[:sub …]`, `[:sup …]` |
 | code block | a fence whose info is `clojure {:test true}` | `[:pre {:lang :clojure :test true} …]` |
 | include source | a fence info of `clojure {:include "src/x.clj" :lines [1 20]}` | `[:pre …]` with the file's text |
 | include a tagged region | a fence info of `clojure {:include "src/x.clj" :tag "core"}` | `[:pre …]` with the region's text |
@@ -102,6 +107,18 @@ The normalized document structure.
 **Profile**
 
 A layout variant such as screen or print.
+:::
+```
+
+## Interface vocabulary
+
+Writing about software means naming its interface. Six inline markers cover the common cases. A key chord is an EDN sequence of key names followed by `{=kbd}` — `` `["Ctrl" "S"]`{=kbd} `` sets each key in its own box and joins them with a plus. A menu path works the same way with `{=menu}` — `` `["File" "Export"]`{=menu} `` — and the separator is drawn for you. The remaining four wrap a literal label: `{=button}` for a control, `{=mark}` to highlight, and `{=sub}` and `{=sup}` for sub- and superscript, as in `` H`2`{=sub}O ``.
+
+Two block directives group richer content. A `:::example` is a titled worked-example callout; a `:::details` (or `:::open`, which starts expanded) is a disclosure that folds away on the site. Print has no interactivity, so a disclosure there shows its summary as a heading above the always-visible body.
+
+```
+:::example {:title "Rounding a ratio"}
+The `ratio?` branch renders as a double so the output stays portable.
 :::
 ```
 

@@ -18,9 +18,11 @@
     :ul :ol :li
     :dl :dt :dd
     :strong :em :code :span :pre :a :br
+    :kbd :menu :button :mark :sub :sup
     :blockquote :img :hr :figure
     :table :thead :tbody :tr :td :th
     :admonition :sidebar :overview :epigraph :footnote :xref :cite :index
+    :example :details :open
     :math :diagram :page-break :keep-together})
 
 (def resolve-tags

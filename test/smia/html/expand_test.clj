@@ -22,6 +22,32 @@
   (is (= [:p {} "a " [:strong {} "b"] " " [:em {} "c"]]
          (html-expand/expand [:p "a " [:strong "b"] " " [:em "c"]] ctx))))
 
+(deftest interface-vocabulary-inline-tags-render
+  (testing "real HTML inline elements pass through"
+    (is (= [:kbd {} "Enter"] (html-expand/expand [:kbd "Enter"] ctx)))
+    (is (= [:mark {} "x"] (html-expand/expand [:mark "x"] ctx)))
+    (is (= [:sub {} "2"] (html-expand/expand [:sub "2"] ctx)))
+    (is (= [:sup {} "n"] (html-expand/expand [:sup "n"] ctx))))
+  (testing ":menu renders a classed path with separator spans"
+    (is (= [:span {:class "menu"}
+            "File" [:span {:class "menu-sep"} " ▸ "] "Export"]
+           (html-expand/expand [:menu "File" "Export"] ctx))))
+  (testing ":button renders a classed span (not an interactive control)"
+    (is (= [:span {:class "button"} "Save"]
+           (html-expand/expand [:button "Save"] ctx)))))
+
+(deftest richer-blocks-render
+  (testing ":example is a classed div with an optional title"
+    (is (= [:div {:class "example"} [:div {:class "example-title"} "Worked"]
+            [:p {} "x"]]
+           (html-expand/expand [:example {:title "Worked"} [:p "x"]] ctx))))
+  (testing ":details is a closed disclosure with a summary"
+    (is (= [:details {} [:summary {} "More"] [:p {} "x"]]
+           (html-expand/expand [:details {:summary "More"} [:p "x"]] ctx))))
+  (testing ":open is the same disclosure, rendered open"
+    (is (= [:details {:open "open"} [:summary {} "Details"] [:p {} "x"]]
+           (html-expand/expand [:open [:p "x"]] ctx)))))
+
 (deftest heading-keeps-its-anchor-id
   (is (= [:h2 {:id "sec-a"} "1.2 " "Title"]
          (html-expand/expand [:h2 {:id :sec-a} "1.2 " "Title"] ctx))))

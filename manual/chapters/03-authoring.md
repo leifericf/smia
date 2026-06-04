@@ -16,9 +16,12 @@ The common case looks like ordinary markup. Paragraphs, headings, lists, emphasi
 - `:ul` / `:ol` / `:li`
 - `:dl` / `:dt` / `:dd`
 - `:strong`, `:em`, `:code`, `:span`, `:a`
+- `:kbd`, `:menu`, `:button`, `:mark`, `:sub`, `:sup`
 - `:table` / `:thead` / `:tbody` / `:tr` / `:td` / `:th`
 
 `:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap. `:img` takes a `:src` and `:alt` text; the HTML editions require the alt text, and an optional `:width` and `:height` size the image.
+
+The interface tags name parts of a user interface. `:kbd` boxes a key (`[:kbd "Enter"]`); set a chord as adjacent keys. `:menu` renders a path from its segments (`[:menu "File" "Export"]`). `:button` labels a control, `:mark` highlights, and `:sub` and `:sup` shift the baseline.
 
 A **description list** pairs a term with its definition. Each `:dt` is set bold, each `:dd` indented beneath it:
 
@@ -38,6 +41,8 @@ Some things HTML cannot name. Smia adds them:
 |---|---|
 | `:chapter` | a chapter (page sequence + bookmark) |
 | `:overview` | a panel at the head of a chapter summarizing what it covers |
+| `:example` | a titled worked-example callout |
+| `:details` / `:open` | a disclosure that folds away on the site (`:open` starts expanded) |
 | `:xref` | a cross-reference resolved to a page number |
 | `:footnote` | a footnote |
 | `:admonition` | a called-out note, tip, or warning |

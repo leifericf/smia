@@ -134,6 +134,10 @@
    :overview   {:border-left "3pt solid #999999" :padding "8pt 10pt"
                 :background-color "#f7f7f7" :space-before "8pt"
                 :space-after "12pt"}
+   :example    {:border-left "3pt solid #999999" :padding "6pt 10pt"
+                :space-before "8pt" :space-after "8pt"}
+   :details    {:border-left "1pt solid #cccccc" :padding "6pt 10pt"
+                :space-before "8pt" :space-after "8pt"}
    :table      {:table-layout "fixed" :width "100%" :border-collapse "collapse"
                 :space-before "6pt" :space-after "8pt"}
    :table-cell {:border "0.5pt solid #cccccc" :padding "4pt"}
@@ -167,6 +171,19 @@
 
 (defn- styled-inline [props children style]
   (into [:fo/inline props] (expand-all children style)))
+
+;; Interface-vocabulary inline styling. Geometric separators are avoided in
+;; the menu path: the base-14 serif has no triangle glyph, so a portable
+;; ASCII ">" keeps the PDF (and PDF/X) free of missing-glyph boxes.
+(def ^:private kbd-style
+  {:font-family "monospace" :font-size "0.85em" :background-color "#eeeeee"
+   :border "0.5pt solid #cccccc" :padding "0pt 2pt"})
+
+(def ^:private button-style
+  {:font-size "0.85em" :background-color "#e8e8e8"
+   :border "0.5pt solid #bbbbbb" :padding "0pt 4pt"})
+
+(def ^:private menu-separator " > ")
 
 (defn- heading-with-marker
   "A styled heading block that also emits an `fo:marker` carrying its plain
@@ -492,6 +509,29 @@
             [[:fo/block {:font-style "normal" :text-align "end"
                          :space-before "4pt"} (str "— " attr)]]))))
 
+(defn- example-block
+  "A worked-example callout: an optional bold title bar above a rich body,
+   kept on one page like the other callouts."
+  [author children style]
+  (into [:fo/block (cond-> (assoc (get style :example)
+                                  :keep-together.within-page "always")
+                     (:id author) (assoc :id (as-id (:id author))))]
+        (concat
+          (when-let [title (:title author)]
+            [[:fo/block {:font-weight "bold" :space-after "3pt"} title]])
+          (expand-all children style))))
+
+(defn- disclosure-block
+  "A foldable disclosure. Print has no interactivity, so it renders as a
+   light block with the summary as a bold lead-in above the always-visible
+   body; the open/closed distinction is a site affordance only."
+  [author children style]
+  (let [summary (or (:summary author) (:title author) "Details")]
+    (into [:fo/block (cond-> (get style :details)
+                       (:id author) (assoc :id (as-id (:id author))))]
+          (cons [:fo/block {:font-weight "bold" :space-after "3pt"} summary]
+                (expand-all children style)))))
+
 (defn- footnote [_author children style]
   [:fo/footnote
    [:fo/inline {:baseline-shift "super" :font-size "8pt"} "*"]
@@ -569,6 +609,15 @@
      :em         (fn [_ c s] (styled-inline {:font-style "italic"} c s))
      :code       (fn [_ c s] (styled-inline (get s :code) c s))
      :span       (fn [_ c s] (into [:fo/inline] (expand-all c s)))
+     :kbd        (fn [_ c s] (styled-inline kbd-style c s))
+     :menu       (fn [_ c s] (into [:fo/inline {}]
+                                   (interpose menu-separator (expand-all c s))))
+     :button     (fn [_ c s] (styled-inline button-style c s))
+     :mark       (fn [_ c s] (styled-inline {:background-color "#fff3b0"} c s))
+     :sub        (fn [_ c s] (styled-inline {:baseline-shift "sub"
+                                             :font-size "0.75em"} c s))
+     :sup        (fn [_ c s] (styled-inline {:baseline-shift "super"
+                                             :font-size "0.75em"} c s))
      :br         (fn [_ _ _] [:fo/block])
      :a          (fn [a c s] (if (links? s)
                                (styled-inline
@@ -601,6 +650,9 @@
      :admonition (fn [a c s] (sidebar-block (update a :kind #(or % :note)) c s))
      :sidebar    sidebar-block
      :overview   overview-block
+     :example    example-block
+     :details    disclosure-block
+     :open       disclosure-block
      :epigraph   epigraph-block
      :footnote   footnote
      :xref       xref

@@ -19,6 +19,35 @@
   (is (= [:fo/inline {:font-weight "bold"} "x"] (ex [:strong "x"])))
   (is (= [:fo/inline {:font-style "italic"} "x"] (ex [:em "x"]))))
 
+(deftest interface-vocabulary-inline-tags-expand
+  (testing ":sub and :sup shift the baseline"
+    (is (= [:fo/inline {:baseline-shift "sub" :font-size "0.75em"} "2"]
+           (ex [:sub "2"])))
+    (is (= [:fo/inline {:baseline-shift "super" :font-size "0.75em"} "n"]
+           (ex [:sup "n"]))))
+  (testing ":mark carries a highlight background"
+    (is (= [:fo/inline {:background-color "#fff3b0"} "x"] (ex [:mark "x"]))))
+  (testing ":kbd boxes a key in monospace"
+    (let [[tag attrs] (ex [:kbd "Enter"])]
+      (is (= :fo/inline tag))
+      (is (= "monospace" (:font-family attrs)))))
+  (testing ":menu joins its path segments with a portable ASCII caret"
+    ;; the base-14 serif has no triangle glyph, so the PDF stays ASCII
+    (is (= [:fo/inline {} "File" " > " "Export"] (ex [:menu "File" "Export"])))))
+
+(deftest richer-blocks-expand
+  (testing ":example is a kept-together callout with an optional title"
+    (let [[tag attrs title body] (ex [:example {:title "Worked"} [:p "x"]])]
+      (is (= :fo/block tag))
+      (is (= "always" (:keep-together.within-page attrs)))
+      (is (= [:fo/block {:font-weight "bold" :space-after "3pt"} "Worked"] title))
+      (is (= [:fo/block {:space-after "6pt"} "x"] body))))
+  (testing ":details/:open show the summary as a bold lead-in (print cannot fold)"
+    (let [[_ _ summary] (ex [:details {:summary "More"} [:p "x"]])]
+      (is (= [:fo/block {:font-weight "bold" :space-after "3pt"} "More"] summary)))
+    (let [[_ _ summary] (ex [:open [:p "x"]])]
+      (is (= [:fo/block {:font-weight "bold" :space-after "3pt"} "Details"] summary)))))
+
 (deftest pre-validation-attrs-are-inert-to-expansion
   ;; The Markdown front-end tags code blocks with :lang/:test/:include for
   ;; the opt-in validation pass; those attrs must not affect rendering.

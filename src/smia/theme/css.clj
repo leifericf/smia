@@ -101,6 +101,28 @@
                        :padding          "8pt 10pt"
                        :margin           (str block " 0 12pt")}]
          [".overview-title" {:font-weight "bold"}]
+         [".example" {:border-left (str "3pt solid " rule)
+                      :padding     "6pt 10pt"
+                      :margin      (str block " 0")}]
+         [".example-title" {:font-weight "bold"}]
+         ["details" {:border-left  (str "1pt solid " rule)
+                     :padding-left "10pt"
+                     :margin       (str block " 0")}]
+         ["summary" {:font-weight "bold" :cursor "pointer"}]
+
+         ;; interface vocabulary: keys, menu paths, buttons, highlight
+         ["kbd" {:font-family      mono-family
+                 :font-size        "0.85em"
+                 :background-color "#eeeeee"
+                 :border           (str "1px solid " rule)
+                 :border-radius    "3px"
+                 :padding          "0 0.3em"}]
+         [".menu-sep" {:color muted}]
+         [".button" {:background-color "#e8e8e8"
+                     :border           (str "1px solid " rule)
+                     :border-radius    "3px"
+                     :padding          "0 0.4em"}]
+         ["mark" {:background-color "#fff3b0"}]
          [".epigraph" {:border-left  "none"
                        :margin-left  "24pt"
                        :font-style   "italic"

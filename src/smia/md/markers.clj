@@ -22,16 +22,35 @@
                             (.getMessage e))
                        {:source payload})))))
 
+(defn- as-seq
+  "Read an EDN payload as a sequence: a vector/list stays as-is, a scalar
+   becomes a one-element seq. Used by the chord/path markers."
+  [payload]
+  (let [form (read-escape-edn payload)]
+    (if (sequential? form) form [form])))
+
 (def inline-markers
   "Inline marker keyword -> pure `(fn [payload] -> author-hiccup node)`.
    `{=hiccup}`/`{=fo}` splice the payload's EDN verbatim; `{=cite}` keys a
    citation by the payload; `{=index}` marks an index term; `{=math}` makes
-   inline math."
+   inline math. The UI markers build the interface-vocabulary tags:
+   `{=kbd}`/`{=menu}` take an EDN sequence (a key chord, a menu path);
+   `{=button}`/`{=mark}`/`{=sub}`/`{=sup}` wrap a literal label."
   {:hiccup read-escape-edn
    :fo     read-escape-edn
    :cite   (fn [payload] [:cite {:key (keyword (str/trim payload))}])
    :index  (fn [payload] [:index {:term payload}])
-   :math   (fn [payload] [:math {:notation payload}])})
+   :math   (fn [payload] [:math {:notation payload}])
+   :kbd    (fn [payload]
+             (let [keys (map str (as-seq payload))]
+               (if (= 1 (count keys))
+                 [:kbd (first keys)]
+                 (into [:span] (interpose "+" (map (fn [k] [:kbd k]) keys))))))
+   :menu   (fn [payload] (into [:menu] (map str (as-seq payload))))
+   :button (fn [payload] [:button (str/trim payload)])
+   :mark   (fn [payload] [:mark payload])
+   :sub    (fn [payload] [:sub payload])
+   :sup    (fn [payload] [:sup payload])})
 
 (def marker-names
   "The marker names as strings, sorted so the inline-escape regex this list

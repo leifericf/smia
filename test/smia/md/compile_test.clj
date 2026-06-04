@@ -120,6 +120,31 @@
                           "Folds with `reduce`.\n"
                           ":::\n"))))))
 
+(deftest interface-markers-compile-to-ui-tags
+  (testing "a key chord folds into kbd nodes"
+    (is (= [[:p "Press " [:span [:kbd "Ctrl"] "+" [:kbd "S"]] " to save."]]
+           (md->body "Press `[\"Ctrl\" \"S\"]`{=kbd} to save.\n"))))
+  (testing "a menu path folds into a menu node"
+    (is (= [[:p "Open " [:menu "File" "Export"] "."]]
+           (md->body "Open `[\"File\" \"Export\"]`{=menu}.\n"))))
+  (testing "button, mark, sub, and sup wrap a label"
+    (is (= [[:p "Click " [:button "Save"] "."]]
+           (md->body "Click `Save`{=button}.\n")))
+    (is (= [[:p "H" [:sub "2"] "O and x" [:sup "2"] "."]]
+           (md->body "H`2`{=sub}O and x`2`{=sup}.\n")))
+    (is (= [[:p "A " [:mark "key"] " point."]]
+           (md->body "A `key`{=mark} point.\n")))))
+
+(deftest richer-block-directives-compile
+  (testing ":::example carries its title and body"
+    (is (= [[:example {:title "A worked case"} [:p "Body."]]]
+           (md->body ":::example {:title \"A worked case\"}\nBody.\n:::\n"))))
+  (testing ":::details and :::open compile to disclosures"
+    (is (= [[:details {:summary "Show more"} [:p "Hidden."]]]
+           (md->body ":::details {:summary \"Show more\"}\nHidden.\n:::\n")))
+    (is (= [[:open {} [:p "Visible."]]]
+           (md->body ":::open\nVisible.\n:::\n")))))
+
 (deftest page-mechanics-directives-compile
   (testing ":::page-break compiles to the page-break element"
     (is (= [[:page-break]] (md->body ":::page-break\n:::\n"))))

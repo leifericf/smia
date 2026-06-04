@@ -283,6 +283,18 @@
    (fn [node]
      (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node))))
 
+   "example"
+   (fn [node]
+     (into [:example (directive-attrs node)] (compile-block-seq (:children node))))
+
+   "details"
+   (fn [node]
+     (into [:details (directive-attrs node)] (compile-block-seq (:children node))))
+
+   "open"
+   (fn [node]
+     (into [:open (directive-attrs node)] (compile-block-seq (:children node))))
+
    "keep-together"
    (fn [node]
      (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node))))
