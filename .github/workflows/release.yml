@@ -56,26 +56,26 @@ jobs:
 
       - name: Verify the download assets exist
         run: |
-          d=build/release/clj-book-manual
-          test -f "$d/pdf/clj-book-manual-screen.pdf"
-          test -f "$d/pdf/clj-book-manual-print.pdf"
-          test -f "$d/pdf/clj-book-manual-print-x.pdf"
-          test -f "$d/epub/clj-book-manual.epub"
+          d=build/release/smia-manual
+          test -f "$d/pdf/smia-manual-screen.pdf"
+          test -f "$d/pdf/smia-manual-print.pdf"
+          test -f "$d/pdf/smia-manual-print-x.pdf"
+          test -f "$d/epub/smia-manual.epub"
 
       - name: Set the custom domain (when configured)
         if: ${{ vars.PAGES_CUSTOM_DOMAIN != '' }}
         run: |
           echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" \
-            > build/release/clj-book-manual/site/CNAME
+            > build/release/smia-manual/site/CNAME
 
       - name: Create the Release with every downloadable edition
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/release/clj-book-manual/pdf/clj-book-manual-screen.pdf
-            build/release/clj-book-manual/pdf/clj-book-manual-print.pdf
-            build/release/clj-book-manual/pdf/clj-book-manual-print-x.pdf
-            build/release/clj-book-manual/epub/clj-book-manual.epub
+            build/release/smia-manual/pdf/smia-manual-screen.pdf
+            build/release/smia-manual/pdf/smia-manual-print.pdf
+            build/release/smia-manual/pdf/smia-manual-print-x.pdf
+            build/release/smia-manual/epub/smia-manual.epub
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -83,7 +83,7 @@ jobs:
       - name: Upload the site as a Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/release/clj-book-manual/site
+          path: build/release/smia-manual/site
 
       - name: Deploy to GitHub Pages
         id: deploy

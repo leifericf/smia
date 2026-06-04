@@ -55,13 +55,13 @@ jobs:
 
       - name: Verify dogfood artifacts
         run: |
-          test -f build/ci/clj-book-manual/pdf/clj-book-manual-screen.pdf
-          test -f build/ci/clj-book-manual/pdf/clj-book-manual-print.pdf
-          test -f build/ci/clj-book-manual/artifacts.edn
+          test -f build/ci/smia-manual/pdf/smia-manual-screen.pdf
+          test -f build/ci/smia-manual/pdf/smia-manual-print.pdf
+          test -f build/ci/smia-manual/artifacts.edn
 
       - name: Upload dogfood artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dogfood-manual
-          path: build/ci/clj-book-manual/pdf/
+          path: build/ci/smia-manual/pdf/
           retention-days: 7

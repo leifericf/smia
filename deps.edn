@@ -20,12 +20,12 @@
   :dev   {:extra-paths ["test" "test/resources" "dev"]
           :extra-deps  {nrepl/nrepl {:mvn/version "1.3.0"}}}
 
-  :run {:main-opts ["-m" "clj-book.cli"]}
+  :run {:main-opts ["-m" "smia.cli"]}
 
-  :build {:exec-fn   clj-book.api/build
+  :build {:exec-fn   smia.api/build
           :exec-args {}}
 
-  :validate {:exec-fn   clj-book.api/validate
+  :validate {:exec-fn   smia.api/validate
              :exec-args {}}
 
   ;; Optional code-validation evaluators. A book pulls in only the

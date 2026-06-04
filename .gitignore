@@ -5,7 +5,7 @@
 .nrepl-port
 target/
 # Anchored to the repo root: this is the build output dir. An unanchored
-# `build/` would also swallow source packages like src/clj_book/build/.
+# `build/` would also swallow source packages like src/smia/build/.
 /build/
 *.log
 .DS_Store

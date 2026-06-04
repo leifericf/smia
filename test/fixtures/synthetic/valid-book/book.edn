@@ -1,6 +1,6 @@
 {:book/slug      "tiny-book"
  :book/title     "Tiny Synthetic Book"
- :book/author    "clj-book tests"
+ :book/author    "Smia tests"
  :book/chapters  ["chapters/01-intro.clj"
                   "chapters/02-body.clj"]
  :custom/extension {:demo true}}
