@@ -79,6 +79,14 @@
   (is (= [[:diagram {:source "A -> B" :id :flow :alt "A calls B"}]]
          (md->body "```plantuml {:id :flow :alt \"A calls B\"}\nA -> B\n```\n"))))
 
+(deftest mermaid-fence-compiles-to-a-client-diagram
+  (is (= [[:diagram {:engine :mermaid :source "graph TD; A-->B"}]]
+         (md->body "```mermaid\ngraph TD; A-->B\n```\n")))
+  (testing "a caption still doubles as alt text"
+    (is (= [[:diagram {:engine :mermaid :source "graph TD; A-->B"
+                       :caption "Flow" :alt "Flow"}]]
+           (md->body "```mermaid {:caption \"Flow\"}\ngraph TD; A-->B\n```\n")))))
+
 (deftest diagram-alt-defaults-to-its-caption
   (is (= [[:diagram {:source "A -> B" :caption "Flow" :alt "Flow"}]]
          (md->body "```plantuml {:caption \"Flow\"}\nA -> B\n```\n"))))

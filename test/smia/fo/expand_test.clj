@@ -35,6 +35,13 @@
     ;; the base-14 serif has no triangle glyph, so the PDF stays ASCII
     (is (= [:fo/inline {} "File" " > " "Export"] (ex [:menu "File" "Export"])))))
 
+(deftest mermaid-diagram-renders-as-a-source-listing-in-print
+  ;; print has no browser, so a client-rendered diagram shows its source
+  (let [out (ex [:diagram {:engine :mermaid :source "graph TD; A-->B"}])]
+    (is (= :fo/block (first out)))
+    (is (= "graph TD; A-->B" (last out)))
+    (is (= "monospace" (:font-family (second out))) "rendered as a code block")))
+
 (deftest table-cells-carry-column-and-row-spans
   (let [out (ex [:table [:tr [:td {:colspan 2} "wide"] [:td {:rowspan 3} "tall"]]])
         cells (filter #(and (vector? %) (= :fo/table-cell (first %)))

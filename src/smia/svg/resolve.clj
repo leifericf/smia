@@ -51,8 +51,13 @@
 
 ;; --- the pass ---------------------------------------------------------------
 
-(defn- renderable-node? [n]
-  (and (vector? n) (contains? renderables (first n)) (map? (second n))))
+(defn- renderable-node?
+  "A node the build-time SVG pass renders. A `:diagram` with a non-default
+   `:engine` (e.g. `:mermaid`) is client-rendered, so it is left untouched
+   here and handled at expansion time."
+  [n]
+  (and (vector? n) (contains? renderables (first n)) (map? (second n))
+       (not (:engine (second n)))))
 
 (defn- contains-renderable? [form]
   (boolean (some renderable-node? (tree-seq vector? seq form))))

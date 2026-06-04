@@ -479,19 +479,29 @@
                    (if (:display a)
                      [:div (assoc (id-attrs a) :class "math-display") svg]
                      svg)))
-   :diagram    (fn [a _ _]
-                 (when-not (:alt a)
-                   (throw (error/ex :smia.html.expand/missing-alt-text
-                                    (str "A diagram has no :alt text. Give the "
-                                         "fence an :alt (or a :caption, which "
-                                         "doubles as one).")
-                                    {:source (:source a)})))
-                 [:div (assoc (id-attrs a) :class "diagram")
-                  (update (svg-resolve/rendered-svg :diagram a) 1
-                          assoc
-                          :role "img"
-                          :aria-label (:alt a)
-                          :class "diagram")])
+   :diagram    (fn [a _ ctx]
+                 ;; A mermaid diagram is client-rendered. On a site with the
+                 ;; island on, emit `<pre class="mermaid">` (mermaid.js
+                 ;; transforms it; with no JavaScript the source shows). Where
+                 ;; the island is off (EPUB, or a site that did not opt in), it
+                 ;; falls back to a plain source listing.
+                 (if (= :mermaid (:engine a))
+                   (if (:mermaid ctx)
+                     [:pre (assoc (id-attrs a) :class "mermaid") (:source a)]
+                     [:pre (id-attrs a) [:code {} (:source a)]])
+                   (do
+                     (when-not (:alt a)
+                       (throw (error/ex :smia.html.expand/missing-alt-text
+                                        (str "A diagram has no :alt text. Give the "
+                                             "fence an :alt (or a :caption, which "
+                                             "doubles as one).")
+                                        {:source (:source a)})))
+                     [:div (assoc (id-attrs a) :class "diagram")
+                      (update (svg-resolve/rendered-svg :diagram a) 1
+                              assoc
+                              :role "img"
+                              :aria-label (:alt a)
+                              :class "diagram")])))
    :page-break (fn [_ _ _] [:div {:class "page-break"}])
    :keep-together
    (fn [a c ctx]

@@ -140,13 +140,16 @@
    copy from the classpath. The default stays zero JavaScript."
   ([book tokens] (assemble book tokens {}))
   ([book tokens {:keys [downloads redirects site-url edit-url]}]
-   (let [search? (boolean (get-in tokens [:site :search]))
+   (let [search?     (boolean (get-in tokens [:site :search]))
+         mermaid     (get-in tokens [:site :mermaid])
+         mermaid-src (when (map? mermaid) (:src mermaid))
          {:keys [pages resources] :as assembled}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
                          :chrome     (layout/chrome-for tokens)
                          :location   html-assemble/nested-location}
                   search?   (assoc :search true)
+                  mermaid   (assoc :mermaid true :mermaid-src mermaid-src)
                   edit-url  (assoc :edit-url edit-url)
                   downloads (assoc :downloads downloads)))
          site-url (some-> site-url (str/replace #"/*$" "/"))
@@ -169,6 +172,6 @@
                            "robots.txt"  (robots site-url)))]
      {:pages     page-map
       :resources resources
-      :bundled   (if search?
-                   [{:resource "smia/site/search.js" :path "search.js"}]
-                   [])})))
+      :bundled   (cond-> []
+                   search? (conj {:resource "smia/site/search.js" :path "search.js"})
+                   mermaid (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"}))})))

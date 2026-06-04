@@ -1,10 +1,14 @@
-;; The search island's build. Smia-dev only: the release bundle is
-;; committed at resources/smia/site/search.js and shipped on the
-;; classpath, so building a book never needs Node. Rebuild after
-;; changing cljs/ with:  npm install && npx shadow-cljs release search
-;; then copy build/cljs/search.js over resources/smia/site/search.js.
+;; The site islands' builds. Smia-dev only: each release bundle is
+;; committed under resources/smia/site/ and shipped on the classpath, so
+;; building a book never needs Node. Rebuild after changing cljs/ with:
+;;   npm install && npx shadow-cljs release search mermaid
+;; then copy build/cljs/<name>.js over resources/smia/site/<name>.js.
 {:deps   {:aliases [:cljs]}
- :builds {:search {:target     :browser
-                   :output-dir "build/cljs"
-                   :asset-path "."
-                   :modules    {:search {:init-fn smia.site.search-client/init}}}}}
+ :builds {:search  {:target     :browser
+                    :output-dir "build/cljs"
+                    :asset-path "."
+                    :modules    {:search {:init-fn smia.site.search-client/init}}}
+          :mermaid {:target     :browser
+                    :output-dir "build/cljs"
+                    :asset-path "."
+                    :modules    {:mermaid {:init-fn smia.site.mermaid-client/init}}}}}

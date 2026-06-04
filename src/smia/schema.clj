@@ -74,7 +74,9 @@
    [:site {:optional true} [:map
                             [:layout {:optional true} :keyword]
                             [:search {:optional true} :boolean]
-                            [:dark {:optional true} :boolean]]]])
+                            [:dark {:optional true} :boolean]
+                            [:mermaid {:optional true}
+                             [:or :boolean [:map [:src {:optional true} :string]]]]]]])
 
 (def Edition
   "A deliverable edition smia can build."

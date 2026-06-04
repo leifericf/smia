@@ -34,7 +34,8 @@
          [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
          [:title {} (page-title ctx title)]
          [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
-        (when-let [s (html-assemble/search-script ctx)] [s])))
+        (concat (when-let [s (html-assemble/search-script ctx)] [s])
+                (html-assemble/mermaid-scripts ctx))))
 
 (defn- current?
   "True when a contents entry's `href` (an absolute-from-root page url,

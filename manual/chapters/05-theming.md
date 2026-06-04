@@ -102,6 +102,10 @@ The build emits an `@media (prefers-color-scheme: dark)` block, so the page hono
 
 A book that does not opt in emits exactly the same stylesheet as before.
 
+## Mermaid diagrams
+
+A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.
+
 ## Fonts
 
 With no font configuration, PDF output uses the base-14 font families. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn`, described in [the editions chapter](#editions). Registered fonts are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics. A list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. Smia bundles no fonts; the manual's manuscript ships its own under the SIL Open Font License, beside the files.

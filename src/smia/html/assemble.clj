@@ -101,9 +101,11 @@
                     :home-url   (:url home-loc)
                     :search?    (boolean search-sp)
                     :search-url (:url search-sp)
-                    :language   language
-                    :edit-url   (:edit-url opts)
-                    :highlight? (boolean (:highlight? opts))}]
+                    :language    language
+                    :edit-url    (:edit-url opts)
+                    :mermaid     (boolean (:mermaid opts))
+                    :mermaid-src (:mermaid-src opts)
+                    :highlight?  (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
                          (fn [i spec]
@@ -327,6 +329,22 @@
   [ctx]
   (when (:search? ctx)
     [:script {:defer "defer" :src ((:href-to ctx) "search.js")}]))
+
+(defn mermaid-scripts
+  "The deferred script tags for the mermaid island, when it is on. The
+   optional `:mermaid-src` (a UMD mermaid build that sets `window.mermaid`)
+   is loaded first; then the committed island bundle (compiled from
+   `cljs/smia/site/mermaid_client.cljs`) runs it over the `<pre class=
+   \"mermaid\">` blocks. With no `:mermaid-src`, the bundle expects the
+   library to be present some other way; with no JavaScript, the diagram
+   source shows. Returns a (possibly empty) seq of script tags."
+  [ctx]
+  (when (:mermaid ctx)
+    (cond-> []
+      (string? (:mermaid-src ctx))
+      (conj [:script {:defer "defer" :src (:mermaid-src ctx)}])
+      :always
+      (conj [:script {:defer "defer" :src ((:href-to ctx) "mermaid.js")}]))))
 
 (defn edit-link
   "An \"Edit this page\" link, when the book set `:book/edit-url` and the
@@ -563,7 +581,8 @@
                        title
                        (str title " — " (:book-title ctx)))]
           [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
-         (when-let [s (search-script ctx)] [s]))
+         (concat (when-let [s (search-script ctx)] [s])
+                 (mermaid-scripts ctx)))
    (into [:body {}]
          (concat
            (when-let [f (search-form ctx)] [f])
@@ -614,6 +633,7 @@
         expand-ctx   {:resolve    resolve
                       :highlight? (:highlight? base-ctx)
                       :language   (:language base-ctx)
+                      :mermaid    (:mermaid base-ctx)
                       :asset-base (href-to "")}
         [body notes] (when body (collect-footnotes body))
         main         (if generate-role

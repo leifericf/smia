@@ -285,6 +285,13 @@
                                  :font-size "0.85em"}]
          [".search-fallback-note" {:color muted}]
 
+         ;; the mermaid island: until the script transforms it (or with no
+         ;; JavaScript) the source shows as a centered preformatted block
+         ["pre.mermaid" {:text-align "center"
+                         :background "none"
+                         :border-left "none"
+                         :overflow-x "auto"}]
+
          ;; rendered math and diagrams (inline SVG)
          ["svg.math" {:vertical-align "middle"}]
          [".math-display" {:text-align "center"

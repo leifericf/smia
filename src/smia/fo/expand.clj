@@ -669,13 +669,19 @@
                                     (:id a) (assoc :id (as-id (:id a))))
                         obj]
                        obj)))
-     :diagram    (fn [a _ _]
-                   [:fo/block (cond-> {:text-align "center"
-                                       :space-before "6pt"
-                                       :space-after "6pt"}
-                                (:id a) (assoc :id (as-id (:id a))))
-                    [:fo/instream-foreign-object {}
-                     (svg-resolve/rendered-svg :diagram a)]])
+     :diagram    (fn [a _ s]
+                   ;; A client-rendered (mermaid) diagram has no build-time
+                   ;; SVG; print shows its source as a code block instead.
+                   (if (= :mermaid (:engine a))
+                     [:fo/block (cond-> (get s :pre)
+                                  (:id a) (assoc :id (as-id (:id a))))
+                      (:source a)]
+                     [:fo/block (cond-> {:text-align "center"
+                                         :space-before "6pt"
+                                         :space-after "6pt"}
+                                  (:id a) (assoc :id (as-id (:id a))))
+                      [:fo/instream-foreign-object {}
+                       (svg-resolve/rendered-svg :diagram a)]]))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together
      (fn [a c s]

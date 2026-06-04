@@ -169,6 +169,13 @@
       [:diagram (let [a (-> attrs (dissoc :lang) (assoc :source literal))]
                   (cond-> a
                     (and (:caption a) (not (:alt a))) (assoc :alt (:caption a))))]
+      ;; A mermaid fence is a client-rendered (site-only) diagram; it carries
+      ;; an :engine so the build-time SVG pass skips it.
+      (= :mermaid (:lang attrs))
+      [:diagram (let [a (-> attrs (dissoc :lang)
+                            (assoc :engine :mermaid :source literal))]
+                  (cond-> a
+                    (and (:caption a) (not (:alt a))) (assoc :alt (:caption a))))]
       ;; :include resolves to slurped source in the shell; emit body-less.
       (:include attrs) [:pre attrs]
       :else            [:pre attrs literal])))

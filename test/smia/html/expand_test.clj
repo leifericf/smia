@@ -55,6 +55,18 @@
   (testing "a plain pre is not wrapped"
     (is (= :pre (first (html-expand/expand [:pre {} "x"] ctx))))))
 
+(deftest mermaid-diagram-is-a-site-island-or-a-source-listing
+  (testing "with the island on, it is a <pre class=mermaid> the script transforms"
+    (is (= [:pre {:class "mermaid"} "graph TD; A-->B"]
+           (html-expand/expand [:diagram {:engine :mermaid :source "graph TD; A-->B"}]
+                               (assoc ctx :mermaid true)))))
+  (testing "without the island (EPUB, or a site that did not opt in) it falls back to source"
+    (is (= [:pre {} [:code {} "graph TD; A-->B"]]
+           (html-expand/expand [:diagram {:engine :mermaid :source "graph TD; A-->B"}]
+                               ctx))))
+  (testing "a mermaid diagram needs no :alt (it is not an image)"
+    (is (some? (html-expand/expand [:diagram {:engine :mermaid :source "x"}] ctx)))))
+
 (deftest richer-blocks-render
   (testing ":example is a classed div with an optional title"
     (is (= [:div {:class "example"} [:div {:class "example-title"} "Worked"]

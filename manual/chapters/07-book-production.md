@@ -89,6 +89,8 @@ hiccup --> editions
 
 A diagram outside a figure carries its own `:alt` (or a `:caption`) in the fence's EDN map. Rendering needs the optional `:diagrams` alias, exactly like math's `:math`: `clojure -M:run:diagrams build`. The renderer measures label widths with the build machine's font metrics, so the drawn output is stable on one machine but may differ in detail across platforms; the diagram source in the manuscript is the canonical artifact.
 
+A second diagram syntax, a `mermaid` fence, is rendered in the reader's browser instead of at build time, because no pure-JVM mermaid renderer exists. It is therefore a **site-only** affordance, opt-in through the theme (see [the theming chapter](#theming)). On the site, each `mermaid` fence becomes a `<pre class="mermaid">` block a small script transforms; with JavaScript disabled, the diagram's source shows. In the PDF and EPUB editions, which have no browser, a `mermaid` diagram renders as a plain source listing. A diagram you need drawn in every edition is a `plantuml` fence; `mermaid` is for the site.
+
 :::admonition {:kind :note}
 A diagram with overlaid callouts, leader lines pointing at parts of an image,
 should be authored as a single pre-rendered image; the page model cannot

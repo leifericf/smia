@@ -214,3 +214,44 @@
   (let [r (clojure.java.io/resource "smia/site/search.js")]
     (is (some? r))
     (is (pos? (count (slurp r))))))
+
+;; --- the mermaid island -----------------------------------------------------
+
+(def ^:private mermaid-manuscript
+  (:manuscript
+    (number/assign
+      {:title "M" :author "A" :numbering structure/default-numbering
+       :sections [{:kind :chapter
+                   :content [:chapter {:id :ch :title "Ch"}
+                             [:diagram {:engine :mermaid :source "graph TD; A-->B"}]]}]})))
+
+(deftest mermaid-island-emits-the-pre-and-bundle-when-on
+  (let [r    (site/assemble mermaid-manuscript (assoc tokens :site {:mermaid true}))
+        page (get (:pages r) "ch/index.html")]
+    (testing "the diagram is a <pre class=mermaid> the script transforms"
+      (is (str/includes? page "<pre class=\"mermaid\">graph TD; A--&gt;B</pre>")))
+    (testing "the deferred island bundle is linked (page-relative)"
+      (is (str/includes? page "src=\"../mermaid.js\"")))
+    (testing "the bundle is named for the emit shell"
+      (is (some #(= {:resource "smia/site/mermaid.js" :path "mermaid.js"} %)
+                (:bundled r))))))
+
+(deftest mermaid-src-adds-a-vendor-loader-before-the-bundle
+  (let [r    (site/assemble mermaid-manuscript
+                            (assoc tokens :site {:mermaid {:src "https://cdn.example/mermaid.js"}}))
+        page (get (:pages r) "ch/index.html")]
+    (is (str/includes? page "src=\"https://cdn.example/mermaid.js\""))
+    (is (< (.indexOf page "cdn.example") (.indexOf page "src=\"../mermaid.js\""))
+        "the vendor loader comes before the island bundle")))
+
+(deftest without-the-token-mermaid-falls-back-to-source
+  (let [r    (site/assemble mermaid-manuscript tokens)
+        page (get (:pages r) "ch/index.html")]
+    (is (not (str/includes? page "class=\"mermaid\"")))
+    (is (str/includes? page "graph TD") "the source still shows as a listing")
+    (is (not (some #(= "mermaid.js" (:path %)) (:bundled r))))))
+
+(deftest shipped-mermaid-bundle-is-on-the-classpath
+  (let [res (clojure.java.io/resource "smia/site/mermaid.js")]
+    (is (some? res))
+    (is (pos? (count (slurp res))))))

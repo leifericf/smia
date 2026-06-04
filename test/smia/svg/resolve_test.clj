@@ -48,6 +48,14 @@
   (is (= plain (resolve/attach-svg plain))
       "nothing to render, no renderer load, no change"))
 
+(deftest a-mermaid-diagram-is-not-rendered-at-build-time
+  ;; A client-rendered (:engine :mermaid) diagram is left untouched — no SVG
+  ;; is stamped and no diagram renderer is loaded.
+  (let [mermaidful (manuscript-with [:chapter {:id :x :title "X"}
+                                     [:diagram {:engine :mermaid :source "graph TD"}]])]
+    (is (= mermaidful (resolve/attach-svg mermaidful))
+        "the engine marks it as client-rendered, so the pass skips it")))
+
 (deftest rendered-svg-accessor-throws-without-a-stamp
   (testing "math names the :math alias"
     (let [d (catch-data #(resolve/rendered-svg :math {:notation "x^2"}))]
