@@ -62,10 +62,25 @@ jobs:
           test -f "$d/pdf/smia-manual-print-x.pdf"
           test -f "$d/epub/smia-manual.epub"
 
-      - name: Set the custom domain
+      - name: Stage the Pages site under /manual
         run: |
-          echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" \
-            > build/release/smia-manual/site/CNAME
+          root=build/release/site-root
+          mkdir -p "$root/manual"
+          cp -R build/release/smia-manual/site/. "$root/manual/"
+          echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" > "$root/CNAME"
+          # The bare domain redirects into the manual; replace with a landing page later.
+          cat > "$root/index.html" <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <title>Smia</title>
+          <meta http-equiv="refresh" content="0; url=manual/">
+          <link rel="canonical" href="manual/">
+          </head>
+          <body><p><a href="manual/">The Smia Manual</a></p></body>
+          </html>
+          HTML
 
       - name: Create the Release with every downloadable edition
         uses: softprops/action-gh-release@v2

@@ -114,22 +114,27 @@ chapter shows it as an example rather than documenting a built-in feature.
 
 ## The site URL and a custom domain
 
-This manual serves from a custom domain, `smia.leifericf.com`, and the workflow
-writes the `CNAME` for it on every build. The step has a baked-in default, so the
+This manual serves from a custom domain, `smia.leifericf.com`, under a `/manual/`
+path — so a page like the quickstart lives at `smia.leifericf.com/manual/part-1/quickstart/`.
+Because every internal link in the site edition is relative, mounting the whole
+site under a sub-path needs no rebuild: the deploy step simply stages it there, and
+writes the `CNAME` at the domain root. The step has a baked-in default, so the
 domain works out of the box without any repository configuration:
 
-```yaml {:id :lst-cname :file ".github/workflows/release.yml" :caption "Writing the CNAME with a default domain"}
-- name: Set the custom domain
+```yaml {:id :lst-cname :file ".github/workflows/release.yml" :caption "Staging the site under /manual with a default domain"}
+- name: Stage the Pages site under /manual
   run: |
-    echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" \
-      > build/release/smia-manual/site/CNAME
+    root=build/release/site-root
+    mkdir -p "$root/manual"
+    cp -R build/release/smia-manual/site/. "$root/manual/"
+    echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" > "$root/CNAME"
 ```
 
-A fork overrides the domain by setting the `PAGES_CUSTOM_DOMAIN` repository variable;
-its value wins over the default. Smia's site links are all relative and the
-Downloads links are absolute release URLs, so the site also works unchanged at
-GitHub's default project URL (`https://leifericf.github.io/smia/`) if you point
-`PAGES_CUSTOM_DOMAIN` at an empty value and drop the `CNAME`.
+The bare domain root is left for a future landing page; until then the workflow
+drops a one-line redirect there into `/manual/`. A fork overrides the domain by
+setting the `PAGES_CUSTOM_DOMAIN` repository variable; its value wins over the
+default. Serving at the domain root instead is a one-line change — stage the site
+as the artifact root rather than under `manual/`.
 
 ## One-time repository setup
 
