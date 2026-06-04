@@ -3,10 +3,7 @@
  :book/author     "The Smia authors"
  :book/references "references.edn"
 
- :book/front-matter [{:role :preface :file "front/preface.md"}
-                     {:role :list-of-figures}
-                     {:role :list-of-tables}
-                     {:role :list-of-listings}]
+ :book/front-matter [{:role :preface :file "front/preface.md"}]
 
  :book/parts
  [{:part/title    "Authoring"
@@ -25,7 +22,11 @@
 
  :book/appendices ["chapters/07-error-catalog.md"]
 
- :book/back-matter [{:role :bibliography} {:role :index}]
+ :book/back-matter [{:role :list-of-figures}
+                    {:role :list-of-tables}
+                    {:role :list-of-listings}
+                    {:role :bibliography}
+                    {:role :index}]
 
  :book/downloads
  {:base   "https://github.com/leifericf/smia/releases/latest/download"

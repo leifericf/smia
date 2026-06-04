@@ -29,21 +29,22 @@ the zero-config default; to group chapters, use `:book/parts`, and add
 {:book/slug  "the-manual"
  :book/title "The Manual"
  :book/references "references.edn"
- :book/front-matter [{:role :preface :file "front/preface.md"}
-                     {:role :list-of-figures}
-                     {:role :list-of-tables}
-                     {:role :list-of-listings}]
+ :book/front-matter [{:role :preface :file "front/preface.md"}]
  :book/parts [{:part/title "Foundations"
                :part/chapters ["chapters/01-intro.md"]}]
  :book/appendices ["appendix/a-glossary.md"]
- :book/back-matter [{:role :bibliography} {:role :index}]}
+ :book/back-matter [{:role :list-of-figures}
+                    {:role :list-of-tables}
+                    {:role :list-of-listings}
+                    {:role :bibliography}
+                    {:role :index}]}
 ```
 
 Some matter sections are **generated**: they have a `:role` but no `:file`,
 because Smia produces their content. Alongside `:bibliography` and `:index`,
 the roles `:list-of-figures`, `:list-of-tables`, and `:list-of-listings` each
 emit a navigation section listing every numbered float of that kind, in document
-order, with a page reference. The lists at the front of this manual are exactly
+order, with a page reference. The lists at the back of this manual are exactly
 these. Give any of them a `:title` to override the default heading.
 
 Parts are numbered with roman numerals, chapters with arabic, and appendices
