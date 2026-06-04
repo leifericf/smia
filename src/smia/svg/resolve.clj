@@ -16,16 +16,20 @@
 
 (def renderables
   "Tag -> how to render it: the renderer var, the deps alias that
-   provides it, the structured error type, and how to derive the render
-   arguments from the node's attrs."
+   provides it, the structured error types, the attrs that name the
+   source, and how to derive the render arguments from the node's attrs."
   {:math    {:render   'smia.math.render/render-svg
              :requires ":math"
              :error    :smia.math/renderer-unavailable
+             :failed   :smia.math/render-failed
+             :source-keys [:notation]
              :label    "Math rendering (JLaTeXMath)"
              :args     (fn [a] [(:notation a) (boolean (:display a))])}
    :diagram {:render   'smia.diagram.render/render-svg
              :requires ":diagrams"
              :error    :smia.diagram/renderer-unavailable
+             :failed   :smia.diagram/render-failed
+             :source-keys [:source]
              :label    "Diagram rendering (PlantUML)"
              :args     (fn [a] [(:source a)])}})
 
@@ -61,12 +65,24 @@
     (catch Exception e
       (throw (unavailable tag {:cause (.getMessage e)})))))
 
+(defn- render-one
+  "Render one node's source, turning any renderer exception into a
+   structured error naming the offending source."
+  [render-for tag a]
+  (let [{:keys [args failed source-keys label]} (get renderables tag)]
+    (try
+      (apply (render-for tag) (args a))
+      (catch Exception e
+        (throw (error/ex failed
+                         (str label " failed: " (.getMessage e))
+                         (assoc (select-keys a source-keys)
+                                :cause (.getMessage e))))))))
+
 (defn- stamp [render-for form]
   (cond
     (renderable-node? form)
-    (let [[tag a] form
-          {:keys [args]} (get renderables tag)]
-      [tag (assoc a :svg (apply (render-for tag) (args a)))])
+    (let [[tag a] form]
+      [tag (assoc a :svg (render-one render-for tag a))])
 
     (vector? form) (mapv #(stamp render-for %) form)
     :else          form))

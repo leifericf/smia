@@ -94,6 +94,16 @@
           [a b] (map second (section-nodes :math out))]
       (is (not= (:svg a) (:svg b))))))
 
+(deftest invalid-math-notation-is-a-structured-error
+  (when math-available?
+    (let [m (manuscript-with [:chapter {:id :x :title "X"}
+                              [:math {:notation "\\nonsense{x}" :display true}]])
+          d (catch-data #(resolve/attach-svg m))]
+      (is (= :smia.math/render-failed (:error/type d))
+          "a malformed formula surfaces a structured error, not a raw exception")
+      (is (= "\\nonsense{x}" (get-in d [:error/context :notation]))
+          "the error names the offending notation"))))
+
 (deftest missing-math-renderer-is-a-structured-error
   (when-not math-available?
     (let [d (catch-data #(resolve/attach-svg mathful))]

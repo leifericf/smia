@@ -52,7 +52,9 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 ## Math and diagrams
 
 - `:smia.math/renderer-unavailable`: the manuscript carries `[:math]` notation but the renderer's optional dependency is not on the classpath. Compose the `:math` alias with the command: `clojure -M:run:math build`.
+- `:smia.math/render-failed`: a formula's LaTeX could not be rendered (a syntax error in the notation); the error names the offending notation.
 - `:smia.diagram/renderer-unavailable`: the manuscript carries a `[:diagram]` but the renderer's optional dependency is not on the classpath. Compose the `:diagrams` alias with the command: `clojure -M:run:diagrams build`.
+- `:smia.diagram/render-failed`: a diagram's source could not be rendered; the error names the offending source.
 
 ## Code validation
 
