@@ -165,6 +165,60 @@
       (is (= {:lang :clojure} (second pre)) "include/lines keys are stripped")
       (is (= "(defn add [a b] (+ a b))" (nth pre 2)) "only the selected line range"))))
 
+(deftest include-selects-a-tagged-region
+  (let [dir (tmp-book "inc-tag")]
+    (spit-chapter dir "src/sample.clj"
+                  (str "(ns sample)\n"
+                       ";; tag::core\n"
+                       "(defn add [a b] (+ a b))\n"
+                       ";; end::core\n"
+                       "(add 1 2)\n"))
+    (spit-chapter dir "chapters/01-x.md"
+                  "# Inc\n\n```clojure {:include \"src/sample.clj\" :tag \"core\"}\n```\n")
+    (let [[_ _ pre] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= {:lang :clojure} (second pre)) "include/tag keys are stripped")
+      (is (= "(defn add [a b] (+ a b))" (nth pre 2))
+          "only the region between the markers, markers excluded"))))
+
+(deftest tagged-regions-with-the-same-tag-concatenate
+  (let [sources {"a.clj" (str "before\n"
+                              "# tag::x\n"
+                              "one\n"
+                              "# end::x\n"
+                              "between\n"
+                              "// tag::x\n"
+                              "two\n"
+                              "// end::x\n")}
+        tree    [:pre {:lang :clojure :include "a.clj" :tag "x"}]]
+    (is (= [:pre {:lang :clojure} "one\ntwo"]
+           (#'load/substitute-includes sources tree))
+        "regions concatenate in file order, any comment syntax")))
+
+(deftest unclosed-tagged-region-runs-to-the-end-of-file
+  (let [sources {"a.clj" "before\n;; tag::x\none\ntwo\n"}
+        tree    [:pre {:include "a.clj" :tag "x"}]]
+    (is (= [:pre {} "one\ntwo"]
+           (#'load/substitute-includes sources tree)))))
+
+(deftest missing-include-tag-is-a-hard-error
+  (let [dir (tmp-book "inc-notag")]
+    (spit-chapter dir "src/sample.clj" "(ns sample)\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# X\n\n```clojure {:include \"src/sample.clj\" :tag \"nope\"}\n```\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/missing-include-tag (:error/type d)))
+      (is (= "nope" (get-in d [:error/context :tag])))
+      (is (= "src/sample.clj" (get-in d [:error/context :include]))))))
+
+(deftest conflicting-include-keys-are-a-hard-error
+  (let [dir (tmp-book "inc-conflict")]
+    (spit-chapter dir "src/sample.clj" "(ns sample)\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  (str "# X\n\n```clojure {:include \"src/sample.clj\""
+                       " :tag \"core\" :lines [1 2]}\n```\n"))
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/conflicting-include-keys (:error/type d))))))
+
 (deftest missing-include-is-a-hard-error
   (let [dir (tmp-book "noinc")]
     (spit-chapter dir "chapters/01-x.md"

@@ -27,7 +27,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(declare chapter-id-from-path select-lines include-pre? include-paths
+(declare chapter-id-from-path select-lines select-tagged include-pre? include-paths
          substitute-includes read-include resolve-includes check-chapter-shape
          load-markdown-chapter load-clojure-chapter duplicate-ids
          check-no-duplicate-ids load-references)
@@ -116,6 +116,28 @@
        (take (inc (- to from)))
        (str/join "\n")))
 
+(defn- select-tagged
+  "Return the lines of `text` between `tag::name` and `end::name` marker
+   lines, the markers themselves excluded. The markers match anywhere in a
+   line, so any comment syntax works. Multiple regions with the same tag
+   concatenate in file order; an unclosed region runs to the end of the
+   file. Returns nil when the tag opens nowhere."
+  [text tag]
+  (let [open  (str "tag::" tag)
+        close (str "end::" tag)]
+    (loop [lines (str/split-lines text), in? false, found? false, acc []]
+      (if-let [line (first lines)]
+        (cond
+          (and in? (str/includes? line close))
+          (recur (rest lines) false found? acc)
+
+          (and (not in?) (str/includes? line open))
+          (recur (rest lines) true true acc)
+
+          :else
+          (recur (rest lines) in? found? (cond-> acc in? (conj line))))
+        (when found? (str/join "\n" acc))))))
+
 (defn- include-pre?
   "True for a `[:pre {:include …} …]` node — a code block that pulls its
    source from a file."
@@ -135,14 +157,31 @@
 (defn- substitute-includes
   "Pure: replace every `[:pre {:include …}]` node with `[:pre <attrs without
    the include keys> <source>]`, taking the text from `sources`
-   (path -> full source) and applying any `:lines [from to]` range."
+   (path -> full source) and applying a `:lines [from to]` range or a
+   `:tag \"name\"` marker region. The two selectors are exclusive; a tag
+   that opens nowhere in its file is a hard error."
   [sources node]
   (cond
     (include-pre? node)
-    (let [attrs (second node)
-          text  (get sources (:include attrs))
-          text  (if-let [lines (:lines attrs)] (select-lines text lines) text)]
-      [:pre (dissoc attrs :include :lines) text])
+    (let [{:keys [include lines tag] :as attrs} (second node)
+          text (get sources include)
+          text (cond
+                 (and tag lines)
+                 (throw (error/ex :smia.book.load/conflicting-include-keys
+                                  (str "An include selects with :tag or :lines, "
+                                       "not both: " include)
+                                  {:include include :tag tag :lines lines}))
+
+                 tag
+                 (or (select-tagged text tag)
+                     (throw (error/ex :smia.book.load/missing-include-tag
+                                      (str "No tag::" tag " marker in included "
+                                           "file: " include)
+                                      {:include include :tag tag})))
+
+                 lines (select-lines text lines)
+                 :else text)]
+      [:pre (dissoc attrs :include :lines :tag) text])
 
     (vector? node) (mapv #(substitute-includes sources %) node)
     :else          node))

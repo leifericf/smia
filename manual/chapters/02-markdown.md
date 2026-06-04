@@ -28,11 +28,14 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 | footnote | `text[^1]` plus a `[^1]:` definition | `[:footnote …]` |
 | code block | a fence whose info is `clojure {:test true}` | `[:pre {:lang :clojure :test true} …]` |
 | include source | a fence info of `clojure {:include "src/x.clj" :lines [1 20]}` | `[:pre …]` with the file's text |
+| include a tagged region | a fence info of `clojure {:include "src/x.clj" :tag "core"}` | `[:pre …]` with the region's text |
 | raw Hiccup | a fence whose info is `{=hiccup}` | spliced author Hiccup (re-expands) |
 | raw FO | a fence whose info is `{=fo}` | spliced FO-Hiccup (verbatim) |
 | table widths | a bare `{:cols [3 1]}` line directly above a table | `[:table {:cols [3 1]} …]` |
 
 A code fence's info string is a language token followed by an optional EDN map. An inline escape also works: a code span carrying the payload, immediately followed by the marker `{=hiccup}`.
+
+An `:include` pulls a file relative to the book root, so a listing can be the real source rather than a copy. Two selectors narrow it, and they are exclusive. `:lines [from to]` takes a 1-based inclusive line range; it is positional, so it breaks silently when the file grows. `:tag "name"` takes the region between a line containing `tag::name` and one containing `end::name` instead. The markers live in comments in the source file, any comment syntax works, and the marker lines themselves are excluded from the listing. Several regions may share one tag; they concatenate in file order, which lets a listing skip the noise between two interesting parts.
 
 :::admonition {:kind :note}
 The `{=hiccup}` escape is the more powerful of the two: spliced author Hiccup re-enters expansion, so sugar nested inside it still expands. Raw FO is terminal.

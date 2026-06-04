@@ -38,6 +38,8 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.load/missing-title`: a Markdown chapter has neither a top-level `# Heading` nor a `:title` in front-matter.
 - `:smia.book.load/markdown-parse-error`: the Markdown chapter could not be parsed.
 - `:smia.book.load/missing-include`: a code block's `:include` file was not found.
+- `:smia.book.load/missing-include-tag`: an include's `:tag` opens nowhere in its file; no line contains the `tag::name` marker.
+- `:smia.book.load/conflicting-include-keys`: an include carries both `:tag` and `:lines`; the two selectors are exclusive.
 - `:smia.md.compile/unsupported-node`: a Markdown construct (such as raw HTML) has no mapping; use a `{=hiccup}` or `{=fo}` escape.
 - `:smia.md.compile/unknown-directive`: a `:::` directive name that is not recognized.
 - `:smia.md.compile/invalid-admonition` / `:smia.md.compile/invalid-overview` / `:smia.md.compile/invalid-directive-attrs`: a directive's attributes are malformed.
