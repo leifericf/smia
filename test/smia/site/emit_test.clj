@@ -30,6 +30,26 @@
       (is (= "example.com" (slurp (io/file out "CNAME"))))
       (is (.exists (io/file out ".nojekyll"))))))
 
+(deftest stale-nested-pages-are-swept-and-emptied-dirs-pruned
+  (let [out (tmp-dir "nested-sweep")]
+    (doseq [f ["index.html" "part-1/quickstart/index.html" "old-ch/index.html"]]
+      (io/make-parents (io/file out f))
+      (spit (io/file out f) "<old/>"))
+    (spit (io/file out "CNAME") "example.com")
+    (emit/emit! {:out-dir   out
+                 :book-root (tmp-dir "nested-sweep-root")
+                 :pages     {"index.html" "<!DOCTYPE html>\n<html></html>"
+                             "part-1/quickstart/index.html" "<!DOCTYPE html>\n<html></html>"
+                             "styles.css" "body {\n}\n"}
+                 :resources []})
+    (testing "a current nested page survives"
+      (is (.exists (io/file out "part-1/quickstart/index.html"))))
+    (testing "a page the build no longer generates is removed, its directory pruned"
+      (is (not (.exists (io/file out "old-ch/index.html"))))
+      (is (not (.exists (io/file out "old-ch")))))
+    (testing "hand-added non-HTML files are left untouched"
+      (is (= "example.com" (slurp (io/file out "CNAME")))))))
+
 (deftest writes-every-page-to-the-output-directory
   (let [out (tmp-dir "pages")
         result (emit/emit! {:out-dir   out

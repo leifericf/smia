@@ -152,6 +152,21 @@
     (is (some #(and (= "chapter-01.html#sec-a" (:href %)) (= 1 (:level %)))
               entries))))
 
+(deftest nested-location-nests-pages-and-relativizes-links
+  (let [r     (html-assemble/assemble book {:location html-assemble/nested-location})
+        files (set (map :file (:pages r)))]
+    (testing "each page is the index of its own directory"
+      (is (contains? files "index.html"))
+      (is (contains? files "ch-one/index.html"))
+      (is (contains? files "bibliography/index.html")))
+    (testing "cross-page links are relative directory urls"
+      (is (contains? (hrefs (:hiccup (page-in r "ch-one/index.html")))
+                     "../ch-two/#sec-b")))
+    (testing "the home contents links to the page directories"
+      (is (contains? (hrefs (:hiccup (page-in r "index.html"))) "ch-one/")))
+    (testing "contents entries carry directory urls"
+      (is (some #(= "ch-one/" (:href %)) (:contents r))))))
+
 (deftest custom-chrome-wraps-every-page
   (let [r (html-assemble/assemble
             book

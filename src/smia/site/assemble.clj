@@ -25,7 +25,8 @@
    (let [{:keys [pages resources]}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
-                         :chrome     (layout/chrome-for tokens)}
+                         :chrome     (layout/chrome-for tokens)
+                         :location   html-assemble/nested-location}
                   downloads (assoc :downloads downloads)))]
      {:pages     (into {"styles.css" (css/css tokens)}
                        (map (fn [{:keys [file hiccup]}]

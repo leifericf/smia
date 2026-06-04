@@ -41,6 +41,25 @@
   (let [resolve (links/resolver {"sec-a" "chapter-01.html"})]
     (is (= "chapter-01.html#sec-a" (resolve "sec-a" "chapter-02.html")))))
 
+(deftest page-dir-of-flat-and-directory-urls
+  (is (= "" (links/page-dir "chapter-01.html")))
+  (is (= "" (links/page-dir "")))
+  (is (= "part-1/quickstart/" (links/page-dir "part-1/quickstart/"))))
+
+(deftest relativize-is-identity-from-the-root
+  (is (= "chapter-02.html#x" (links/relativize "chapter-01.html" "chapter-02.html#x")))
+  (is (= "a/b/" (links/relativize "" "a/b/"))))
+
+(deftest relativize-climbs-out-of-a-nested-directory
+  (is (= "../../part-2/theming/#sec"
+         (links/relativize "part-1/quickstart/" "part-2/theming/#sec")))
+  (is (= "../../" (links/relativize "part-1/quickstart/" ""))))
+
+(deftest resolver-relativizes-across-nested-directories
+  (let [resolve (links/resolver {"sec-b" "part-2/theming/"})]
+    (is (= "../../part-2/theming/#sec-b" (resolve "sec-b" "part-1/quickstart/")))
+    (is (= "#sec-b" (resolve "sec-b" "part-2/theming/")))))
+
 (deftest resolver-throws-on-unknown-id
   (let [resolve (links/resolver {})
         d       (catch-data #(resolve "nope" "x.html"))]

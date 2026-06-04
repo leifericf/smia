@@ -32,34 +32,36 @@
    [:meta {:charset "utf-8"}]
    [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
    [:title {} (page-title ctx title)]
-   [:link {:rel "stylesheet" :href "styles.css"}]])
+   [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]])
 
 (defn- current?
-  "True when a contents entry's `href` points at the page now rendering —
-   the page file itself, or one of its in-page heading anchors."
-  [href current-file]
+  "True when a contents entry's `href` (an absolute-from-root page url,
+   possibly carrying a `#fragment`) points at the page now rendering —
+   the page itself, or one of its in-page heading anchors."
+  [href current-url]
   (boolean (and href
-                (or (= href current-file)
-                    (str/starts-with? href (str current-file "#"))))))
+                (= (first (str/split href #"#")) current-url))))
 
-(defn- toc-entry [{:keys [level text href id]} current-file]
+(defn- toc-entry [{:keys [level text href id]} current-url href-to]
   [:li (cond-> {:class (str "toc-level-" level)}
          id (assoc :id id))
    (cond
-     (nil? href)                  text
-     (current? href current-file) [:a {:class "current" :href href} text]
-     :else                        [:a {:href href} text])])
+     (nil? href)                 text
+     (current? href current-url) [:a {:class "current" :href (href-to href)} text]
+     :else                       [:a {:href (href-to href)} text])])
 
 (defn- sidebar-toc
   "The sticky navigation rail: the book title linking home, then every
-   contents entry, with the entry for the current page marked `current`."
+   contents entry, with the entry for the current page marked `current`.
+   Hrefs are relativized against the page being rendered."
   [ctx]
-  (let [current-file (:file (:page ctx))]
+  (let [current-url (:url (:page ctx))
+        href-to     (:href-to ctx)]
     [:nav {:class "book-sidebar" :aria-label "Table of contents"}
-     [:a {:class "book-sidebar-title" :href (:home-file ctx)}
+     [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
       (:book-title ctx)]
      (into [:ol {:class "book-sidebar-list"}]
-           (map #(toc-entry % current-file) (:contents ctx)))]))
+           (map #(toc-entry % current-url href-to) (:contents ctx)))]))
 
 (defn- sidebar-page-wrap [ctx title main]
   [:html

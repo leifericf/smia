@@ -55,7 +55,7 @@
 
 (deftest sidebar-layout-wraps-every-page-in-a-sidebar-listing-the-chapters
   (let [pages (assemble-with :sidebar)]
-    (doseq [page ["chapter-01.html" "chapter-02.html"]]
+    (doseq [page ["ch-one/index.html" "ch-two/index.html"]]
       (testing (str page " carries the sidebar nav with every chapter")
         (is (str/includes? (get pages page) "class=\"book-sidebar\""))
         (is (str/includes? (get pages page) ">One<"))
@@ -64,13 +64,13 @@
 (deftest sidebar-layout-marks-the-current-page
   (let [pages (assemble-with :sidebar)]
     (testing "chapter one marks its own entry current, not chapter two's"
-      (let [one (get pages "chapter-01.html")]
-        (is (re-find #"class=\"current\"[^>]*href=\"chapter-01.html\"" one))
-        (is (not (re-find #"class=\"current\"[^>]*href=\"chapter-02.html\"" one)))))))
+      (let [one (get pages "ch-one/index.html")]
+        (is (re-find #"class=\"current\"[^>]*href=\"\.\./ch-one/\"" one))
+        (is (not (re-find #"class=\"current\"[^>]*href=\"\.\./ch-two/\"" one)))))))
 
 (deftest plain-layout-emits-no-sidebar
   (let [pages (assemble-with nil)]
-    (is (not (str/includes? (get pages "chapter-01.html") "book-sidebar")))))
+    (is (not (str/includes? (get pages "ch-one/index.html") "book-sidebar")))))
 
 (deftest sidebar-home-page-is-a-title-card-without-the-duplicate-toc
   (let [home (get (assemble-with :sidebar) "index.html")]
@@ -81,7 +81,7 @@
       (is (not (str/includes? home "class=\"toc\""))))
     (testing "the sidebar rail is still the navigation, and links the chapters"
       (is (str/includes? home "class=\"book-sidebar\""))
-      (is (str/includes? home "href=\"chapter-01.html\"")))))
+      (is (str/includes? home "href=\"ch-one/\"")))))
 
 (deftest plain-home-page-keeps-its-contents-list
   (let [home (get (assemble-with nil) "index.html")]

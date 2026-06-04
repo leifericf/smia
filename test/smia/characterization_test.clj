@@ -61,39 +61,52 @@
         art (first (:artifacts man))
         dir (io/file (:path art))]
     (is (= [:site] (:build/editions man)))
+    (testing "pages nest in clean per-page directories"
+      (is (.exists (io/file dir "part-1/quickstart/index.html")))
+      (is (.exists (io/file dir "appendix-a/errors/index.html"))))
     (testing "the manual ships the sidebar layout, on the home and chapter pages"
       (is (str/includes? (slurp (io/file dir "index.html")) "class=\"book-sidebar\""))
-      (is (str/includes? (slurp (io/file dir "chapter-01.html")) "class=\"book-sidebar\"")))
+      (is (str/includes? (slurp (io/file dir "part-1/quickstart/index.html"))
+                         "class=\"book-sidebar\"")))
     (testing "the home page is a title card: the book title, but no duplicate TOC"
       (let [index (slurp (io/file dir "index.html"))]
         (is (str/includes? index "The Smia Manual"))
         (is (not (str/includes? index "class=\"toc\"")))))
-    (testing "every page the contents links to exists on disk"
-      (let [index (slurp (io/file dir "index.html"))
-            hrefs (map second (re-seq #"href=\"([^\"#]+\.html)" index))]
-        (is (seq hrefs))
-        (doseq [h hrefs]
-          (is (.exists (io/file dir h)) (str h " is linked from the TOC")))))
-    (testing "every internal link lands on a real file and anchor"
-      (let [pages  (filter #(str/ends-with? (.getName ^java.io.File %) ".html")
-                           (.listFiles dir))
-            ids    (into {}
-                         (map (fn [^java.io.File f]
-                                [(.getName f)
-                                 (set (map second (re-seq #"id=\"([^\"]+)\""
-                                                          (slurp f))))]))
-                         pages)]
-        (doseq [^java.io.File f pages
-                [_ href] (re-seq #"href=\"([^\"]+)\"" (slurp f))
-                :when (not (re-find #"^[a-z]+:" href))
+    (testing "every internal link resolves to a real file and anchor"
+      (let [base   (.toPath dir)
+            htmls  (filter #(and (.isFile ^java.io.File %)
+                                 (str/ends-with? (.getName ^java.io.File %) ".html"))
+                           (file-seq dir))
+            relof  (fn [^java.io.File f] (str (.relativize base (.toPath f))))
+            dirof  (fn [rel] (if-let [i (str/last-index-of rel "/")]
+                               (subs rel 0 (inc i)) ""))
+            ids    (into {} (map (fn [^java.io.File f]
+                                   [(relof f)
+                                    (set (map second (re-seq #"id=\"([^\"]+)\""
+                                                             (slurp f))))]))
+                         htmls)
+            resolve (fn [from-dir path]
+                      (-> (java.nio.file.Paths/get from-dir (into-array String []))
+                          (.resolve ^String path) (.normalize) str))]
+        (doseq [^java.io.File f htmls
+                :let [fr (relof f) from (dirof fr) html (slurp f)]
+                [_ href] (re-seq #"href=\"([^\"]+)\"" html)
+                :when (not (re-find #"^[a-z]+:" href))      ; skip http(s)/data/mailto
                 :when (not (str/ends-with? href ".css"))]
-          (let [[file frag] (str/split href #"#" 2)
-                target      (if (str/blank? file) (.getName f) file)]
-            (is (contains? ids target)
-                (str href " in " (.getName f) " names a real page"))
-            (when frag
+          (let [[path frag] (str/split href #"#" 2)
+                resolved    (when-not (str/blank? path) (resolve from path))
+                target      (cond
+                              (str/blank? path)                   fr
+                              (str/ends-with? path "/")           (str resolved
+                                                                       (when (seq resolved) "/")
+                                                                       "index.html")
+                              (str/includes? (str (last (str/split resolved #"/"))) ".") resolved
+                              :else (str resolved "/index.html"))]
+            (is (.exists (io/file dir target))
+                (str href " in " fr " resolves to a real file"))
+            (when (and frag (str/ends-with? target ".html"))
               (is (contains? (get ids target) frag)
-                  (str href " in " (.getName f) " lands on a real anchor")))))))
+                  (str href " in " fr " lands on a real anchor")))))))
     (testing "the stylesheet and referenced images are emitted"
       (is (.exists (io/file dir "styles.css")))
       (is (.exists (io/file dir "images/pipeline.svg"))))))
@@ -103,7 +116,7 @@
         site-dir (:path (first (filter #(= :site (:edition %)) (:artifacts man))))
         epub     (artifact-path man :epub)]
     (testing "the site emits a downloads page linking every published asset"
-      (let [dl (io/file site-dir "downloads.html")]
+      (let [dl (io/file site-dir "downloads/index.html")]
         (is (.exists dl))
         (let [html (slurp dl)]
           (doseq [asset ["smia-manual-screen.pdf"
@@ -113,7 +126,7 @@
             (is (str/includes? html asset) (str asset " is linked"))))))
     (testing "the home contents links to the downloads page"
       (is (str/includes? (slurp (io/file site-dir "index.html"))
-                         "href=\"downloads.html\"")))
+                         "href=\"downloads/\"")))
     (testing "the EPUB carries no downloads page"
       (with-open [zf (java.util.zip.ZipFile. (io/file epub))]
         (is (nil? (.getEntry zf "OEBPS/downloads.xhtml")))))))

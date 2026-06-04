@@ -30,7 +30,8 @@
    [clojure.string :as str]))
 
 (declare default-chrome section-items page-items contents-entries
-         links-table home-page build-page resources downloads-spec)
+         links-table home-page build-page resources downloads-spec
+         flat-location nested-location chapter-slug matter-slug)
 
 ;; --- assembly ----------------------------------------------------------------
 
@@ -55,13 +56,14 @@
   ([book opts]
    (let [chrome    (merge default-chrome (:chrome opts))
          extension (or (:extension opts) "html")
-         home-file (str "index." extension)
+         locate    (or (:location opts) flat-location)
+         home-loc  (locate {:kind :home} extension)
          dl-spec   (when-let [dl (:downloads opts)]
-                     (downloads-spec dl extension))
-         items     (section-items book extension)
+                     (downloads-spec dl extension locate))
+         items     (section-items book extension locate)
          specs     (cond->> (page-items items)
                      dl-spec (cons dl-spec))
-         _         (let [dupes (->> (cons home-file (map :file specs))
+         _         (let [dupes (->> (cons (:file home-loc) (map :file specs))
                                     frequencies
                                     (keep (fn [[f n]] (when (< 1 n) f))))]
                      (when (seq dupes)
@@ -72,13 +74,14 @@
          contents  (cond->> (contents-entries items)
                      dl-spec (cons {:kind  :downloads
                                     :level 0
-                                    :href  (:file dl-spec)
+                                    :href  (:url dl-spec)
                                     :text  "Downloads"}))
-         resolver  (links/resolver (links-table items specs home-file))
+         resolver  (links/resolver (links-table items specs (:url home-loc)))
          base-ctx  {:book-title (:title book)
                     :author     (:author book)
                     :contents   contents
-                    :home-file  home-file
+                    :home-loc   home-loc
+                    :home-url   (:url home-loc)
                     :highlight? (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -88,6 +91,55 @@
                          specs))
       :contents  contents
       :resources (resources book)})))
+
+;; --- page location strategies ------------------------------------------------
+
+(defn- slugify
+  "A URL slug from a string or keyword: lowercase, runs of non-alphanumeric
+   collapsed to a single hyphen, trimmed. `:book-production` -> `\"book-production\"`."
+  [x]
+  (-> (name x)
+      str/lower-case
+      (str/replace #"[^a-z0-9]+" "-")
+      (str/replace #"(^-+|-+$)" "")))
+
+(defn flat-location
+  "The default location: one flat file per page at the site root. `spec`
+   carries `:kind` and the numbered `:id`/`:number` the slug derives from.
+   Returns `{:file <name> :dir \"\" :url <name>}` — `:dir` is the root and
+   `:url` equals `:file`, so links stay same-directory."
+  [spec extension]
+  (let [slug (case (:kind spec)
+               (:chapter :appendix) (chapter-slug (:kind spec) spec)
+               :matter              (matter-slug (:id spec))
+               :downloads           "downloads"
+               :home                "index")
+        file (str slug "." extension)]
+    {:file file :dir "" :url file}))
+
+(defn- section-dir
+  "The directory url for a page under the nested location, ending in `/`:
+   body chapters nest under their part (`part-1/quickstart/`), appendices
+   under their letter (`appendix-a/error-catalog/`), matter and part-less
+   chapters sit at the root (`preface/`)."
+  [spec]
+  (case (:kind spec)
+    :chapter   (if-let [p (:part spec)]
+                 (str "part-" (inc p) "/" (slugify (:id spec)) "/")
+                 (str (slugify (:id spec)) "/"))
+    :appendix  (str "appendix-" (str/lower-case (:number spec)) "/"
+                    (slugify (:id spec)) "/")
+    :matter    (str (matter-slug (:id spec)) "/")
+    :downloads "downloads/"
+    :home      ""))
+
+(defn nested-location
+  "A clean, SEO-friendly location: each page is the `index.<ext>` of its
+   own directory, so the served url is the extensionless directory path
+   (`part-1/quickstart/`). The home page stays at the site root."
+  [spec extension]
+  (let [dir (section-dir spec)]
+    {:file (str dir "index." extension) :dir dir :url dir}))
 
 ;; --- section walking ----------------------------------------------------------
 
@@ -123,7 +175,7 @@
   "The page a non-part section assembles to: its slug, display meta,
    anchor id, and either the authored `:body` or a `:generate-role` for
    the roleful back matter the assembler writes itself."
-  [section book extension]
+  [section book extension locate]
   (-> (case (:kind section)
         (:chapter :appendix)
         (let [parsed (parse-chapter (:content section))]
@@ -153,7 +205,7 @@
              :extra-ids     (when (= :bibliography role)
                               (mapv #(str "ref-" (name %))
                                     (keys (:references book))))})))
-      (as-> spec (assoc spec :file (str (:slug spec) "." extension)))))
+      (as-> spec (merge spec (locate spec extension)))))
 
 (defn- downloads-spec
   "The synthesized site-only Downloads page: the asset flagged
@@ -162,7 +214,7 @@
    from the `:html/*` hatch so the link classes and absolute release
    hrefs pass through `html.expand` untouched (the `:a` sugar would drop
    the class)."
-  [{:keys [base assets]} extension]
+  [{:keys [base assets]} extension locate]
   (let [href    (fn [a] (str base "/" (:file a)))
         default (or (first (filter :default assets)) (first assets))
         others  (remove #(identical? % default) assets)
@@ -179,22 +231,22 @@
                                   (into [:html/li {} (link a nil)]
                                         (when (:note a) [(str " — " (:note a))])))
                                 others))]))]
-    {:file  (str "downloads." extension)
-     :slug  "downloads"
-     :kind  :downloads
-     :id    "downloads"
-     :title "Downloads"
-     :body  [(into [:html/div {:class "downloads"}] items)]}))
+    (merge {:slug  "downloads"
+            :kind  :downloads
+            :id    "downloads"
+            :title "Downloads"
+            :body  [(into [:html/div {:class "downloads"}] items)]}
+           (locate {:kind :downloads} extension))))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
    (no page of their own) and `{:type :page :spec …}` for everything
    else."
-  [book extension]
+  [book extension locate]
   (mapv (fn [s]
           (if (= :part (:kind s))
             {:type :part :section s}
-            {:type :page :spec (page-spec s book extension)}))
+            {:type :page :spec (page-spec s book extension locate)}))
         (:sections book)))
 
 (defn- page-items [items]
@@ -216,7 +268,7 @@
           (when (and (vector? node) (= :h2 (first node))
                      (map? (second node)) (:id (second node)))
             {:level level
-             :href  (str (:file spec) "#" (name (:id (second node))))
+             :href  (str (:url spec) "#" (name (:id (second node))))
              :text  (heading-text node)}))
         (:body spec)))
 
@@ -235,7 +287,7 @@
              (let [level (if (and (= :chapter (:kind spec)) (:part spec)) 1 0)]
                (cons {:kind  (:kind spec)
                       :level level
-                      :href  (:file spec)
+                      :href  (:url spec)
                       :text  (numbered-text (:number spec) (:title spec))}
                      (section-entries spec (inc level))))))
          items)))
@@ -243,17 +295,19 @@
 ;; --- link resolution ---------------------------------------------------------------
 
 (defn- links-table
-  "The `{anchor-id → file}` table over every assembled page: part anchors
-   live on the home page; each section page contributes its authored
-   anchors, its own id, and any generated anchors (`ref-*`)."
-  [items specs home-file]
+  "The `{anchor-id → page-url}` table over every assembled page: part
+   anchors live on the home page; each section page contributes its
+   authored anchors, its own id, and any generated anchors (`ref-*`). The
+   value is the page's link url (a flat file or a directory), which the
+   resolver relativizes per referring page."
+  [items specs home-url]
   (links/table
-    (cons {:file home-file
+    (cons {:file home-url
            :ids  (keep #(when (= :part (:type %))
                           (str "part-" (:index (:section %))))
                        items)}
           (map (fn [spec]
-                 {:file    (:file spec)
+                 {:file    (:url spec)
                   :content (when (:body spec) (into [:div {}] (:body spec)))
                   :ids     (cons (:id spec) (:extra-ids spec))})
                specs))))
@@ -374,25 +428,29 @@
   (into [:header {:class "book-header"} [:h1 {} title]]
         (when author [[:p {:class "book-author"} author]])))
 
-(defn- toc-nav [contents]
+(defn- toc-nav
+  "The table-of-contents nav. `href-to` relativizes each entry's
+   absolute-from-root url against the page being rendered."
+  [contents href-to]
   [:nav {:class "toc" :aria-label "Table of contents"}
    [:h2 {} "Contents"]
    (into [:ol {:class "toc-list"}]
          (map (fn [{:keys [level text href id]}]
                 [:li (cond-> {:class (str "toc-level-" level)}
                        id (assoc :id id))
-                 (if href [:a {:href href} text] text)])
+                 (if href [:a {:href (href-to href)} text] text)])
               contents))])
 
 (defn- default-nav [ctx]
   (when-not (= :home (:kind (:page ctx)))
-    (into [:nav {:class "page-nav"}]
-          (concat
-            [[:a {:href (:home-file ctx)} "Contents"]]
-            (when-let [p (:prev ctx)]
-              [[:a {:rel "prev" :href (:file p)} (:title p)]])
-            (when-let [n (:next ctx)]
-              [[:a {:rel "next" :href (:file n)} (:title n)]])))))
+    (let [href-to (:href-to ctx)]
+      (into [:nav {:class "page-nav"}]
+            (concat
+              [[:a {:href (href-to (:home-url ctx))} "Contents"]]
+              (when-let [p (:prev ctx)]
+                [[:a {:rel "prev" :href (href-to (:url p))} (:title p)]])
+              (when-let [n (:next ctx)]
+                [[:a {:rel "next" :href (href-to (:url n))} (:title n)]]))))))
 
 (defn- default-page-wrap [ctx title main]
   [:html
@@ -402,7 +460,7 @@
     [:title {} (if (= title (:book-title ctx))
                  title
                  (str title " — " (:book-title ctx)))]
-    [:link {:rel "stylesheet" :href "styles.css"}]]
+    [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
    (into [:body {}]
          (concat
            (when-let [nav (:nav-hiccup ctx)] [nav])
@@ -427,14 +485,15 @@
    `:home-toc? false` — a layout whose own chrome already carries the
    contents (the sidebar) leaves the landing a plain title card."
   [book contents chrome base-ctx resolver]
-  (let [home-file (:home-file base-ctx)
-        spec {:file home-file :slug "index" :kind :home
-              :title (:title book)}
-        ctx  (assoc base-ctx
-                    :page spec
-                    :resolve #(resolver % home-file))
-        main (cond-> [(book-header book)]
-               (get chrome :home-toc? true) (conj (toc-nav contents)))]
+  (let [spec    (merge {:slug "index" :kind :home :title (:title book)}
+                       (:home-loc base-ctx))
+        href-to #(links/relativize (:url spec) %)
+        ctx     (assoc base-ctx
+                       :page spec
+                       :href-to href-to
+                       :resolve #(resolver % (:url spec)))
+        main    (cond-> [(book-header book)]
+                  (get chrome :home-toc? true) (conj (toc-nav contents href-to)))]
     (assoc spec :hiccup
            (wrap-page chrome ctx (:title book) main))))
 
@@ -442,10 +501,13 @@
   "Assemble one section page: collect and number its footnotes, expand
    the authored body (or generate the roleful back matter), and wrap it
    in the chrome."
-  [{:keys [file kind title label body generate-role] :as spec}
+  [{:keys [file url kind title label body generate-role] :as spec}
    book resolver chrome base-ctx prev next]
-  (let [resolve      #(resolver % file)
-        expand-ctx   {:resolve resolve :highlight? (:highlight? base-ctx)}
+  (let [href-to      #(links/relativize url %)
+        resolve      #(resolver % url)
+        expand-ctx   {:resolve    resolve
+                      :highlight? (:highlight? base-ctx)
+                      :asset-base (href-to "")}
         [body notes] (when body (collect-footnotes body))
         main         (if generate-role
                        (into [(page-header spec)]
@@ -455,7 +517,7 @@
                            (cond-> (seq notes)
                              (conj (footnotes-block notes expand-ctx)))))
         ctx          (assoc base-ctx :page spec :prev prev :next next
-                            :resolve resolve)]
+                            :resolve resolve :href-to href-to)]
     {:file file :slug (:slug spec) :kind kind :title title :label label
      :hiccup (wrap-page chrome ctx title main)}))
 

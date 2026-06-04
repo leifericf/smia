@@ -35,8 +35,8 @@
 (def ^:private pages (:pages result))
 
 (deftest page-map-covers-every-page-and-the-stylesheet
-  (is (= #{"index.html" "chapter-01.html" "chapter-02.html"
-           "bibliography.html" "styles.css"}
+  (is (= #{"index.html" "ch-one/index.html" "ch-two/index.html"
+           "bibliography/index.html" "styles.css"}
          (set (keys pages)))))
 
 (deftest html-pages-are-doctyped-html5-documents
@@ -48,24 +48,29 @@
 (deftest home-page-links-the-contents
   (let [home (get pages "index.html")]
     (is (str/includes? home "Contents"))
-    (is (str/includes? home "href=\"chapter-01.html\""))))
+    (is (str/includes? home "href=\"ch-one/\""))))
 
-(deftest cross-chapter-xrefs-resolve-in-the-serialized-output
-  (is (str/includes? (get pages "chapter-01.html")
-                     "href=\"chapter-02.html#sec-b\""))
-  (is (str/includes? (get pages "chapter-02.html")
-                     "href=\"chapter-01.html#sec-a\"")))
+(deftest cross-chapter-xrefs-resolve-as-relative-directory-urls
+  (is (str/includes? (get pages "ch-one/index.html")
+                     "href=\"../ch-two/#sec-b\""))
+  (is (str/includes? (get pages "ch-two/index.html")
+                     "href=\"../ch-one/#sec-a\"")))
+
+(deftest assets-resolve-relative-to-the-nested-page
+  (testing "the stylesheet link climbs back to the site root"
+    (is (str/includes? (get pages "ch-one/index.html")
+                       "href=\"../styles.css\""))))
 
 (deftest nav-chrome-chains-prev-and-next
   (testing "the middle of the chain points both ways"
-    (is (str/includes? (get pages "chapter-02.html") "rel=\"prev\""))
-    (is (str/includes? (get pages "chapter-02.html") "rel=\"next\"")))
+    (is (str/includes? (get pages "ch-two/index.html") "rel=\"prev\""))
+    (is (str/includes? (get pages "ch-two/index.html") "rel=\"next\"")))
   (testing "the edges do not run off the book"
-    (is (not (str/includes? (get pages "chapter-01.html") "rel=\"prev\"")))
-    (is (not (str/includes? (get pages "bibliography.html") "rel=\"next\"")))))
+    (is (not (str/includes? (get pages "ch-one/index.html") "rel=\"prev\"")))
+    (is (not (str/includes? (get pages "bibliography/index.html") "rel=\"next\"")))))
 
 (deftest theme-highlighting-reaches-the-code
-  (is (str/includes? (get pages "chapter-01.html") "tok-keyword")))
+  (is (str/includes? (get pages "ch-one/index.html") "tok-keyword")))
 
 (deftest stylesheet-is-generated-from-the-tokens
   (let [css (get pages "styles.css")]
@@ -83,14 +88,14 @@
 
 (deftest downloads-config-adds-a-downloads-page
   (let [pages (:pages (site/assemble book tokens downloads))]
-    (is (contains? pages "downloads.html"))
+    (is (contains? pages "downloads/index.html"))
     (testing "the home contents links to the downloads page"
-      (is (str/includes? (get pages "index.html") "href=\"downloads.html\"")))
+      (is (str/includes? (get pages "index.html") "href=\"downloads/\"")))
     (testing "the page links each asset by its full release URL"
-      (is (str/includes? (get pages "downloads.html")
+      (is (str/includes? (get pages "downloads/index.html")
                          "href=\"https://example.com/dl/b-screen.pdf\""))
-      (is (str/includes? (get pages "downloads.html")
+      (is (str/includes? (get pages "downloads/index.html")
                          "href=\"https://example.com/dl/b.epub\"")))))
 
 (deftest two-arity-assemble-has-no-downloads-page
-  (is (not (contains? (set (keys pages)) "downloads.html"))))
+  (is (not (contains? (set (keys pages)) "downloads/index.html"))))

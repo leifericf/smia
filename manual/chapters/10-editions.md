@@ -19,7 +19,9 @@ The `artifacts.edn` manifest lists what was built under `:build/editions`, with 
 
 ## The site edition
 
-`--edition site` writes a browsable site under `build/<slug>/site/`: an `index.html` carrying the title and table of contents, one page per chapter (and per named or generated matter section), a `styles.css` generated from `theme.edn`, and copies of every image the chapters reference. Open `index.html` straight from disk — there is no server, no JavaScript, and no build-tool runtime in the output.
+`--edition site` writes a browsable site under `build/<slug>/site/`: a home `index.html`, one page per chapter (and per named or generated matter section), a `styles.css` generated from `theme.edn`, and copies of every image the chapters reference. There is no JavaScript and no build-tool runtime in the output.
+
+Each page is the `index.html` of its own directory, so the served URL is a clean, extensionless path: a body chapter nests under its part (`part-1/quickstart/`), an appendix under its letter (`appendix-a/errors/`), and matter sits at the root (`preface/`). The slug is the section's `:id`. Internal links are all relative, so the site is portable to any host and any sub-path. These directory URLs resolve through a web server, so to read the build locally run a static file server in the site directory — for example `python3 -m http.server` — and open `http://localhost:8000/`.
 
 Paged furniture is rendered for a medium with no pages:
 

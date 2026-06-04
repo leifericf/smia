@@ -33,6 +33,20 @@
   {:resolve (fn [id] (str "#" id))
    :highlight? false})
 
+(defn- asset-src
+  "Resolve an image `src` against the page's `:asset-base` (the relative
+   prefix from the page back to the site root). A remote (`https:`,
+   `data:`, …) or absolute (`/…`) source is used as-is; a local one is
+   prefixed so it resolves from a nested page directory. With no base (the
+   flat default) the source is unchanged."
+  [ctx src]
+  (let [base (:asset-base ctx)]
+    (if (or (str/blank? base)
+            (re-find #"^[A-Za-z][A-Za-z0-9+.-]*:" src)
+            (str/starts-with? src "/"))
+      src
+      (str base src))))
+
 ;; --- the public transform ---------------------------------------------------
 
 (defn expand
@@ -385,14 +399,14 @@
    :a          (fn [a c ctx] (into [:a {:href (:href a)}] (expand-all c ctx)))
    :br         (fn [_ _ _] [:br {}])
    :hr         (fn [_ _ _] [:hr {}])
-   :img        (fn [a _ _]
+   :img        (fn [a _ ctx]
                  (when-not (:alt a)
                    (throw (error/ex :smia.html.expand/missing-alt-text
                                     (str "Image " (pr-str (:src a)) " has no "
                                          ":alt text. Every image needs alt "
                                          "text (\"\" for a decorative one).")
                                     {:src (:src a)})))
-                 [:img (cond-> {:src (:src a) :alt (:alt a)}
+                 [:img (cond-> {:src (asset-src ctx (:src a)) :alt (:alt a)}
                          (:width a)  (assoc :width (:width a))
                          (:height a) (assoc :height (:height a)))])
    :pre        pre-block

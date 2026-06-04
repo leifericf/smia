@@ -17,16 +17,25 @@
    [clojure.string :as str]))
 
 (defn- sweep-stale-html!
-  "Delete top-level `*.html` files in `out-dir` whose names are not in
-   `keep` (the current build's HTML page set)."
+  "Delete `*.html` files anywhere under `out-dir` whose path (relative to
+   `out-dir`, with `/` separators) is not in `keep` (the current build's
+   HTML page set), then prune any directories left empty. Pages now nest
+   in per-page directories, so the sweep recurses; non-HTML files a user
+   adds for hosting (`CNAME`, `.nojekyll`, images) are never touched."
   [out-dir keep]
-  (let [dir (io/file out-dir)]
-    (when (.isDirectory dir)
-      (doseq [^java.io.File f (.listFiles dir)
-              :when (and (.isFile f)
-                         (str/ends-with? (.getName f) ".html")
-                         (not (contains? keep (.getName f))))]
-        (.delete f)))))
+  (let [root (io/file out-dir)]
+    (when (.isDirectory root)
+      (let [base (.toPath root)]
+        (doseq [^java.io.File f (file-seq root)
+                :when (and (.isFile f)
+                           (str/ends-with? (.getName f) ".html")
+                           (not (contains? keep (str (.relativize base (.toPath f))))))]
+          (.delete f))
+        (doseq [^java.io.File d (->> (file-seq root)
+                                     (filter #(.isDirectory ^java.io.File %))
+                                     (sort-by #(- (count (.getPath ^java.io.File %)))))
+                :when (and (not= d root) (zero? (alength (.listFiles d))))]
+          (.delete d))))))
 
 (defn emit!
   "Write `{:pages {path → content-string} :resources [{:src} …]}` under
