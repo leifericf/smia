@@ -38,9 +38,13 @@
   "Assemble a numbered `book` (the manuscript value out of
    `book.number/assign`) into the HTML page set. Options:
    `:chrome`     — `{:page-wrap (fn [ctx title main] page-hiccup)
-                     :nav (fn [ctx] nav-hiccup-or-nil)}`, merged over the
-                   defaults; `ctx` carries `:book-title :author :page
-                   :prev :next :contents :resolve :home-file :nav-hiccup`.
+                     :nav (fn [ctx] nav-hiccup-or-nil)
+                     :home-toc? bool}`, merged over the defaults; `ctx`
+                   carries `:book-title :author :page :prev :next
+                   :contents :resolve :home-file :nav-hiccup`. `:home-toc?`
+                   (default true) renders the contents on the home page;
+                   a chrome whose own framing carries the contents sets it
+                   false to leave the landing a title card.
    `:extension`  — page file extension (default \"html\"; EPUB content
                    documents pass \"xhtml\").
    `:highlight?` — enable syntax-highlight token spans.
@@ -417,16 +421,22 @@
   (let [ctx (assoc ctx :nav-hiccup ((:nav chrome) ctx))]
     ((:page-wrap chrome) ctx title main)))
 
-(defn- home-page [book contents chrome base-ctx resolver]
+(defn- home-page
+  "The home page (`index`). Its main content is the book header, followed
+   by the table of contents unless the chrome opts out with
+   `:home-toc? false` — a layout whose own chrome already carries the
+   contents (the sidebar) leaves the landing a plain title card."
+  [book contents chrome base-ctx resolver]
   (let [home-file (:home-file base-ctx)
         spec {:file home-file :slug "index" :kind :home
               :title (:title book)}
         ctx  (assoc base-ctx
                     :page spec
-                    :resolve #(resolver % home-file))]
+                    :resolve #(resolver % home-file))
+        main (cond-> [(book-header book)]
+               (get chrome :home-toc? true) (conj (toc-nav contents)))]
     (assoc spec :hiccup
-           (wrap-page chrome ctx (:title book)
-                      [(book-header book) (toc-nav contents)]))))
+           (wrap-page chrome ctx (:title book) main))))
 
 (defn- build-page
   "Assemble one section page: collect and number its footnotes, expand

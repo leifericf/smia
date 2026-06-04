@@ -75,9 +75,12 @@
 (def ^:private sidebar-chrome
   "Two-column docs chrome: the sidebar rail is the table of contents; the
    prev/next furniture (the plain chrome's `:nav`) sits beneath the
-   reading column."
-  {:page-wrap sidebar-page-wrap
-   :nav       (:nav html-assemble/default-chrome)})
+   reading column. `:home-toc? false` keeps the landing a plain title
+   card — the sidebar already lists every page, so a contents list on the
+   home page would only duplicate the rail."
+  {:page-wrap  sidebar-page-wrap
+   :nav        (:nav html-assemble/default-chrome)
+   :home-toc?  false})
 
 ;; --- the registry ------------------------------------------------------------
 

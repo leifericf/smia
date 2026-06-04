@@ -71,3 +71,19 @@
 (deftest plain-layout-emits-no-sidebar
   (let [pages (assemble-with nil)]
     (is (not (str/includes? (get pages "chapter-01.html") "book-sidebar")))))
+
+(deftest sidebar-home-page-is-a-title-card-without-the-duplicate-toc
+  (let [home (get (assemble-with :sidebar) "index.html")]
+    (testing "the landing keeps the title and author"
+      (is (str/includes? home "The Book"))
+      (is (str/includes? home "An Author")))
+    (testing "but drops the contents nav that the sidebar already provides"
+      (is (not (str/includes? home "class=\"toc\""))))
+    (testing "the sidebar rail is still the navigation, and links the chapters"
+      (is (str/includes? home "class=\"book-sidebar\""))
+      (is (str/includes? home "href=\"chapter-01.html\"")))))
+
+(deftest plain-home-page-keeps-its-contents-list
+  (let [home (get (assemble-with nil) "index.html")]
+    (is (str/includes? home "class=\"toc\""))
+    (is (str/includes? home "Contents"))))
