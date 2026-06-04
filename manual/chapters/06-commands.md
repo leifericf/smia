@@ -81,4 +81,4 @@ Tools that assemble the request themselves call `clj-book.api/build` and `clj-bo
 clojure -X clj-book.api/build :book-root '"manual"' :editions '[:screen :print]'
 ```
 
-The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, and `:validate-code`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.
+The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.

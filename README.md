@@ -55,6 +55,21 @@ repeatable `--edition` flag:
 Numbering and cross-reference resolution run once, before any format-specific
 rendering, so every edition agrees on the book's structure.
 
+## Build output
+
+Every edition lands under one gitignored directory, `build/<slug>/` (override
+with `--output-root`). Rebuilds overwrite in place; the site edition also sweeps
+stale pages, so deleting a chapter leaves no orphan HTML while files you add
+yourself (a `CNAME`, `.nojekyll`) are kept. Pass `--clean` to wipe
+`build/<slug>/` first — a guaranteed-fresh slate that also discards editions you
+no longer build; it is a no-op under `--dry-run`.
+
+`--licensee "Name <email>"` stamps a discreet "Licensed to …" line in the footer
+of every PDF page — a per-recipient watermark for distributing a personalized
+copy. It affects the PDF editions only and is not part of the manuscript, so a
+stamped build is intentionally not byte-identical across recipients while an
+unstamped build stays reproducible.
+
 ## Documentation
 
 The manual is itself a clj-book manuscript, under `manual/`. Build it (the
