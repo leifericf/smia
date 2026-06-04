@@ -1,6 +1,6 @@
 # Writing in Markdown
 
-Markdown is the prose-first way to write a chapter: prose and code samples go down without escaping, and the dialect is CommonMark with a small set of book extensions. A chapter whose filename ends in `.md` compiles to **author Hiccup**, the data vocabulary [the next chapter](#authoring) describes in full, and everything downstream is identical: assembly, expansion, theming, and every edition.
+Markdown is the prose-first way to write a chapter: text and code samples go down without escaping, and the dialect is CommonMark with a small set of book extensions. A chapter whose filename ends in `.md` compiles to **author Hiccup**, the data vocabulary [the next chapter](#authoring) describes in full, and everything downstream is identical: assembly, expansion, theming, and every edition.
 
 ## Title, id, and front-matter
 

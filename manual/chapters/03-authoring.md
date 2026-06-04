@@ -18,7 +18,7 @@ The common case looks like ordinary markup. Paragraphs, headings, lists, emphasi
 - `:strong`, `:em`, `:code`, `:span`, `:a`
 - `:table` / `:thead` / `:tbody` / `:tr` / `:td` / `:th`
 
-`:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap. `:img` takes a `:src` and `:alt` text, which the HTML editions require, and accepts an optional `:width` and `:height`.
+`:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap. `:img` takes a `:src` and `:alt` text; the HTML editions require the alt text, and an optional `:width` and `:height` size the image.
 
 A **description list** pairs a term with its definition. Each `:dt` is set bold, each `:dd` indented beneath it:
 

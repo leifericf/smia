@@ -18,8 +18,8 @@ Programs that manipulate plain data are easier to reason about than programs tha
 manipulate objects with hidden state.
 :::
 
-The quotation above is an `:::epigraph`, a block quotation set off from the
-text, with an optional `:attribution` beneath it.
+The quotation above is an `:::epigraph`, set off from the running text, with
+an optional `:attribution` beneath it.
 
 ## Structure lives in book.edn {:id :structure-demo}
 
@@ -157,9 +157,9 @@ renders the full label and title, "Chapter 2: Title", in the PDF editions.
 ## Running heads
 
 Every page carries a running head and a page-number folio. The defaults: a
-verso page heads with the chapter title, a recto page with the current
-section, and the symmetric screen layout with the chapter title on every
-page. `:book/running-heads` overrides any slot. Keys are the page parities,
+verso page shows the chapter title, a recto page the current section, and
+the symmetric screen layout the chapter title on every page.
+`:book/running-heads` overrides any slot. Keys are the page parities,
 `:verso` and `:recto` for the print layout and `:screen` for the symmetric
 ones; each maps `:before` (the head) and `:after` (the foot) to one of
 `:chapter`, `:section`, `:page`, `:book-title`, or `nil` for empty:

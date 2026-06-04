@@ -35,7 +35,7 @@ Because the text varies per copy, a stamped build differs between recipients. An
 
 ## preview
 
-Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes. A save takes around 150 ms, where each cold `build` pays a few seconds of JVM start-up first:
+Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes. A save takes around 150 ms, while each cold `build` pays a few seconds of JVM start-up first:
 
 ```
 clojure -M:run preview manual
@@ -43,7 +43,7 @@ clojure -M:run preview manual
 
 The whole book tree is watched: chapters, `book.edn`, `theme.edn`, references, included code files, and images. Editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and on some platforms faster.
 
-Preview renders only the **screen** edition by default. Rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering, because page layout is global: page numbers, the table of contents, and keeps all span the document, so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
+Preview renders only the **screen** edition by default. Rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. Rendering is all-or-nothing, because page layout is global: page numbers, the table of contents, and keeps all span the document. Each save therefore re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
 
 Previewing the **site** edition also starts a small static file server, because the site's directory URLs (see [the editions chapter](#editions)) resolve through a web server, not from the file system:
 
@@ -51,7 +51,7 @@ Previewing the **site** edition also starts a small static file server, because 
 clojure -M:run preview manual --edition site
 ```
 
-This rebuilds on every save and serves the site at `http://localhost:8000/`: edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart. Choose another port with `--port`. The server is part of the JDK, adds no dependency, and runs only for the site edition. There is no live reload, which would need JavaScript in the page; you refresh by hand.
+This rebuilds on every save and serves the site at `http://localhost:8000/`: edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart. Choose another port with `--port`. The server is part of the JDK, adds no dependency, and runs only for the site edition. Live reload would need JavaScript in the page, so you refresh by hand.
 
 A save that fails, say a typo in front-matter or an unresolved cross-reference, prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. For a PDF preview, a viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
 

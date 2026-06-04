@@ -1,8 +1,8 @@
 # Quickstart
 
 Smia builds a manuscript into screen and print PDFs, an EPUB, and a static
-website, all on the JVM. PDFs are rendered with Apache FOP as a library call,
-and the build never leaves the Java process.
+website, all on the JVM. Apache FOP renders the PDFs as a library call, and
+the build never leaves the process.
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Run the build with the Clojure CLI:
 clojure -M:run build my-book
 ```
 
-With no `--edition` given, the screen and print PDFs are written under `build/my-book/pdf/`, alongside an `artifacts.edn` manifest. The website, the EPUB, and the press-ready PDF/X are selected with `--edition`; [the editions chapter](#editions) describes them all. Run the command from inside the book directory and the path can be dropped: `clojure -M:run build`.
+With no `--edition` given, Smia writes the screen and print PDFs under `build/my-book/pdf/`, alongside an `artifacts.edn` manifest. `--edition` selects the website, the EPUB, and the press-ready PDF/X; [the editions chapter](#editions) describes them all. Run the command from inside the book directory and you can drop the path: `clojure -M:run build`.
 
 While writing, `clojure -M:run preview my-book` rebuilds the book on every save. Previewing the site edition also serves it locally. See [the commands chapter](#commands).
 

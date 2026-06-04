@@ -1,6 +1,6 @@
 # How it works
 
-Smia is small because it leans on two ideas: everything is plain data, and the only effects live at the edges. This chapter explains the design and the reasoning behind it.
+Smia is small because it leans on two ideas: everything is plain data, and the only effects live at the edges.
 
 ## The pipeline
 
