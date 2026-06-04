@@ -43,27 +43,6 @@
   [kw-set]
   (fn [s] (if (contains? kw-set s) :keyword :text)))
 
-;; String patterns "unroll the loop" — `chars* (escape chars*)*` rather than
-;; `(escape | char)*`. Both match the same language, but the unrolled form has
-;; no alternation under a star, so java.util.regex does not recurse per
-;; character and a long literal cannot overflow the stack.
-(def c-like-rules-base
-  "Shared lexical rules for C-family languages (comments, strings, numbers),
-   as `[regex-string kind]`; the identifier rule is appended per language."
-  [["//[^\\n]*"               :comment]
-   ["/\\*[\\s\\S]*?\\*/"      :comment]
-   ["\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"" :string]
-   ["'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'"     :string]
-   ["\\d[\\d_]*\\.?\\d*(?:[eE][+-]?\\d+)?[fFlLdD]?" :number]])
-
-(defn c-like
-  "A tokenizer for a C-family language whose reserved words are `keywords`."
-  [keywords]
-  (let [rules (-> (mapv (fn [[p k]] [(re-pattern p) k]) c-like-rules-base)
-                  (conj [(re-pattern "[A-Za-z_$][A-Za-z0-9_$]*")
-                         (keyword-classifier keywords)]))]
-    (fn [code] (scan code rules))))
-
 ;; --- private helpers -------------------------------------------------------
 
 (defn- merge-runs

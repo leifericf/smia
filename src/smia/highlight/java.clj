@@ -1,7 +1,7 @@
 (ns smia.highlight.java
   "Pure core: a Java source tokenizer for syntax highlighting."
   (:require
-   [smia.highlight.lexer :as lexer]))
+   [smia.highlight.fragments :as fragments]))
 
 (def ^:private keywords
   #{"abstract" "assert" "boolean" "break" "byte" "case" "catch" "char" "class"
@@ -12,4 +12,4 @@
     "synchronized" "this" "throw" "throws" "transient" "try" "void" "volatile"
     "while" "var" "record" "sealed" "permits" "yield" "true" "false" "null"})
 
-(def tokenize (lexer/c-like keywords))
+(def tokenize (fragments/c-family keywords))

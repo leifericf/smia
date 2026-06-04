@@ -83,8 +83,8 @@
     (is (contains? (kinds-of toks :string) "'it''s'"))))
 
 (deftest unregistered-language-returns-nil
-  (is (nil? (hl/tokenize :rust "fn main() {}")))
-  (is (not (hl/supported? :rust)))
+  (is (nil? (hl/tokenize :cobol "DISPLAY 'HI'.")))
+  (is (not (hl/supported? :cobol)))
   (is (hl/supported? :clojure)))
 
 (deftest long-string-literals-do-not-overflow-the-stack

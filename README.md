@@ -19,7 +19,7 @@ A book is a `book.edn` file, its chapter sources, and a `theme.edn`. From that,
 Smia produces parts and numbered chapters, appendices, named front and back
 matter, captioned figures and code listings, cross-references that read
 "Figure 1" rather than a bare page number, typographic punctuation, syntax
-highlighting for the common book languages, running heads, an index, and a
+highlighting for dozens of languages, running heads, an index, and a
 bibliography. Document attributes let a version or product name live in one
 place and resolve everywhere, and conditional `:::when` blocks include content
 for some editions and not others. An interface vocabulary names keys, menus, and

@@ -1,7 +1,7 @@
 (ns smia.highlight.groovy
   "Pure core: a Groovy source tokenizer for syntax highlighting."
   (:require
-   [smia.highlight.lexer :as lexer]))
+   [smia.highlight.fragments :as fragments]))
 
 (def ^:private keywords
   #{"abstract" "as" "assert" "boolean" "break" "byte" "case" "catch" "char"
@@ -12,4 +12,4 @@
     "switch" "synchronized" "this" "throw" "throws" "trait" "transient" "true"
     "try" "void" "volatile" "while" "var"})
 
-(def tokenize (lexer/c-like keywords))
+(def tokenize (fragments/c-family keywords))

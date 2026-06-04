@@ -4,7 +4,7 @@
    `${var}`, and the special parameters classify as literals. A
    single-quoted shell string has no escapes."
   (:require
-   [smia.highlight.lexer :as lexer]))
+   [smia.highlight.fragments :as fragments]))
 
 (def ^:private keywords
   #{"if" "then" "else" "elif" "fi" "for" "while" "until" "do" "done"
@@ -13,13 +13,8 @@
     "shift" "source" "eval" "exec" "trap" "exit" "echo" "printf" "read"
     "cd" "test" "true" "false"})
 
-(def ^:private rules
-  [[#"#[^\n]*"                             :comment]
-   [#"\"[^\"\\]*(?:\\.[^\"\\]*)*\""        :string]
-   [#"'[^']*'"                             :string]
-   [#"\$\{[^}]*\}"                         :literal]
-   [#"\$(?:[A-Za-z_][A-Za-z0-9_]*|[0-9@#?$!*-])" :literal]
-   [#"\d+"                                 :number]
-   [#"[A-Za-z_][A-Za-z0-9_]*"              (lexer/keyword-classifier keywords)]])
-
-(defn tokenize [code] (lexer/scan code rules))
+(def tokenize
+  (fragments/from-fragments
+    [fragments/hash-line fragments/dq-string fragments/sq-no-escape
+     fragments/shell-var-brace fragments/shell-var-simple fragments/int-number]
+    fragments/plain-ident keywords))

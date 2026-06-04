@@ -1,7 +1,7 @@
 (ns smia.highlight.kotlin
   "Pure core: a Kotlin source tokenizer for syntax highlighting."
   (:require
-   [smia.highlight.lexer :as lexer]))
+   [smia.highlight.fragments :as fragments]))
 
 (def ^:private keywords
   #{"as" "break" "class" "continue" "do" "else" "false" "for" "fun" "if" "in"
@@ -14,4 +14,4 @@
     "lateinit" "noinline" "open" "operator" "out" "override" "private"
     "protected" "public" "reified" "sealed" "suspend" "tailrec" "vararg"})
 
-(def tokenize (lexer/c-like keywords))
+(def tokenize (fragments/c-family keywords))

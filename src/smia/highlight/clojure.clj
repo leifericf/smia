@@ -4,7 +4,7 @@
    curated set of core/special-form symbols; everything else is plain text.
    Returns `[{:kind :text} …]` whose parts rebuild the source verbatim."
   (:require
-   [smia.highlight.lexer :as lexer]))
+   [smia.highlight.fragments :as fragments]))
 
 (def ^:private core-forms
   #{"def" "defn" "defn-" "defmacro" "defmulti" "defmethod" "defprotocol"
@@ -15,17 +15,4 @@
     "->" "->>" "as->" "some->" "some->>" "cond->" "cond->>" "and" "or" "not"
     "quote" "var" "set!" "new" "in-ns" "declare" "comment"})
 
-(def ^:private rules
-  (mapv (fn [[p k]] [(re-pattern p) k])
-        [[";[^\\n]*"                    :comment]
-         ["\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"" :string]
-         ["\\\\(?:newline|space|tab|return|[\\s\\S])" :string]
-         [":[A-Za-z0-9_*+!?<>=./%&-]+"  :literal]
-         ["-?\\d[\\d_]*\\.?\\d*(?:[eE][+-]?\\d+)?[MN]?" :number]]))
-
-(def ^:private symbol-rule
-  [(re-pattern "[A-Za-z_*+!?<>=%&][A-Za-z0-9_*+!?<>=.%&/'-]*")
-   (lexer/keyword-classifier core-forms)])
-
-(defn tokenize [code]
-  (lexer/scan code (conj rules symbol-rule)))
+(def tokenize (fragments/lisp-family core-forms))

@@ -11,19 +11,24 @@
    [smia.highlight.java :as java]
    [smia.highlight.javascript :as javascript]
    [smia.highlight.kotlin :as kotlin]
+   [smia.highlight.languages :as languages]
    [smia.highlight.python :as python]
    [smia.highlight.sql :as sql]))
 
 (def tokenizers
-  "Language keyword -> pure `(fn [code] -> tokens)`."
-  {:bash       bash/tokenize
-   :clojure    clojure/tokenize
-   :java       java/tokenize
-   :javascript javascript/tokenize
-   :kotlin     kotlin/tokenize
-   :groovy     groovy/tokenize
-   :python     python/tokenize
-   :sql        sql/tokenize})
+  "Language keyword -> pure `(fn [code] -> tokens)`. The eight bespoke
+   tokenizers sit alongside the family-factory languages from
+   `smia.highlight.languages` (a keyword set plus a family factory each)."
+  (merge
+    languages/tokenizers
+    {:bash       bash/tokenize
+     :clojure    clojure/tokenize
+     :java       java/tokenize
+     :javascript javascript/tokenize
+     :kotlin     kotlin/tokenize
+     :groovy     groovy/tokenize
+     :python     python/tokenize
+     :sql        sql/tokenize}))
 
 (defn supported? [lang] (contains? tokenizers (keyword lang)))
 

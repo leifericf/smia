@@ -125,10 +125,22 @@ clojure -M:run build my-book \
   --edition print
 ```
 
-Highlighting is a pure, in-process tokenizer, so builds stay deterministic. It
-ships for Clojure, Java, Kotlin, Groovy, JavaScript, Python, SQL, and shell
-scripts (`bash`); an unknown language falls back to plain monospace. The
-listing above is highlighted as `bash`.
+Highlighting is a pure, in-process tokenizer, so builds stay deterministic. The
+tokenizer is built from a small library of lexical fragments and a handful of
+language-family factories, so a language is usually a reserved-word set plus a
+family. It ships for the eight curated tokenizers — Clojure, Java, Kotlin,
+Groovy, JavaScript, Python, SQL, and shell scripts (`bash`) — alongside a wider
+set keyed by family:
+
+- **C-family** (`//` and `/* */`): `c`, `cpp`, `csharp`, `go`, `rust`, `scala`, `swift`, `dart`, `objc`, `php`, `solidity`, `zig`, `d`, `protobuf`, and `typescript` (with template literals).
+- **Hash-comment scripting** (`#`): `ruby`, `r`, `perl`, `julia`, `elixir`, `coffeescript`, `powershell`, `toml`, `yaml`, `dockerfile`, `makefile`.
+- **Lisp** (`;`): `scheme`, `racket`, `commonlisp`, `fennel`, `edn`.
+- **ML** (`(* *)`): `ocaml`, `fsharp`, `sml`.
+- **Percent-comment** (`%`): `latex`, `erlang`, `matlab`, `prolog`.
+- **Dash-comment** (`--` and `{- -}`): `haskell`, `elm`, `lua`, `ada`, `purescript`.
+
+An unknown language falls back to plain monospace. The listing above is
+highlighted as `bash`.
 
 ### Annotating a listing
 
