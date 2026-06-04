@@ -22,6 +22,8 @@ clojure -M:run build manual --edition screen --edition print
 
 PDF outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`; `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
 
+Output is incremental: a rebuild overwrites each edition in place, and the site edition sweeps stale pages so a removed chapter leaves no orphan page (files you add to the site directory yourself, such as a `CNAME`, are kept). Pass `--clean` to remove the whole `build/<slug>/` directory before building — a guaranteed-fresh slate that also discards output from editions you no longer build. `--clean` does nothing under `--dry-run`.
+
 ## preview
 
 Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes — around 150 ms a save, where each cold `build` pays a few seconds of JVM start-up first:

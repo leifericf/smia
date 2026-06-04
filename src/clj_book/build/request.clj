@@ -46,7 +46,7 @@
                      "Request must be a map."
                      {:request request-map})))
   (let [{:keys [book-root config-path editions output-root dry-run
-                validate-code]} request-map
+                validate-code clean]} request-map
         normalized {:command       command
                     :book-root     (resolve-book-root book-root)
                     :config-path   (or (string-or-throw :config-path config-path)
@@ -55,6 +55,7 @@
                                        default-output-root)
                     :dry-run       (boolean dry-run)
                     :validate-code (boolean validate-code)
+                    :clean         (boolean clean)
                     :editions      (normalize-editions editions)}]
     (cond-> normalized
       (= command :build) (update :editions resolve-editions))))

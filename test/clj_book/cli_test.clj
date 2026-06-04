@@ -58,6 +58,11 @@
 (deftest epub-edition-is-accepted-on-the-command-line
   (is (= 0 (run-code ["build" fixture "--edition" "epub" "--dry-run"]))))
 
+(deftest clean-flag-is-translated-and-accepted
+  (is (= {:book-root fixture :clean true}
+         (args->request fixture {:clean true})))
+  (is (= 0 (run-code ["build" fixture "--clean" "--dry-run"]))))
+
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
 

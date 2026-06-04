@@ -25,6 +25,7 @@
   (into [["-e" "--edition EDITION" "Edition to build (screen|print|print-x|site|epub); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
+         [nil "--clean" "Remove the book's output directory before building."]
          [nil "--dry-run" "Print the build plan; render nothing."]]
         common-options))
 
@@ -58,14 +59,15 @@
    map `clj-book.build.request/normalize` expects. Only keys the user actually
    supplied are set, so normalize applies its own defaults — this is the
    contract that keeps the `-M` and `-X` front-ends in sync."
-  [book-root {:keys [edition config-path output-root dry-run validate-code]}]
+  [book-root {:keys [edition config-path output-root dry-run validate-code clean]}]
   (cond-> {}
     book-root      (assoc :book-root book-root)
     (seq edition)  (assoc :editions edition)
     config-path    (assoc :config-path config-path)
     output-root    (assoc :output-root output-root)
     dry-run        (assoc :dry-run true)
-    validate-code  (assoc :validate-code true)))
+    validate-code  (assoc :validate-code true)
+    clean          (assoc :clean true)))
 
 ;; --- reporting ---------------------------------------------------------
 

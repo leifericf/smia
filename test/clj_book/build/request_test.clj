@@ -85,6 +85,10 @@
     (is (= {:format :pdf :layout :print :pdf-x true}
            (request/edition-descriptors :print-x)))))
 
+(deftest clean-flag-defaults-false-and-normalizes
+  (is (false? (:clean (request/normalize valid-base :build))))
+  (is (true? (:clean (request/normalize (assoc valid-base :clean true) :build)))))
+
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]
     (is (= :clj-book.build.request/invalid-request (:error/type d)))))

@@ -84,13 +84,26 @@
        :finished-at finished
        :metadata    (:metadata manifest-skeleton)})))
 
+(defn- delete-tree!
+  "Recursively delete the file or directory at `path` (children before
+   parents). A no-op when it does not exist."
+  [path]
+  (let [f (io/file path)]
+    (when (.exists f)
+      (doseq [^java.io.File child (reverse (file-seq f))]
+        (.delete child)))))
+
 (defn build
   "Execute the requested edition builds and return the manifest map.
    build = execute! ∘ plan ∘ prepare.
 
    With `:dry-run` truthy in the request, return the inspectable plan
    value instead of performing the build: the manuscript is still loaded
-   and validated, but nothing is rendered and no artifacts are written."
+   and validated, but nothing is rendered and no artifacts are written.
+
+   With `:clean` truthy (and not a dry run), the book's output directory
+   is removed before building — a guaranteed-fresh slate that also evicts
+   editions and resources a prior build wrote but this one does not."
   [request]
   (let [prepared (prepare request)
         the-plan (plan/plan prepared)]
@@ -103,7 +116,10 @@
           (get-in the-plan [:validation :enabled])
           (assoc-in [:validation :plan]
                     (eval-registry/plan-validation (:chapters book)))))
-      (execute! the-plan))))
+      (do
+        (when (:clean request)
+          (delete-tree! (get-in prepared [:paths :book-output-dir])))
+        (execute! the-plan)))))
 
 (defn validate
   "Run validation only: load and check the manuscript config, tokens, and

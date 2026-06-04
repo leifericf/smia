@@ -73,6 +73,26 @@
   ;; the request has been normalized.
   (is true))
 
+(deftest ^:integration clean-wipes-the-slug-output-before-building
+  (let [req      (request "clean" :editions [:screen])
+        slug-dir (io/file (:output-root req) "tiny-book")]
+    (execute/build req)
+    (spit (io/file slug-dir "stale.txt") "old")
+    (is (.exists (io/file slug-dir "stale.txt")))
+    (execute/build (assoc req :clean true))
+    (is (not (.exists (io/file slug-dir "stale.txt")))
+        "clean removed the stale output before rebuilding")
+    (is (.exists (io/file slug-dir "pdf")) "the build regenerated its output")))
+
+(deftest ^:integration clean-is-a-no-op-under-dry-run
+  (let [req      (request "cleandry" :editions [:screen])
+        slug-dir (io/file (:output-root req) "tiny-book")]
+    (execute/build req)
+    (spit (io/file slug-dir "keep.txt") "x")
+    (execute/build (assoc req :clean true :dry-run true))
+    (is (.exists (io/file slug-dir "keep.txt"))
+        "a dry run writes nothing, so --clean deletes nothing")))
+
 (deftest print-x-without-config-fails-fast-at-prepare
   (testing "the gate trips before any loading or rendering"
     (let [d (catch-data #(execute/prepare (request "px" :editions [:print-x])))]

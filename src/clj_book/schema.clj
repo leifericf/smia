@@ -75,6 +75,7 @@
    [:output-root :string]
    [:dry-run {:optional true} :boolean]
    [:validate-code {:optional true} :boolean]
+   [:clean {:optional true} :boolean]
    [:editions [:maybe [:sequential :keyword]]]])
 
 (def Paths
