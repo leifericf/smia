@@ -43,7 +43,7 @@
 (def ^:private top-level-help
   (str/join
    \newline
-   ["Smia — build technical books as PDF on the JVM."
+   ["Smia builds technical books as PDF, EPUB, and a static site on the JVM."
     ""
     "Usage: clojure -M:run <command> [book-root] [options]"
     ""
