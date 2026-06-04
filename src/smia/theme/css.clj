@@ -52,8 +52,12 @@
          ["p" {:margin (str "0 0 " paragraph)}]
          ["a" {:color link}]
 
-         ;; code
-         ["code" {:font-family mono-family}]
+         ;; code — inline code is sized down to sit level with the serif
+         ;; body (monospace x-heights run large); the `pre code` reset keeps
+         ;; the two factors from compounding inside listings.
+         ["code" {:font-family mono-family
+                  :font-size   "0.85em"}]
+         ["pre code" {:font-size "1em"}]
          ["pre" {:font-family      mono-family
                  :background-color code-bg
                  :border-left      (str "3pt solid " link)

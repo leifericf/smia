@@ -109,7 +109,10 @@
                 :space-after "3pt"}
    :h6         {:font-size "11pt" :font-style "italic" :space-before "8pt"
                 :space-after "3pt"}
-   :code       {:font-family "monospace"}
+   ;; Inline code sits inside serif body text; monospace faces carry a
+   ;; larger x-height, so equal sizes make code tower over the prose.
+   ;; Block code (`:pre`) styles itself — this never applies inside it.
+   :code       {:font-family "monospace" :font-size "0.85em"}
    :pre        {:font-family "monospace" :white-space "pre" :wrap-option "wrap"
                 :space-before "6pt" :space-after "8pt"
                 :background-color "#f4f4f4" :padding "6pt" :font-size "9.5pt"}
