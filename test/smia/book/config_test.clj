@@ -95,6 +95,36 @@
                   :book/site-url "https://example.com/book"}
                  "book.edn"))))
 
+(deftest valid-attributes-pass
+  (is (vector? (config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/attributes {:version "1.0" :year 2026
+                                    :brand [:strong "Smia"]}}
+                 "book.edn"))))
+
+(deftest malformed-attributes-rejected
+  (testing "a non-map"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/attributes [:version "1.0"]}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-attributes (:error/type d)))))
+  (testing "a non-keyword key"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/attributes {"version" "1.0"}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-attributes (:error/type d)))))
+  (testing "an unsupported value type"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/attributes {:version :a-keyword}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-attributes (:error/type d))))))
+
 (deftest malformed-redirects-rejected
   (testing "a non-map"
     (let [d (catch-data

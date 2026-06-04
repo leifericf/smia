@@ -33,6 +33,10 @@
     (is (= [:sub "2"] (markers/marker-form :sub "2")))
     (is (= [:sup "n"] (markers/marker-form :sup "n")))))
 
+(deftest attr-marker-references-a-document-attribute
+  (is (= [:attr :version] (markers/marker-form :attr "version")))
+  (is (= [:attr :build-date] (markers/marker-form :attr " build-date "))))
+
 (deftest marker-names-are-the-sorted-registry-keys
   (is (= (->> (keys markers/inline-markers) (map name) sort vec)
          markers/marker-names))

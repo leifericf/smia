@@ -27,11 +27,12 @@
 
 (def resolve-tags
   "Tags the vocabulary accepts but that a resolve pass eliminates before
-   expansion — they have no expander of their own. Document attributes and
-   conditional content land here as those features ship; empty for now. Kept
-   separate from `sugar-tags` so the expander-parity invariant (every sugar
-   tag has an expander in every format) stays exact."
-  #{})
+   expansion — they have no expander of their own. `:attr` (a document
+   attribute reference, `[:attr :version]`) is resolved by
+   `smia.book.attrs` before numbering. Kept separate from `sugar-tags` so
+   the expander-parity invariant (every sugar tag has an expander in every
+   format) stays exact."
+  #{:attr})
 
 (defn fo-tag?
   "True for a raw FO tag: a keyword in the `fo` namespace, e.g. `:fo/block`."

@@ -34,6 +34,7 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 | code block | a fence whose info is `clojure {:test true}` | `[:pre {:lang :clojure :test true} …]` |
 | include source | a fence info of `clojure {:include "src/x.clj" :lines [1 20]}` | `[:pre …]` with the file's text |
 | include a tagged region | a fence info of `clojure {:include "src/x.clj" :tag "core"}` | `[:pre …]` with the region's text |
+| document attribute | a code span (the attribute name) followed by `{=attr}` | `[:attr :name]` (resolved before numbering) |
 | inline math | a code span followed by `{=math}` | `[:math {:notation "…"}]` |
 | display math | a fence whose info is `math` | `[:math {:notation "…" :display true}]` |
 | diagram | a fence whose info is `plantuml` | `[:diagram {:source "…"}]` |
@@ -121,6 +122,12 @@ Two block directives group richer content. A `:::example` is a titled worked-exa
 The `ratio?` branch renders as a double so the output stays portable.
 :::
 ```
+
+## Document attributes
+
+A value you repeat — a version, a product name, a release year — belongs in one place. Declare it once under `:book/attributes` in `book.edn` (see [the configuration chapter](#configuration)), then reference it by name: a code span carrying the attribute name, followed by the `{=attr}` marker. The reference resolves to the declared value. A chapter's front-matter can override an attribute for that chapter, and the build's `--licensee` and the book `:language` are available as `licensee` and `language`.
+
+A value may be a string or author Hiccup, and it resolves before numbering, so an attribute holding a captioned figure is numbered in document order like any other. An undeclared name is a build error rather than a silent blank.
 
 ## Annotating code
 

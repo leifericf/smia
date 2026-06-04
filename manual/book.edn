@@ -4,6 +4,8 @@
  :book/site-url   "https://smia.leifericf.com/manual"
  :book/references "references.edn"
 
+ :book/attributes {:tool "Smia"}
+
  :book/front-matter [{:role :preface :file "front/preface.md"}]
 
  :book/parts

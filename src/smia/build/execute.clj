@@ -10,6 +10,7 @@
    descriptor's `:format`."
   (:require
    [smia.book.assemble :as assemble]
+   [smia.book.attrs :as attrs]
    [smia.book.config :as config]
    [smia.book.load :as book-load]
    [smia.book.number :as number]
@@ -36,7 +37,7 @@
   (:import
    (java.time Instant)))
 
-(declare build-paths load-book render-edition!)
+(declare build-paths load-book render-edition! substitute-attrs)
 
 (defn prepare
   "Shell: load and validate the manuscript and resolve output paths.
@@ -69,11 +70,15 @@
            licensee]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
+        ;; Document attributes resolve once, before numbering, so an
+        ;; attribute value carrying a numbered float numbers correctly and
+        ;; every edition substitutes identically.
+        substituted   (substitute-attrs book (:config manuscript) licensee)
         _             (when (:enabled validation)
-                        (eval-validate/validate-chapters! (:chapters book)))
+                        (eval-validate/validate-chapters! (:chapters substituted)))
         ;; Math and diagrams render once, after numbering and before the
         ;; editions split, so every edition carries the same SVG.
-        numbered      (svg-resolve/attach-svg (:manuscript (number/assign book)))
+        numbered      (svg-resolve/attach-svg (:manuscript (number/assign substituted)))
         base          {:book-root book-root :book numbered
                        :tokens (:tokens manuscript)
                        :config (:config manuscript)
@@ -115,7 +120,10 @@
     (if (:dry-run request)
       ;; Surface the numbering summary and the validation plan (block counts
       ;; per language) by loading the book; nothing is rendered or evaluated.
-      (let [book (load-book (:book-root (:request prepared)) (:manuscript prepared))]
+      (let [book (substitute-attrs
+                   (load-book (:book-root (:request prepared)) (:manuscript prepared))
+                   (:config (:manuscript prepared))
+                   (:licensee (:request prepared)))]
         (cond-> (assoc-in the-plan [:numbering :counts]
                           (number/counts (number/assign book)))
           (get-in the-plan [:validation :enabled])
@@ -132,7 +140,8 @@
    rendering. Returns `{:status :ok :warnings [...]}` or throws."
   [request]
   (let [{:keys [manuscript request]} (prepare request)
-        book      (load-book (:book-root request) manuscript)
+        book      (substitute-attrs (load-book (:book-root request) manuscript)
+                                    (:config manuscript) (:licensee request))
         numbered  (:manuscript (number/assign book))
         the-theme (theme-compile/compile-theme (:tokens manuscript) :screen)]
     ;; Structural check: numbering resolves every cross-reference and
@@ -170,6 +179,18 @@
   (book-load/load-manuscript
     book-root config
     {:smart-punctuation (get-in tokens [:type :smart-punctuation] true)}))
+
+(defn- substitute-attrs
+  "Resolve `[:attr :k]` document attributes across the loaded `book` before
+   numbering. The book-wide context is the book's title/author and declared
+   `:book/attributes`, with the build's `licensee` and the book `:language`
+   on top (each chapter's front-matter is merged in between, by the pass)."
+  [book config licensee]
+  (attrs/substitute
+    book
+    (merge {:title (:book/title config) :author (:book/author config)}
+           (:book/attributes config))
+    {:licensee licensee :language (:book/language config)}))
 
 (defn- render-pdf-edition!
   "Assemble -> expand -> serialize -> FOP for one PDF edition. The page

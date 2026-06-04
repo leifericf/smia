@@ -20,6 +20,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/invalid-downloads`: `:book/downloads` is malformed. It must be a map with a string `:base` and a non-empty `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`.
 - `:smia.book.config/invalid-redirects`: `:book/redirects` is not a map of old URL path (string) to target id (keyword).
 - `:smia.book.config/invalid-site-url`: `:book/site-url` is not an absolute http(s) URL string.
+- `:smia.book.config/invalid-attributes`: `:book/attributes` is not a map of keyword to (string, number, or author Hiccup).
 - `:smia.theme.load/missing`: no `theme.edn`.
 - `:smia.theme.load/missing-group`: a required token group is absent.
 
@@ -29,6 +30,8 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.load/duplicate-chapter-id`: two chapters resolve to the same `:id`.
 - `:smia.book.load/invalid-chapter`: a loaded chapter is not a `[:chapter {…} …]` form.
 - `:smia.book.load/missing-chapter-id` / `:smia.book.load/missing-chapter-title`: a `:chapter` is missing its `:id` or `:title`.
+- `:smia.book.attrs/unknown-attribute`: an `[:attr :k]` reference (or `` `k`{=attr} ``) names an attribute that is not declared in `:book/attributes` or front-matter.
+- `:smia.book.attrs/invalid-attribute`: an `:attr` reference is not the form `[:attr <keyword>]`.
 - `:smia.book.number/unresolved-xref`: an `:xref` points at an unknown id.
 - `:smia.book.number/duplicate-id`: an `:id` is used twice. Every id (heading, chapter, appendix, part, matter, or captioned float) must be unique across the whole book, since each becomes an anchor target.
 - `:smia.fo.expand/unknown-tag`: an element tag is neither known sugar nor a `:fo/*` tag.
@@ -47,6 +50,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.md.compile/unknown-directive`: a `:::` directive name that is not recognized.
 - `:smia.md.compile/invalid-admonition` / `:smia.md.compile/invalid-overview` / `:smia.md.compile/invalid-directive-attrs`: a directive's attributes are malformed.
 - `:smia.md.compile/invalid-fence-info` / `:smia.md.compile/invalid-raw-escape`: a code-fence info string or raw-escape payload is not readable EDN.
+- `:smia.md.compile/unknown-marker`: an inline `{=marker}` escape names a marker that is not registered.
 - `:smia.md.compile/unknown-footnote`: a footnote reference has no definition.
 
 ## Math and diagrams

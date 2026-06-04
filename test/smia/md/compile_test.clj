@@ -59,6 +59,10 @@
   (is (= [[:p "Determinism" [:index {:term "Determinism"}] " matters."]]
          (md->body "Determinism`Determinism`{=index} matters.\n"))))
 
+(deftest inline-attr-escape-compiles
+  (is (= [[:p "Smia " [:attr :version] " ships today."]]
+         (md->body "Smia `version`{=attr} ships today.\n"))))
+
 (deftest inline-math-escape-compiles
   (is (= [[:p "Euler: " [:math {:notation "e^{i\\pi} = -1"}] "."]]
          (md->body "Euler: `e^{i\\pi} = -1`{=math}.\n"))))

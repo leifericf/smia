@@ -16,6 +16,18 @@ One `book.edn` describes the manuscript. It is an **open map**: required keys ar
 
 Parts, front and back matter, appendices, numbering, and the bibliography are configured through further `:book/*` keys, covered in [the book-production chapter](#book-production).
 
+## Document attributes
+
+`:book/attributes` is a map of keyword to value — a value you reference by name throughout the manuscript instead of repeating:
+
+```clojure
+:book/attributes {:version "2026.1"
+                  :product "Smia"
+                  :year    2026}
+```
+
+A chapter then references one by name with the `{=attr}` marker (a code span holding the name, followed by `{=attr}`), or in Hiccup with `[:attr :version]`, and the reference resolves to the value. A value is a string, a number, or author Hiccup. The book's `:book/title` and `:book/author` are available as `title` and `author`, the build's `--licensee` as `licensee`, and `:book/language` as `language`; a chapter's front-matter can override any attribute for that chapter. References resolve before numbering, so an attribute whose value is a captioned figure is numbered in order. An undeclared name fails the build. This manual declares one such attribute and resolves it here: `tool`{=attr}.
+
 ## Edition-specific keys
 
 Some editions read their own `book.edn` keys, all documented in [the editions chapter](#editions):

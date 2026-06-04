@@ -24,7 +24,7 @@
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-no-duplicate-files check-files-exist
          valid-download-asset? check-downloads check-redirects check-site-url
-         unknown-key-warnings compute-warnings)
+         check-attributes unknown-key-warnings compute-warnings)
 
 (defn validate
   "Pure validation of an already-parsed `book.edn` map. Performs no IO.
@@ -48,6 +48,7 @@
   (check-downloads config path)
   (check-redirects config path)
   (check-site-url config path)
+  (check-attributes config path)
   (check-no-duplicate-files config path)
   (compute-warnings config))
 
@@ -241,6 +242,26 @@
                        (str ":book/site-url must be an absolute http(s) URL "
                             "string in " path ".")
                        {:path path :site-url u})))))
+
+(defn- valid-attribute-value?
+  "A document attribute value is a string, a number, or author Hiccup (a
+   vector). Richer values flow through the substitution pass unchanged."
+  [v]
+  (or (string? v) (number? v) (vector? v)))
+
+(defn- check-attributes
+  "`:book/attributes` (optional) must be a map of keyword -> value, each
+   value a string, number, or author Hiccup vector. The substitution pass
+   replaces `[:attr :k]` references with these before numbering."
+  [config path]
+  (when-let [attrs (:book/attributes config)]
+    (when-not (and (map? attrs)
+                   (every? keyword? (keys attrs))
+                   (every? valid-attribute-value? (vals attrs)))
+      (throw (error/ex :smia.book.config/invalid-attributes
+                       (str ":book/attributes in " path " must be a map of "
+                            "keyword -> (string | number | author Hiccup).")
+                       {:path path :value attrs})))))
 
 (defn- unknown-key-warnings
   "Warn about top-level keys outside the `book/*` namespace. They are

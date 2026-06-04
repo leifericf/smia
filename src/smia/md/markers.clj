@@ -33,7 +33,8 @@
   "Inline marker keyword -> pure `(fn [payload] -> author-hiccup node)`.
    `{=hiccup}`/`{=fo}` splice the payload's EDN verbatim; `{=cite}` keys a
    citation by the payload; `{=index}` marks an index term; `{=math}` makes
-   inline math. The UI markers build the interface-vocabulary tags:
+   inline math; `{=attr}` references a document attribute by name. The UI
+   markers build the interface-vocabulary tags:
    `{=kbd}`/`{=menu}` take an EDN sequence (a key chord, a menu path);
    `{=button}`/`{=mark}`/`{=sub}`/`{=sup}` wrap a literal label."
   {:hiccup read-escape-edn
@@ -41,6 +42,7 @@
    :cite   (fn [payload] [:cite {:key (keyword (str/trim payload))}])
    :index  (fn [payload] [:index {:term payload}])
    :math   (fn [payload] [:math {:notation payload}])
+   :attr   (fn [payload] [:attr (keyword (str/trim payload))])
    :kbd    (fn [payload]
              (let [keys (map str (as-seq payload))]
                (if (= 1 (count keys))
