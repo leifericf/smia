@@ -2,9 +2,12 @@
   (:require
    [smia.book.number :as number]
    [smia.book.structure :as structure]
+   [smia.error :as error]
    [smia.site.assemble :as site]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
+
+(defn- catch-data [f] (try (f) nil (catch Exception e (error/data e))))
 
 (def ^:private tokens
   {:color   {:link "#2a52be"}
@@ -87,7 +90,7 @@
             {:label "EPUB" :file "b.epub" :note "For e-readers."}]})
 
 (deftest downloads-config-adds-a-downloads-page
-  (let [pages (:pages (site/assemble book tokens downloads))]
+  (let [pages (:pages (site/assemble book tokens {:downloads downloads}))]
     (is (contains? pages "downloads/index.html"))
     (testing "the home contents links to the downloads page"
       (is (str/includes? (get pages "index.html") "href=\"downloads/\"")))
@@ -99,3 +102,63 @@
 
 (deftest two-arity-assemble-has-no-downloads-page
   (is (not (contains? (set (keys pages)) "downloads/index.html"))))
+
+;; --- redirects ----------------------------------------------------------------
+
+(deftest redirects-synthesize-stub-pages
+  (let [pages (:pages (site/assemble book tokens
+                                     {:redirects {"old/one/"  :ch-one
+                                                  "moved.html" :sec-b}}))]
+    (is (contains? pages "old/one/index.html"))
+    (is (contains? pages "moved.html"))
+    (let [stub (get pages "old/one/index.html")]
+      (is (str/includes? stub "http-equiv=\"refresh\""))
+      (is (str/includes? stub "url=../../ch-one/") "the refresh target is relative")
+      (is (str/includes? stub "rel=\"canonical\""))
+      (is (str/includes? stub "<a href=\"../../ch-one/\"") "a plain link remains"))
+    (testing "an anchor target redirects to its page plus fragment"
+      (is (str/includes? (get pages "moved.html") "url=ch-two/#sec-b")))))
+
+(deftest redirect-canonical-is-absolute-when-the-site-url-is-known
+  (let [pages (:pages (site/assemble book tokens
+                                     {:redirects {"old/" :ch-one}
+                                      :site-url  "https://example.com/book"}))]
+    (is (str/includes? (get pages "old/index.html")
+                       "href=\"https://example.com/book/ch-one/\" rel=\"canonical\""))))
+
+(deftest unknown-redirect-target-is-a-hard-error
+  (let [d (catch-data #(site/assemble book tokens {:redirects {"old/" :nope}}))]
+    (is (= :smia.site.redirects/unknown-target (:error/type d)))
+    (is (= :nope (get-in d [:error/context :target])))
+    (is (= "old/" (get-in d [:error/context :redirect])))))
+
+(deftest redirect-may-not-overwrite-a-page
+  (let [d (catch-data #(site/assemble book tokens {:redirects {"ch-one/" :ch-two}}))]
+    (is (= :smia.site.redirects/redirect-overwrites-page (:error/type d)))))
+
+;; --- sitemap and robots ---------------------------------------------------------
+
+(deftest site-url-adds-sitemap-and-robots
+  (let [pages (:pages (site/assemble book tokens
+                                     {:site-url "https://example.com/book"}))]
+    (is (contains? pages "sitemap.xml"))
+    (is (contains? pages "robots.txt"))
+    (let [sm (get pages "sitemap.xml")]
+      (is (str/includes? sm "<loc>https://example.com/book/</loc>"))
+      (is (str/includes? sm "<loc>https://example.com/book/ch-one/</loc>"))
+      (is (str/includes? sm "<loc>https://example.com/book/bibliography/</loc>")))
+    (is (str/includes? (get pages "robots.txt")
+                       "Sitemap: https://example.com/book/sitemap.xml"))))
+
+(deftest sitemap-lists-pages-in-sorted-order-and-skips-stubs
+  (let [pages (:pages (site/assemble book tokens
+                                     {:site-url  "https://example.com/book"
+                                      :redirects {"old/" :ch-one}}))
+        sm    (get pages "sitemap.xml")]
+    (is (not (str/includes? sm "old/")) "redirect stubs are not canonical pages")
+    (let [locs (mapv second (re-seq #"<loc>([^<]*)</loc>" sm))]
+      (is (= locs (vec (sort locs)))))))
+
+(deftest without-a-site-url-no-sitemap-or-robots
+  (is (not (contains? pages "sitemap.xml")))
+  (is (not (contains? pages "robots.txt"))))

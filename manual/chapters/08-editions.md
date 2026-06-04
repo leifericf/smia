@@ -36,6 +36,8 @@ The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:sp
 
 When `book.edn` carries a `:book/downloads` map, the site gains one more page, `downloads.html`, listing the other editions as download links; the asset flagged `:default` renders as the primary link. The page is site-only: the PDF and EPUB editions never emit it. [The distribution chapter](#distribution) walks through setting it up.
 
+Two more `book.edn` keys serve a *published* site. `:book/site-url`, the site's public address, adds a deterministic `sitemap.xml` over the canonical pages and a `robots.txt` pointing at it. `:book/redirects` maps old URL paths to target ids and writes a stub page at each old path — an instant redirect with a canonical link — so a chapter that moves leaves no dead bookmarks. Both are described in [the configuration chapter](#configuration).
+
 Content portability follows the escape-hatch matrix in [the theming chapter](#theming): the shared sugar renders in every edition, `[:html/* …]` is reachable only in HTML editions, and `[:fo/* …]` only in PDF editions. Using one in the other is a structured error at build time, naming the offending tag.
 
 ## The EPUB edition

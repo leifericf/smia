@@ -137,6 +137,13 @@ variable, whose value wins over the default. Serving at the domain root instead
 is a one-line change: stage the site as the artifact root rather than under
 `manual/`.
 
+With the public address in `book.edn` as `:book/site-url` (this manual sets
+`"https://smia.leifericf.com/manual"`), the built site already contains a
+`sitemap.xml` listing every canonical page and a `robots.txt` pointing search
+engines at it — nothing to add in the workflow. When a published chapter later
+moves, `:book/redirects` keeps its old URL alive; both keys are described in
+[the configuration chapter](#configuration).
+
 ## One-time repository setup
 
 Three things are configured once, in the repository, outside the manuscript:

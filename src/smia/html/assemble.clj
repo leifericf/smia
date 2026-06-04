@@ -76,7 +76,8 @@
                                     :level 0
                                     :href  (:url dl-spec)
                                     :text  "Downloads"}))
-         resolver  (links/resolver (links-table items specs (:url home-loc)))
+         table     (links-table items specs (:url home-loc))
+         resolver  (links/resolver table)
          base-ctx  {:book-title (:title book)
                     :author     (:author book)
                     :contents   contents
@@ -90,6 +91,7 @@
                                        (get specs (dec i)) (get specs (inc i))))
                          specs))
       :contents  contents
+      :links     table
       :resources (resources book)})))
 
 ;; --- page location strategies ------------------------------------------------
@@ -518,7 +520,8 @@
                              (conj (footnotes-block notes expand-ctx)))))
         ctx          (assoc base-ctx :page spec :prev prev :next next
                             :resolve resolve :href-to href-to)]
-    {:file file :slug (:slug spec) :kind kind :title title :label label
+    {:file file :url url :id (:id spec) :slug (:slug spec) :kind kind
+     :title title :label label
      :hiccup (wrap-page chrome ctx title main)}))
 
 ;; --- resources ------------------------------------------------------------------------------

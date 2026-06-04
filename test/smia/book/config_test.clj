@@ -88,6 +88,37 @@
                  "book.edn"))]
       (is (= :smia.book.config/invalid-downloads (:error/type d))))))
 
+(deftest valid-redirects-and-site-url-pass
+  (is (vector? (config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/redirects {"old/path/" :target}
+                  :book/site-url "https://example.com/book"}
+                 "book.edn"))))
+
+(deftest malformed-redirects-rejected
+  (testing "a non-map"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/redirects ["old" :target]}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-redirects (:error/type d)))))
+  (testing "a non-keyword target"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/redirects {"old" "target"}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-redirects (:error/type d))))))
+
+(deftest malformed-site-url-rejected
+  (let [d (catch-data
+            #(config/validate
+               {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                :book/site-url "example.com/no-scheme"}
+               "book.edn"))]
+    (is (= :smia.book.config/invalid-site-url (:error/type d)))))
+
 (deftest config-file-not-found
   (let [d (catch-data
             #(config/load-config {:book-root valid-root

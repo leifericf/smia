@@ -209,7 +209,10 @@
    Returns the artifact entry."
   [{:keys [book-root book tokens config]} {:keys [edition out-dir]}]
   (let [{:keys [pages resources]} (site-assemble/assemble
-                                    book tokens (:book/downloads config))
+                                    book tokens
+                                    {:downloads (:book/downloads config)
+                                     :redirects (:book/redirects config)
+                                     :site-url  (:book/site-url config)})
         result (site-emit/emit! {:out-dir   out-dir
                                  :book-root book-root
                                  :pages     pages

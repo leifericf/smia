@@ -23,7 +23,7 @@
          check-types check-body-present check-unambiguous-body check-chapters
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-no-duplicate-files check-files-exist
-         valid-download-asset? check-downloads
+         valid-download-asset? check-downloads check-redirects check-site-url
          unknown-key-warnings compute-warnings)
 
 (defn validate
@@ -46,6 +46,8 @@
   (check-appendices config path)
   (check-numbering config path)
   (check-downloads config path)
+  (check-redirects config path)
+  (check-site-url config path)
   (check-no-duplicate-files config path)
   (compute-warnings config))
 
@@ -215,6 +217,30 @@
                        (str "Source file(s) not found relative to "
                             book-root ": " (str/join ", " missing))
                        {:path path :book-root book-root :missing missing})))))
+
+(defn- check-redirects
+  "`:book/redirects` (optional) must map old URL paths (strings) to
+   target ids (keywords). The targets resolve against the assembled
+   site's anchors later, at site assembly."
+  [config path]
+  (when-let [r (:book/redirects config)]
+    (when-not (and (map? r)
+                   (every? (fn [[k v]] (and (string? k) (keyword? v))) r))
+      (throw (error/ex :smia.book.config/invalid-redirects
+                       (str ":book/redirects must be a map of old URL path "
+                            "(string) -> target id (keyword) in " path ".")
+                       {:path path :redirects r})))))
+
+(defn- check-site-url
+  "`:book/site-url` (optional) must be an absolute http(s) URL — the
+   sitemap needs the site's public address."
+  [config path]
+  (when-let [u (:book/site-url config)]
+    (when-not (and (string? u) (re-find #"^https?://" u))
+      (throw (error/ex :smia.book.config/invalid-site-url
+                       (str ":book/site-url must be an absolute http(s) URL "
+                            "string in " path ".")
+                       {:path path :site-url u})))))
 
 (defn- unknown-key-warnings
   "Warn about top-level keys outside the `book/*` namespace. They are

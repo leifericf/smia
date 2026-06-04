@@ -18,6 +18,8 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/missing-chapter`: a listed chapter file does not exist.
 - `:smia.book.config/duplicate-chapter`: a chapter is listed more than once.
 - `:smia.book.config/invalid-downloads`: `:book/downloads` is malformed. It must be a map with a string `:base` and a non-empty `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`.
+- `:smia.book.config/invalid-redirects`: `:book/redirects` is not a map of old URL path (string) to target id (keyword).
+- `:smia.book.config/invalid-site-url`: `:book/site-url` is not an absolute http(s) URL string.
 - `:smia.theme.load/missing`: no `theme.edn`.
 - `:smia.theme.load/missing-group`: a required token group is absent.
 
@@ -65,6 +67,8 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.html.assemble/unsafe-resource-path`: an image `:src` is absolute or contains `..`, so it would escape the output directory. Image paths must stay within the book.
 - `:smia.html.assemble/duplicate-page`: two sections assemble to the same output filename.
 - `:smia.site.layout/unknown-layout`: the `theme.edn` `:site {:layout …}` token names a site layout outside the known set (`:plain`, `:sidebar`).
+- `:smia.site.redirects/unknown-target`: a `:book/redirects` entry points at an id no page declares.
+- `:smia.site.redirects/redirect-overwrites-page`: a redirect's old path resolves to a file a real page already occupies.
 
 ## Rendering
 

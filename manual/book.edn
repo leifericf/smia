@@ -1,6 +1,7 @@
 {:book/slug       "smia-manual"
  :book/title      "The Smia Manual"
  :book/author     "The Smia authors"
+ :book/site-url   "https://smia.leifericf.com/manual"
  :book/references "references.edn"
 
  :book/front-matter [{:role :preface :file "front/preface.md"}]
