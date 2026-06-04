@@ -42,7 +42,8 @@
                     :index         (:index book)
                     :floats        (:floats book)
                     :running-heads (merge-with merge default-running-heads
-                                               (:running-heads book))}
+                                               (:running-heads book))
+                    :licensee      (:licensee book)}
         body-style (get style :body)]
     (into [:fo/root {:font-family (:font-family body-style)
                      :font-size   (:font-size body-style)
@@ -290,19 +291,35 @@
                               :padding-bottom "3pt" :space-before "4pt"))]
           [inline])))
 
+(defn- licensee-block
+  "The per-recipient footer notice (\"Licensed to …\"): a small, muted,
+   centered line beneath the page number. Present only when the build
+   supplies a `licensee`, so it personalizes a PDF without altering the
+   manuscript."
+  [licensee muted-color]
+  [:fo/block {:text-align "center" :font-size "7.5pt" :color muted-color
+              :space-before "2pt"}
+   (str "Licensed to " licensee)])
+
 (defn- static-contents
   "The `fo:static-content` for every running region the theme declares,
    choosing each region's content from the running-heads config. With
-   `headers?` false (front matter, part dividers) only footers are emitted."
-  [{:keys [theme running-heads book-title headers?]}]
+   `headers?` false (front matter, part dividers) only footers are emitted.
+   When a `licensee` is set, each footer also carries the licensee notice."
+  [{:keys [theme running-heads book-title headers? licensee]}]
   (let [{:keys [running-regions muted-color rule-color]} theme]
     (keep (fn [{:keys [slot name parity]}]
             (let [cfg-slot (when (or headers? (= slot :after))
                              (get-in running-heads [(parity-key parity) slot]))
-                  inline   (slot->inline cfg-slot book-title)]
-              (when inline
-                (into [:fo/static-content {:flow-name name}]
-                      [(region-block slot parity inline muted-color rule-color)]))))
+                  inline   (slot->inline cfg-slot book-title)
+                  blocks   (cond-> []
+                             inline
+                             (conj (region-block slot parity inline
+                                                 muted-color rule-color))
+                             (and (= slot :after) licensee)
+                             (conj (licensee-block licensee muted-color)))]
+              (when (seq blocks)
+                (into [:fo/static-content {:flow-name name}] blocks))))
           running-regions)))
 
 (defn- page-sequence

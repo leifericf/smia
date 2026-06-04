@@ -103,6 +103,23 @@
       (is (.exists (io/file (:path art)))
           (str (name (:edition art)) " artifact exists")))))
 
+(deftest ^:integration licensee-notice-stamps-pdf-but-not-site
+  (let [out      (out-root)
+        licensee "Ada Lovelace <ada@example.com>"
+        man      (api/build {:book-root manual-root
+                             :editions [:screen :site]
+                             :licensee licensee
+                             :output-root out})
+        pdf      (artifact-path man :screen)
+        site-dir (:path (first (filter #(= :site (:edition %)) (:artifacts man))))]
+    (testing "every-page footer notice is present in the PDF text"
+      (with-open [doc (Loader/loadPDF (io/file pdf))]
+        (let [text (.getText (PDFTextStripper.) doc)]
+          (is (str/includes? text (str "Licensed to " licensee))))))
+    (testing "the HTML site does not carry the notice"
+      (is (not (str/includes? (slurp (io/file site-dir "index.html"))
+                              "Licensed to"))))))
+
 (deftest ^:integration manual-epub-is-byte-reproducible
   (testing "two EPUB builds of the same manuscript are identical bytes"
     (let [a (artifact-path (build! [:epub]) :epub)

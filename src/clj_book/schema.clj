@@ -76,6 +76,7 @@
    [:dry-run {:optional true} :boolean]
    [:validate-code {:optional true} :boolean]
    [:clean {:optional true} :boolean]
+   [:licensee {:optional true} [:maybe :string]]
    [:editions [:maybe [:sequential :keyword]]]])
 
 (def Paths
@@ -127,7 +128,8 @@
                         [:build/editions [:sequential Edition]]
                         [:metadata :map]]]
    [:validation {:optional true} :map]
-   [:numbering {:optional true} :map]])
+   [:numbering {:optional true} :map]
+   [:licensee {:optional true} [:maybe :string]]])
 
 (defn valid?
   "True when `value` conforms to `schema`."

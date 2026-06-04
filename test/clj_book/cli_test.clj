@@ -63,6 +63,11 @@
          (args->request fixture {:clean true})))
   (is (= 0 (run-code ["build" fixture "--clean" "--dry-run"]))))
 
+(deftest licensee-flag-is-translated-and-accepted
+  (is (= {:book-root fixture :licensee "Ada <a@x>"}
+         (args->request fixture {:licensee "Ada <a@x>"})))
+  (is (= 0 (run-code ["build" fixture "--licensee" "Ada <a@x>" "--dry-run"]))))
+
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
 

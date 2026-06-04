@@ -64,7 +64,8 @@
    manifest. Returns the manifest map. When the plan enables code
    validation, the `:test` blocks are checked after loading and before
    assembly — a failing block aborts the build."
-  [{:keys [book-root manuscript paths edition-steps manifest-skeleton validation]}]
+  [{:keys [book-root manuscript paths edition-steps manifest-skeleton validation
+           licensee]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
         _             (when (:enabled validation)
@@ -72,7 +73,8 @@
         numbered      (:manuscript (number/assign book))
         base          {:book-root book-root :book numbered
                        :tokens (:tokens manuscript)
-                       :config (:config manuscript)}
+                       :config (:config manuscript)
+                       :licensee licensee}
         artifacts-out (mapv #(render-edition! base %) edition-steps)
         finished      (Instant/now)]
     (artifacts/write!
@@ -168,13 +170,13 @@
    `:book/print-x`, its fonts are embedded in every PDF edition and the
    `:print-x` descriptor additionally turns on PDF/X conformance. Writes
    the intermediate FO and the final PDF; returns the artifact entry."
-  [{:keys [book-root book tokens config]} {:keys [edition fo-path pdf-path]} descriptor]
+  [{:keys [book-root book tokens config licensee]} {:keys [edition fo-path pdf-path]} descriptor]
   (let [the-theme (cond-> (theme-compile/compile-theme tokens (:layout descriptor))
                     ;; PDF/X forbids link annotations: render references
                     ;; as text and let the page citations locate them.
                     (:pdf-x descriptor) (-> (assoc :links? false)
                                             (assoc-in [:style :links?] false)))
-        fo-xml    (-> (assemble/assemble book the-theme)
+        fo-xml    (-> (assemble/assemble (assoc book :licensee licensee) the-theme)
                       (expand/expand (:style the-theme))
                       (serialize/serialize))]
     (io/make-parents (io/file fo-path))

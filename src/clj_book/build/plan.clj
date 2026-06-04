@@ -29,7 +29,8 @@
        :manifest-skeleton {:book/slug      slug
                            :build/editions editions
                            :metadata       {:warnings warnings}}
-       :validation        {:enabled (boolean (:validate-code request))}}
+       :validation        {:enabled (boolean (:validate-code request))}
+       :licensee          (:licensee request)}
       :clj-book.build.plan/invalid-plan)))
 
 ;; --- private helpers -------------------------------------------------------

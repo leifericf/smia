@@ -26,6 +26,7 @@
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
          [nil "--clean" "Remove the book's output directory before building."]
+         [nil "--licensee TEXT" "Stamp 'Licensed to TEXT' in every PDF page footer."]
          [nil "--dry-run" "Print the build plan; render nothing."]]
         common-options))
 
@@ -59,7 +60,8 @@
    map `clj-book.build.request/normalize` expects. Only keys the user actually
    supplied are set, so normalize applies its own defaults — this is the
    contract that keeps the `-M` and `-X` front-ends in sync."
-  [book-root {:keys [edition config-path output-root dry-run validate-code clean]}]
+  [book-root {:keys [edition config-path output-root dry-run validate-code clean
+                     licensee]}]
   (cond-> {}
     book-root      (assoc :book-root book-root)
     (seq edition)  (assoc :editions edition)
@@ -67,7 +69,8 @@
     output-root    (assoc :output-root output-root)
     dry-run        (assoc :dry-run true)
     validate-code  (assoc :validate-code true)
-    clean          (assoc :clean true)))
+    clean          (assoc :clean true)
+    licensee       (assoc :licensee licensee)))
 
 ;; --- reporting ---------------------------------------------------------
 

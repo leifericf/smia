@@ -203,6 +203,33 @@
     (is (some #{"A Book"} (tree-seq vector? seq verso))
         "the verso header now carries the book title")))
 
+(defn- footer [out name]
+  (first (filter #(= name (:flow-name (second %)))
+                 (find-all :fo/static-content out))))
+
+(defn- text-of [tree]
+  (apply str (filter string? (tree-seq vector? seq tree))))
+
+(deftest licensee-stamps-a-footer-notice-on-every-page
+  (let [out (assemble/assemble (assoc manuscript :licensee "Ada Lovelace <ada@x.io>")
+                               the-theme)]
+    (testing "both print footers carry the licensee notice"
+      (is (.contains (text-of (footer out "foot-recto"))
+                     "Licensed to Ada Lovelace <ada@x.io>"))
+      (is (.contains (text-of (footer out "foot-verso"))
+                     "Licensed to Ada Lovelace <ada@x.io>")))
+    (testing "the page number is still in the footer"
+      (is (seq (find-all :fo/page-number (footer out "foot-recto")))))))
+
+(deftest licensee-rides-the-screen-footer-too
+  (let [screen (theme/compile-theme {:color {} :type {} :spacing {} :layout {}} :screen)
+        out    (assemble/assemble (assoc manuscript :licensee "Ada") screen)]
+    (is (.contains (text-of (footer out "xsl-region-after")) "Licensed to Ada"))))
+
+(deftest no-licensee-leaves-the-footer-unstamped
+  (let [out (assemble/assemble manuscript the-theme)]
+    (is (not (.contains (text-of (footer out "foot-recto")) "Licensed to")))))
+
 ;; --- multi-level table of contents and nested outline --------------------
 
 (def toc-src

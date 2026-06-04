@@ -89,6 +89,15 @@
   (is (false? (:clean (request/normalize valid-base :build))))
   (is (true? (:clean (request/normalize (assoc valid-base :clean true) :build)))))
 
+(deftest licensee-defaults-nil-and-passes-strings-through
+  (is (nil? (:licensee (request/normalize valid-base :build))))
+  (is (= "Ada <a@x>" (:licensee (request/normalize
+                                  (assoc valid-base :licensee "Ada <a@x>") :build)))))
+
+(deftest non-string-licensee-is-hard-error
+  (let [d (catch-error #(request/normalize (assoc valid-base :licensee 42) :build))]
+    (is (= :clj-book.build.request/invalid-value (:error/type d)))))
+
 (deftest non-map-request-is-hard-error
   (let [d (catch-error #(request/normalize "oops" :build))]
     (is (= :clj-book.build.request/invalid-request (:error/type d)))))

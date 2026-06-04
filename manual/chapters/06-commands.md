@@ -24,6 +24,15 @@ PDF outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>
 
 Output is incremental: a rebuild overwrites each edition in place, and the site edition sweeps stale pages so a removed chapter leaves no orphan page (files you add to the site directory yourself, such as a `CNAME`, are kept). Pass `--clean` to remove the whole `build/<slug>/` directory before building — a guaranteed-fresh slate that also discards output from editions you no longer build. `--clean` does nothing under `--dry-run`.
 
+`--licensee TEXT` stamps a discreet "Licensed to TEXT" line in the footer of every PDF page — a per-recipient watermark for distributing a personalized copy. It applies to the PDF editions only (the HTML and EPUB editions are unaffected) and is not part of the manuscript, so the same book renders a different copy per licensee:
+
+```
+clojure -M:run build manual --edition print \
+  --licensee "Ada Lovelace <ada@example.com>"
+```
+
+Because the text varies per copy, a licensee-stamped build is intentionally not byte-identical across recipients; an unstamped build stays reproducible as before.
+
 ## preview
 
 Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes — around 150 ms a save, where each cold `build` pays a few seconds of JVM start-up first:
