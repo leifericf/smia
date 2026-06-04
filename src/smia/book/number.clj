@@ -20,6 +20,7 @@
    and needs no rendering results. New numbered kinds (figures, tables,
    listings) register through the same counters in later phases. No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.book.structure :as structure]
    [smia.error :as error]
    [clojure.string :as str]))
@@ -37,7 +38,7 @@
   (let [policy     (:numbering manuscript)
         references (:references manuscript)
         {:keys [sections registry index floats]}
-        (number-sections (:sections manuscript) policy)
+        (number-sections (:sections manuscript) policy (:language manuscript))
         sections   (mapv #(rewrite-section % registry references) sections)]
     {:manuscript (assoc manuscript :sections sections :index index :floats floats)
      :registry   registry}))
@@ -70,9 +71,16 @@
 (defn- fmt [format n] ((get formatters format str) n))
 
 (def ^:private kind-words
-  "The noun each numbered kind composes into a label, e.g. \"Chapter 3\"."
+  "The English noun each numbered kind composes into a label, e.g.
+   \"Chapter 3\" — the `:en` baseline and the fallback for `kind-word`."
   {:part "Part" :chapter "Chapter" :appendix "Appendix"
    :figure "Figure" :table "Table" :listing "Listing" :section "Section"})
+
+(defn- kind-word
+  "The localized noun for a numbered `kind` in `language` (the manuscript's
+   `:book/language`, threaded through the accumulator), English as fallback."
+  [language kind]
+  (dictionary/localize language kind (kind-words kind)))
 
 (def ^:private float-id-prefixes
   "The synthesized anchor-id prefix for each float kind, used when the
@@ -155,7 +163,7 @@
   (let [a         (or (attrs-of node) {})
         [acc n]   (bump acc kind)
         num       (str n)
-        label     (str (kind-words kind) " " num)
+        label     (str (kind-word (:language acc) kind) " " num)
         author-id (:id a)
         id        (if author-id (name author-id)
                       (str (float-id-prefixes kind) "-" num))
@@ -237,7 +245,7 @@
         numbered? (boolean fmt-key)
         [acc n]   (if numbered? (bump acc k) [acc nil])
         num       (when numbered? (fmt fmt-key n))
-        label     (when num (str (kind-words k) " " num))
+        label     (when num (str (kind-word (:language acc) k) " " num))
         [_ a & body] (:content section)
         [acc body'] (number-body acc (vec body) policy num)
         a'        (cond-> a num (assoc :number num :label label :kind k))
@@ -252,7 +260,7 @@
   [acc section policy]
   (let [[acc n] (bump acc :part)
         num     (fmt (:parts policy) n)
-        label   (str (kind-words :part) " " num)
+        label   (str (kind-word (:language acc) :part) " " num)
         acc     (register acc (str "part-" (:index section))
                           {:kind :part :number num :label label
                            :title (:title section)})]
@@ -271,14 +279,16 @@
     [(register acc (name (:role section))
                {:kind :matter
                 :title (or (:title section)
-                           (structure/role-title (:role section)))})
+                           (structure/role-title (:role section) (:language acc)))})
      section]))
 
 (defn- number-sections
   "Number every top-level `section` under `policy`, threading the numbering
-   accumulator left-to-right. Returns `{:sections :registry :index :floats}`."
-  [sections policy]
-  (let [init {:registry {} :counters {} :index {} :idx-counter 0 :floats []}
+   accumulator left-to-right. `language` (the book's `:book/language`) drives
+   the localized labels. Returns `{:sections :registry :index :floats}`."
+  [sections policy language]
+  (let [init {:registry {} :counters {} :index {} :idx-counter 0 :floats []
+              :language language}
         [acc out]
         (reduce (fn [[acc out] s]
                   (let [[acc s'] (case (:kind s)

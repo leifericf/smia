@@ -16,6 +16,7 @@
    Adding a layout is one registry entry; an unknown layout is a
    structured error. No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.error :as error]
    [smia.html.assemble :as html-assemble]
    [clojure.string :as str]))
@@ -60,7 +61,8 @@
   [ctx]
   (let [current-url (:url (:page ctx))
         href-to     (:href-to ctx)]
-    [:nav {:class "book-sidebar" :aria-label "Table of contents"}
+    [:nav {:class "book-sidebar"
+           :aria-label (dictionary/localize (:language ctx) :table-of-contents "Table of contents")}
      (into [:div {:class "book-sidebar-inner"}
             [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
              (:book-title ctx)]]

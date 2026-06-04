@@ -16,6 +16,7 @@
    theme-derived style. An unknown bare tag is a hard, structured error.
    This namespace is a pure core: no IO, no FOP."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
@@ -451,17 +452,14 @@
 
 ;; --- book extensions ------------------------------------------------------
 
-(def ^:private admonition-labels
-  {:note "Note" :tip "Tip" :warning "Warning"
-   :important "Important" :caution "Caution"})
-
 (defn- sidebar-title
   "The title bar text for a sidebar/admonition: an explicit `:title`, else
-   the label for a known `:kind`, else the capitalized kind, else nil."
-  [{:keys [title kind]}]
+   the localized label for a known `:kind`, else the capitalized kind, else
+   nil. The label is localized to the book's `:language` carried on `style`."
+  [{:keys [title kind]} style]
   (cond
     title title
-    kind  (get admonition-labels kind (str/capitalize (name kind)))
+    kind  (dictionary/localize (:language style) kind (str/capitalize (name kind)))
     :else nil))
 
 (defn- sidebar-block
@@ -470,7 +468,7 @@
    kind-titled special case, `:sidebar` adds an arbitrary `:title`. The box
    is kept on one page so its title bar cannot strand at a page foot."
   [author children style]
-  (let [title (sidebar-title author)
+  (let [title (sidebar-title author style)
         icon  (:icon author)]
     (into [:fo/block (cond-> (assoc (get style :admonition)
                                     :keep-together.within-page "always")

@@ -162,7 +162,7 @@
                     search?
                     (assoc "search-index.json"
                            (search-index/index-json
-                             (search-index/index (:specs assembled))))
+                             (search-index/index (:specs assembled) (:language book))))
                     site-url
                     (assoc "sitemap.xml" (sitemap site-url (map :file pages))
                            "robots.txt"  (robots site-url)))]

@@ -23,7 +23,8 @@ highlighting for the common book languages, running heads, an index, and a
 bibliography. Document attributes let a version or product name live in one
 place and resolve everywhere, and conditional `:::when` blocks include content
 for some editions and not others. An interface vocabulary names keys, menus, and
-controls, and worked-example and disclosure blocks group richer content. LaTeX math and PlantUML
+controls, and worked-example and disclosure blocks group richer content. The
+generated apparatus localizes to the book's language. LaTeX math and PlantUML
 diagrams render at build time into self-contained SVG, identical in every
 edition, with no JavaScript and no math font needed at read time.
 

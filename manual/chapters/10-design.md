@@ -44,6 +44,8 @@ Because the FO tree is data, it can be assembled, transformed, and inspected wit
 
 The vocabulary itself is data too. The Markdown front-end compiles each block and inline construct through a registry — a map from a node's kind to a function — rather than a fixed `case`, so the set of directives (`:::figure`, `:::sidebar`) and inline markers (`` `…`{=cite} ``) is open: a construct is one map entry. Each output format expands the resulting tags through the same kind of table, and a single test pins the two in step.
 
+The same idea localizes the apparatus. Every string smia generates — the float and structure labels, the generated section titles, the admonition labels, the site chrome — is looked up by a stable key in a dictionary keyed by `:book/language`, with English as the shipped baseline and the fallback. A language is a map of overrides; the lookup threads through the numbering, assembly, and expansion passes, so one knob localizes the furniture in every edition while the manuscript's content stays exactly as written.
+
 ## A superset per format, not a subset
 
 Most engines give you a fixed vocabulary plus an escape hatch. Smia inverts that: for each output format the author vocabulary is a superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable.

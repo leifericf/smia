@@ -21,6 +21,7 @@
    end-of-chapter block and leaves a numbered noteref behind. An unknown
    bare tag is a hard, structured error. No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
@@ -265,24 +266,21 @@
 
 ;; --- book extensions ----------------------------------------------------------
 
-(def ^:private admonition-labels
-  {:note "Note" :tip "Tip" :warning "Warning"
-   :important "Important" :caution "Caution"})
-
 (defn- callout-title
   "The title bar text for a sidebar/admonition: an explicit `:title`, else
-   the label for a known `:kind`, else the capitalized kind, else nil."
-  [{:keys [title kind]}]
+   the localized label for a known `:kind`, else the capitalized kind, else
+   nil. The label is localized to the book's `:language` carried on `ctx`."
+  [{:keys [title kind]} ctx]
   (cond
     title title
-    kind  (get admonition-labels kind (str/capitalize (name kind)))
+    kind  (dictionary/localize (:language ctx) kind (str/capitalize (name kind)))
     :else nil))
 
 (defn- callout
   "A classed `<aside>` callout with an optional title bar: the shared
    shape of admonitions and sidebars."
   [author children ctx attrs title-class]
-  (let [title (callout-title author)
+  (let [title (callout-title author ctx)
         icon  (:icon author)]
     (into [:aside (merge (id-attrs author) attrs)]
           (concat

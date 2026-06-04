@@ -20,7 +20,7 @@
 
    No IO. File existence is checked in the shell (`smia.book.config`)."
   (:require
-   [clojure.string :as str]))
+   [smia.book.dictionary :as dictionary]))
 
 (def default-numbering
   "Default numbering policy. Parts, chapters, and appendices are
@@ -31,16 +31,6 @@
    :appendices       :letter
    :sections         false
    :start-chapters-on :any})
-
-(def ^:private role-titles
-  "Explicit human titles for generated roles, so the multi-word lists read
-   naturally (e.g. \"List of Figures\", not the title-cased \"List Of
-   Figures\"). An author `:title` still overrides these downstream."
-  {:bibliography      "Bibliography"
-   :index             "Index"
-   :list-of-figures   "List of Figures"
-   :list-of-tables    "List of Tables"
-   :list-of-listings  "List of Listings"})
 
 (declare matter-spec front-sections back-sections part-sections
          body-sections appendix-sections)
@@ -89,13 +79,11 @@
 
 (defn role-title
   "A human title for a generated matter `role` (e.g. `:bibliography` ->
-   \"Bibliography\"). Known generated roles have curated titles; any other
-   role is title-cased from its kebab name."
-  [role]
-  (or (role-titles role)
-      (->> (str/split (name role) #"-")
-           (map str/capitalize)
-           (str/join " "))))
+   \"Bibliography\"), localized to `language` (the book's `:book/language`,
+   defaulting to English). Known generated roles have curated titles in the
+   dictionary; any other role is title-cased from its kebab name."
+  ([role] (role-title role nil))
+  ([role language] (dictionary/localize language role)))
 
 ;; --- private helpers -------------------------------------------------------
 

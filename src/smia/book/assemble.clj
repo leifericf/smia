@@ -85,14 +85,20 @@
   (or (:chapter section) (generated-parsed section)))
 
 (defn- prepare-sections
-  "Attach a parsed `:chapter` to every file-backed section; leave part
-   dividers and generated matter untouched."
-  [sections]
-  (mapv (fn [s] (if (:content s) (assoc s :chapter (parse-chapter (:content s))) s))
+  "Attach a parsed `:chapter` to every file-backed section, and resolve the
+   localized title of every generated (file-less) matter section so the
+   outline and the page builder render the same localized heading. Part
+   dividers and author-titled sections are untouched."
+  [sections language]
+  (mapv (fn [s]
+          (cond-> s
+            (:content s) (assoc :chapter (parse-chapter (:content s)))
+            (and (:role s) (not (:content s)) (not (:title s)))
+            (assoc :title (structure/role-title (:role s) language))))
         sections))
 
-(defn- book-sections [{:keys [sections]}]
-  (prepare-sections sections))
+(defn- book-sections [{:keys [sections language]}]
+  (prepare-sections sections language))
 
 (defn- heading-text [node]
   (apply str (filter string? (tree-seq vector? seq node))))

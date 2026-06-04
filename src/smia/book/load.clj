@@ -89,6 +89,7 @@
      (check-no-duplicate-ids chapters)
      {:title         (:book/title config)
       :author        (:book/author config)
+      :language      (:book/language config)
       :numbering     numbering
       :running-heads (:book/running-heads config)
       :references    (load-references book-root config)

@@ -22,6 +22,7 @@
      :contents [{:level :text :href|:id} …]
      :resources [{:src} …]}`. No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.book.structure :as structure]
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
@@ -61,16 +62,17 @@
   ([book] (assemble book {}))
   ([book opts]
    (let [chrome    (merge default-chrome (:chrome opts))
+         language  (:language book)
          extension (or (:extension opts) "html")
          locate    (or (:location opts) flat-location)
          home-loc  (locate {:kind :home} extension)
          dl-spec   (when-let [dl (:downloads opts)]
-                     (downloads-spec dl extension locate))
+                     (downloads-spec dl extension locate language))
          items     (section-items book extension locate)
          specs     (vec (cond->> (page-items items)
                           dl-spec (cons dl-spec)))
          search-sp (when (:search opts)
-                     (search-fallback-spec specs extension locate))
+                     (search-fallback-spec specs extension locate language))
          specs     (cond-> specs search-sp (conj search-sp))
          _         (let [dupes (->> (cons (:file home-loc) (map :file specs))
                                     frequencies
@@ -84,12 +86,12 @@
                      dl-spec (cons {:kind  :downloads
                                     :level 0
                                     :href  (:url dl-spec)
-                                    :text  "Downloads"}))
+                                    :text  (dictionary/localize language :downloads "Downloads")}))
          contents  (vec (cond-> contents
                           search-sp (concat [{:kind  :search
                                               :level 0
                                               :href  (:url search-sp)
-                                              :text  "Search"}])))
+                                              :text  (dictionary/localize language :search "Search")}])))
          table     (links-table items specs (:url home-loc))
          resolver  (links/resolver table)
          base-ctx  {:book-title (:title book)
@@ -99,6 +101,7 @@
                     :home-url   (:url home-loc)
                     :search?    (boolean search-sp)
                     :search-url (:url search-sp)
+                    :language   language
                     :highlight? (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -235,7 +238,7 @@
    from the `:html/*` hatch so the link classes and absolute release
    hrefs pass through `html.expand` untouched (the `:a` sugar would drop
    the class)."
-  [{:keys [base assets]} extension locate]
+  [{:keys [base assets]} extension locate language]
   (let [href    (fn [a] (str base "/" (:file a)))
         default (or (first (filter :default assets)) (first assets))
         others  (remove #(identical? % default) assets)
@@ -255,7 +258,7 @@
     (merge {:slug  "downloads"
             :kind  :downloads
             :id    "downloads"
-            :title "Downloads"
+            :title (dictionary/localize language :downloads "Downloads")
             :body  [(into [:html/div {:class "downloads"}] items)]}
            (locate {:kind :downloads} extension))))
 
@@ -265,7 +268,7 @@
    answer the query server-side, so the page lists the book by category
    with plain links — every page reachable, nothing required. Built from
    the `:html/*` hatch like the Downloads page."
-  [specs extension locate]
+  [specs extension locate language]
   (let [loc      (locate {:kind :search} extension)
         rel      #(links/relativize (:url loc) %)
         groups   (group-by :kind (filter :id specs))
@@ -273,7 +276,7 @@
                    (fn [kind]
                      (when-let [ss (seq (get groups kind))]
                        (into [:html/section {:class "search-category"}
-                              [:html/h2 {} (search-index/kind-label kind)]]
+                              [:html/h2 {} (search-index/kind-label kind language)]]
                              [(into [:html/ul {}]
                                     (map (fn [s]
                                            [:html/li {}
@@ -285,11 +288,13 @@
     (merge {:slug  "search"
             :kind  :search
             :id    "search"
-            :title "Search"
+            :title (dictionary/localize language :search "Search")
             :body  (vec (cons [:html/p {:class "search-fallback-note"}
-                               (str "With JavaScript enabled, the search box "
-                                    "suggests matches as you type. Without it, "
-                                    "the book is listed here by category.")]
+                               (dictionary/localize
+                                 language :search-fallback-note
+                                 (str "With JavaScript enabled, the search box "
+                                      "suggests matches as you type. Without it, "
+                                      "the book is listed here by category."))]
                               sections))}
            loc)))
 
@@ -309,8 +314,10 @@
               :data-island    "smia-search"
               :data-index-url (href-to "search-index.json")
               :data-root      (href-to "")}
-       [:input {:type "search" :name "q" :placeholder "Search…"
-                :aria-label "Search this book" :autocomplete "off"}]])))
+       [:input {:type "search" :name "q"
+                :placeholder (dictionary/localize (:language ctx) :search-placeholder "Search…")
+                :aria-label  (dictionary/localize (:language ctx) :search-aria "Search this book")
+                :autocomplete "off"}]])))
 
 (defn search-script
   "The deferred script tag for the search island, when it is on."
@@ -511,9 +518,9 @@
 (defn- toc-nav
   "The table-of-contents nav. `href-to` relativizes each entry's
    absolute-from-root url against the page being rendered."
-  [contents href-to]
-  [:nav {:class "toc" :aria-label "Table of contents"}
-   [:h2 {} "Contents"]
+  [contents href-to language]
+  [:nav {:class "toc" :aria-label (dictionary/localize language :table-of-contents "Table of contents")}
+   [:h2 {} (dictionary/localize language :contents "Contents")]
    (into [:ol {:class "toc-list"}]
          (map (fn [{:keys [level text href id]}]
                 [:li (cond-> {:class (str "toc-level-" level)}
@@ -526,7 +533,8 @@
     (let [href-to (:href-to ctx)]
       (into [:nav {:class "page-nav"}]
             (concat
-              [[:a {:href (href-to (:home-url ctx))} "Contents"]]
+              [[:a {:href (href-to (:home-url ctx))}
+                (dictionary/localize (:language ctx) :contents "Contents")]]
               (when-let [p (:prev ctx)]
                 [[:a {:rel "prev" :href (href-to (:url p))} (:title p)]])
               (when-let [n (:next ctx)]
@@ -575,7 +583,8 @@
                        :href-to href-to
                        :resolve #(resolver % (:url spec)))
         main    (cond-> [(book-header book)]
-                  (get chrome :home-toc? true) (conj (toc-nav contents href-to)))]
+                  (get chrome :home-toc? true)
+                  (conj (toc-nav contents href-to (:language base-ctx))))]
     (assoc spec :hiccup
            (wrap-page chrome ctx (:title book) main))))
 
@@ -589,6 +598,7 @@
         resolve      #(resolver % url)
         expand-ctx   {:resolve    resolve
                       :highlight? (:highlight? base-ctx)
+                      :language   (:language base-ctx)
                       :asset-base (href-to "")}
         [body notes] (when body (collect-footnotes body))
         main         (if generate-role

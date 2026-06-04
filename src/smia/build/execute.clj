@@ -264,8 +264,11 @@
                     ;; as text and let the page citations locate them.
                     (:pdf-x descriptor) (-> (assoc :links? false)
                                             (assoc-in [:style :links?] false)))
+        ;; The book language drives localized apparatus labels in expansion
+        ;; (admonition titles); the assembler reads it from `book` directly.
+        style     (assoc (:style the-theme) :language (:book/language config))
         fo-xml    (-> (assemble/assemble (assoc book :licensee licensee) the-theme)
-                      (expand/expand (:style the-theme))
+                      (expand/expand style)
                       (serialize/serialize))]
     (io/make-parents (io/file fo-path))
     (spit fo-path fo-xml)

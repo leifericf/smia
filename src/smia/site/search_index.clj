@@ -12,6 +12,7 @@
    object keys sorted, strings escaped, no dependency — the same
    determinism discipline as every other artifact. No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [clojure.string :as str]))
 
 ;; --- categories ---------------------------------------------------------------
@@ -20,6 +21,8 @@
   [:chapter :appendix :matter :downloads :section :figure :table :listing :term])
 
 (def ^:private kind-labels
+  "The English category labels — the `:en` baseline and the fallback for
+   `kind-label` (the localized lookup keys these under `:cat/<kind>`)."
   {:chapter  "Chapters"
    :appendix "Appendices"
    :matter   "Pages"
@@ -32,9 +35,12 @@
 
 (defn kind-label
   "The reader-facing label for an entry kind (also used by the static
-   fallback page)."
-  [kind]
-  (get kind-labels kind (str/capitalize (name kind))))
+   fallback page), localized to `language` (the book's `:book/language`),
+   English as fallback."
+  ([kind] (kind-label kind nil))
+  ([kind language]
+   (dictionary/localize language (keyword "cat" (name kind))
+                        (get kind-labels kind (str/capitalize (name kind))))))
 
 ;; --- text extraction -------------------------------------------------------------
 
@@ -119,8 +125,10 @@
 (defn index
   "Build `{:kinds [{:kind :label} …] :entries [{:kind :title :url
    :text?} …]}` from the assembled page `specs`, in document order.
-   `:kinds` lists only the categories present, in display order."
-  [specs]
+   `:kinds` lists only the categories present, in display order.
+   `language` localizes the category labels."
+  ([specs] (index specs nil))
+  ([specs language]
   (let [page-entries
         (mapcat (fn [{:keys [kind id title number url body]}]
                   (when (and id title (not= :search kind))
@@ -134,9 +142,9 @@
         present (set (map :kind entries))]
     {:kinds   (vec (keep (fn [k]
                            (when (present (name k))
-                             {:kind (name k) :label (kind-labels k)}))
+                             {:kind (name k) :label (kind-label k language)}))
                          kind-order))
-     :entries entries}))
+     :entries entries})))
 
 ;; --- JSON ----------------------------------------------------------------------
 
