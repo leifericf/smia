@@ -18,6 +18,9 @@ Programs that manipulate plain data are easier to reason about than programs tha
 manipulate objects with hidden state.
 :::
 
+The quotation above is an `:::epigraph`, a block quotation set off from the
+text, with an optional `:attribution` beneath it.
+
 ## Structure lives in book.edn {:id :structure-demo}
 
 You declare a book's shape in `book.edn`. A flat `:book/chapters` list is still
@@ -44,11 +47,16 @@ because Smia produces their content. Alongside `:bibliography` and `:index`,
 the roles `:list-of-figures`, `:list-of-tables`, and `:list-of-listings` each
 emit a navigation section listing every numbered float of that kind, in document
 order, with a page reference. The lists at the back of this manual are exactly
-these. Give any of them a `:title` to override the default heading.
+these. Give any of them a `:title` to override the default heading. Any other
+keyword is a custom role: give it a `:file` and the section renders under a
+title-cased version of its name, or a `:title` of your choosing.
 
 Parts are numbered with roman numerals, chapters with arabic, and appendices
-with letters. Sections are unnumbered by default; set
-`:book/numbering {:sections true}` for decimal section numbers. See
+with letters. `:book/numbering` overrides any of these per kind with `:roman`,
+`:arabic`, `:letter`, or `false` to turn numbering off, for example
+`{:chapters :roman}`. Sections are unnumbered by default; `{:sections true}`
+adds decimal section numbers. In the print layout,
+`{:start-chapters-on :recto}` opens every chapter on a right-hand page. See
 [the configuration chapter](#configuration) for the full key reference.
 
 ## Figures and captions
@@ -125,14 +133,41 @@ format embeds a timestamp; the intermediate `.fo` is the equivalence oracle. See
 
 ## Citations and the index
 
-Cite a bibliography entry inline with `` `key`{=cite} ``, which links to the
+References live in the EDN file named by `:book/references`, a map from
+citation key to entry. An entry carries `:author`, `:title`, `:year`, and
+optionally `:publisher`; the generated bibliography lists every entry, sorted
+by author:
+
+```edn
+{:typesetting {:author "B. Writer"
+               :title  "Foundations of Digital Typesetting"
+               :year   2018}}
+```
+
+Cite an entry inline with `` `key`{=cite} ``, which links to the
 generated bibliography, for example `typesetting`{=cite} on digital
 typesetting`Typesetting`{=index} or `dataoriented`{=cite} on data-oriented
 design`Data-oriented design`{=index}. Mark a term for the index with
 `` `term`{=index} ``; Smia collects every mark into an alphabetical index
 with page references. Cross-references`Cross-references`{=index} resolve the same
 way whether they point at a chapter, a section like [](#structure-demo), a
-figure, a table, or a listing.
+figure, a table, or a listing. In Hiccup, an `:xref` with `:style :full`
+renders the full label and title, "Chapter 2: Title", in the PDF editions.
+
+## Running heads
+
+Every page carries a running head and a page-number folio. The defaults: a
+verso page heads with the chapter title, a recto page with the current
+section, and the symmetric screen layout with the chapter title on every
+page. `:book/running-heads` overrides any slot. Keys are the page parities,
+`:verso` and `:recto` for the print layout and `:screen` for the symmetric
+ones; each maps `:before` (the head) and `:after` (the foot) to one of
+`:chapter`, `:section`, `:page`, `:book-title`, or `nil` for empty:
+
+```edn
+:book/running-heads {:verso {:before :book-title}
+                     :recto {:before :chapter}}
+```
 
 ## Page mechanics
 

@@ -13,7 +13,9 @@ Define the theme once in `theme.edn` at the book root, beside `book.edn`. The sp
  :layout {:page-size :digest :margin-outside "20mm"}}
 ```
 
-The same file drives every output format. For paged output the tokens compile into the FO properties carried by every block, for HTML output into a generated stylesheet. Missing tokens fall back to readable defaults. `:layout` is page geometry and applies to paged output only.
+The same file drives every output format. For paged output the tokens compile into the FO properties carried by every block, for HTML output into a generated stylesheet. Missing tokens fall back to readable defaults. `:layout` is page geometry and applies to paged output only; `:page-size` is one of `:a4`, `:letter`, or `:digest`.
+
+Syntax highlighting is two more tokens. Set `:type {:highlight true}` to enable it, and override the palette with a `:code` group mapping token kinds to colors: `:keyword`, `:string`, `:comment`, `:number`, and `:literal`.
 
 ## Styling escape hatches
 

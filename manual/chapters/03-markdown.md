@@ -6,7 +6,8 @@ A chapter whose filename ends in `.md` is written in a CommonMark dialect and co
 
 - The chapter **title** is the first level-1 heading (`# Title`). It is not repeated in the body.
 - The chapter **id**, the target of cross-references, comes from the filename with any leading `NN-` ordering prefix stripped: `chapters/05-theming.md` becomes `:theming`.
-- An optional **front-matter** map, a bare EDN map as the very first content of the file, overrides either and supplies any extra keys. This chapter's neighbor uses one to keep the id `:errors` while the file is named `error-catalog`:
+- A **section heading** may end with a bare EDN map to set its attributes, most usefully an anchor id to cross-reference: `## Structure {:id :structure}`.
+- An optional **front-matter** map, a bare EDN map as the very first content of the file, overrides the chapter title or id and supplies any extra keys. This chapter's neighbor uses one to keep the id `:errors` while the file is named `error-catalog`:
 
 ```edn
 {:id :errors}

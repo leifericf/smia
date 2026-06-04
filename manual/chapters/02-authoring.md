@@ -18,7 +18,7 @@ The common case looks like ordinary markup. Paragraphs, headings, lists, emphasi
 - `:strong`, `:em`, `:code`, `:span`, `:a`
 - `:table` / `:thead` / `:tbody` / `:tr` / `:td` / `:th`
 
-`:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap.
+`:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap. `:img` takes a `:src` and `:alt` text, which the HTML editions require, and accepts an optional `:width` and `:height`.
 
 A **description list** pairs a term with its definition. Each `:dt` is set bold, each `:dd` indented beneath it:
 
@@ -28,7 +28,7 @@ A **description list** pairs a term with its definition. Each `:dt` is set bold,
  [:dt "Profile"]    [:dd "A layout variant such as " [:code ":screen"] " or " [:code ":print"] "."]]
 ```
 
-Table columns are equal width by default. Give `:table` a `:cols` vector of positive numbers, one relative weight per column, to size them: `[:table {:cols [3 1 1]} …]` makes the first column three times as wide. FOP supports only fixed table layout, so weights are how you make room for wide, unbreakable cell content. In Markdown, a bare EDN map on the line directly above a table supplies the same `:cols`.
+Table columns are equal width by default. Give `:table` a `:cols` vector of positive numbers, one relative weight per column, to size them: `[:table {:cols [3 1 1]} …]` makes the first column three times as wide. FOP supports only fixed table layout, so weights are how you make room for wide, unbreakable cell content. In Markdown, a bare EDN map on the line directly above a table supplies the same `:cols`, and colons in the header separator row set cell alignment in the usual way.
 
 ## Layer 2: book extensions
 
@@ -47,7 +47,7 @@ An `:overview` panel opens a chapter with a short summary of what it covers; the
 For example, this sentence links to [the theming chapter](#theming) by id.
 
 :::admonition {:kind :tip}
-An admonition takes a `:kind`: one of `:note`, `:tip`, or `:warning`.
+An admonition takes a `:kind`: one of `:note`, `:tip`, `:warning`, `:important`, or `:caution`. A `:title` replaces the kind's default label, and an `:icon` prefixes the title. A kind outside the known set works too; its label is the capitalized kind name.
 :::
 
 ## Layer 3: raw FO
