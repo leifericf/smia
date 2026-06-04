@@ -19,6 +19,7 @@
                    "chapters/06-commands.md"]}
   {:part/title    "Producing a Book"
    :part/chapters ["chapters/10-editions.md"
+                   "chapters/11-distribution.md"
                    "chapters/09-book-production.md"
                    "chapters/08-design.md"]}]
 

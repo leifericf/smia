@@ -30,7 +30,7 @@ Paged furniture is rendered for a medium with no pages:
 
 The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:spacing` map onto generated CSS rules, while `:layout` (page geometry) applies to the PDF editions only — the site supplies its own reading-column layout. The generated stylesheet is deterministic: the same theme always produces byte-identical CSS.
 
-When `book.edn` carries a `:book/downloads` map, the site gains one more page — `downloads.html` — listing the other editions as download links, with the asset flagged `:default` rendered as a prominent primary link. The page is site-only: the PDF and EPUB editions never emit it. It is the bridge from an online manual to its downloadable PDFs and EPUB, and the worked example for setting it up lives in the distribution chapter.
+When `book.edn` carries a `:book/downloads` map, the site gains one more page — `downloads.html` — listing the other editions as download links, with the asset flagged `:default` rendered as a prominent primary link. The page is site-only: the PDF and EPUB editions never emit it. It is the bridge from an online manual to its downloadable PDFs and EPUB, and [the distribution chapter](#distribution) walks through setting it up end to end.
 
 Content portability follows the escape-hatch matrix in [the theming chapter](#theming): the shared sugar renders in every edition, `[:html/* …]` is reachable only in HTML editions, and `[:fo/* …]` only in PDF editions — using one in the other is a structured error at build time, naming the offending tag.
 
