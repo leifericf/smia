@@ -53,6 +53,41 @@
       (is (= :clj-book.book.config/duplicate-chapter (:error/type d)))
       (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
+(deftest valid-downloads-passes
+  (is (vector? (config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/downloads
+                  {:base "https://example.com/dl"
+                   :assets [{:label "Screen PDF" :file "s.pdf"
+                             :note "For screen." :default true}
+                            {:label "EPUB" :file "b.epub"}]}}
+                 "book.edn"))))
+
+(deftest malformed-downloads-rejected
+  (testing "two assets flagged :default"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/downloads {:base "u"
+                                   :assets [{:label "a" :file "a" :default true}
+                                            {:label "b" :file "b" :default true}]}}
+                 "book.edn"))]
+      (is (= :clj-book.book.config/invalid-downloads (:error/type d)))))
+  (testing "an asset missing :file"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/downloads {:base "u" :assets [{:label "a"}]}}
+                 "book.edn"))]
+      (is (= :clj-book.book.config/invalid-downloads (:error/type d)))))
+  (testing "a non-string :base"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/downloads {:base 5 :assets [{:label "a" :file "f"}]}}
+                 "book.edn"))]
+      (is (= :clj-book.book.config/invalid-downloads (:error/type d))))))
+
 (deftest config-file-not-found
   (let [d (catch-data
             #(config/load-config {:book-root valid-root

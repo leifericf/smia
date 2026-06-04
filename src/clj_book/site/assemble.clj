@@ -15,14 +15,19 @@
   "Assemble a numbered `book` and theme `tokens` into
    `{:pages {path → content-string} :resources [{:src} …]}`. The page map
    holds every HTML page (doctyped HTML5) plus `styles.css`; `:resources`
-   names the image files the pages reference, for the emit shell to copy."
-  [book tokens]
-  (let [{:keys [pages resources]}
-        (html-assemble/assemble
-          book {:highlight? (get-in tokens [:type :highlight] false)})]
-    {:pages     (into {"styles.css" (css/css tokens)}
-                      (map (fn [{:keys [file hiccup]}]
-                             [file (html-serialize/serialize
-                                     hiccup {:doctype? true})])
-                           pages))
-     :resources resources}))
+   names the image files the pages reference, for the emit shell to copy.
+   The optional `downloads` (`:book/downloads`) adds a site-only
+   `downloads.html` page; it is a site affordance, so only this edition
+   threads it through."
+  ([book tokens] (assemble book tokens nil))
+  ([book tokens downloads]
+   (let [{:keys [pages resources]}
+         (html-assemble/assemble
+           book (cond-> {:highlight? (get-in tokens [:type :highlight] false)}
+                  downloads (assoc :downloads downloads)))]
+     {:pages     (into {"styles.css" (css/css tokens)}
+                       (map (fn [{:keys [file hiccup]}]
+                              [file (html-serialize/serialize
+                                      hiccup {:doctype? true})])
+                            pages))
+      :resources resources})))

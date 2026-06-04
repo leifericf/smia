@@ -23,6 +23,7 @@
          check-types check-body-present check-unambiguous-body check-chapters
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-no-duplicate-files check-files-exist
+         valid-download-asset? check-downloads
          unknown-key-warnings compute-warnings)
 
 (defn validate
@@ -44,6 +45,7 @@
   (check-matter config path :book/back-matter)
   (check-appendices config path)
   (check-numbering config path)
+  (check-downloads config path)
   (check-no-duplicate-files config path)
   (compute-warnings config))
 
@@ -165,6 +167,35 @@
              (not (map? (:book/numbering config))))
     (invalid-type! path :book/numbering (:book/numbering config)
                    ":book/numbering must be a map.")))
+
+(defn- valid-download-asset? [a]
+  (and (map? a)
+       (string? (:label a))
+       (string? (:file a))
+       (or (nil? (:note a)) (string? (:note a)))
+       (or (nil? (:default a)) (boolean? (:default a)))))
+
+(defn- check-downloads
+  "Validate the optional `:book/downloads` block the site edition reads:
+   a map with a string `:base` and a non-empty `:assets` vector of
+   `{:label <string> :file <string> :note <string>? :default <boolean>?}`
+   maps, with at most one asset flagged `:default`."
+  [config path]
+  (when (contains? config :book/downloads)
+    (let [d (:book/downloads config)]
+      (when-not (and (map? d)
+                     (string? (:base d))
+                     (vector? (:assets d))
+                     (seq (:assets d))
+                     (every? valid-download-asset? (:assets d))
+                     (<= (count (filter :default (:assets d))) 1))
+        (throw (error/ex :clj-book.book.config/invalid-downloads
+                         (str ":book/downloads in " path " must be a map with a "
+                              "string :base and a non-empty :assets vector of "
+                              "{:label <string> :file <string> :note <string>? "
+                              ":default <boolean>?} maps, with at most one "
+                              ":default asset.")
+                         {:path path :value d}))))))
 
 (defn- check-no-duplicate-files [config path]
   (let [dupes (structure/duplicates

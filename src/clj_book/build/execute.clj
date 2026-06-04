@@ -200,8 +200,9 @@
 (defn- render-site!
   "Assemble the static site (pure) and write its page map (shell).
    Returns the artifact entry."
-  [{:keys [book-root book tokens]} {:keys [edition out-dir]}]
-  (let [{:keys [pages resources]} (site-assemble/assemble book tokens)
+  [{:keys [book-root book tokens config]} {:keys [edition out-dir]}]
+  (let [{:keys [pages resources]} (site-assemble/assemble
+                                    book tokens (:book/downloads config))
         result (site-emit/emit! {:out-dir   out-dir
                                  :book-root book-root
                                  :pages     pages

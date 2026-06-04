@@ -49,7 +49,8 @@
         selectors (set (map first rules))]
     (doseq [s [".admonition" ".sidebar" ".overview" ".epigraph"
                ".file-bar" ".annotations" ".footnotes"
-               "figure" "figcaption" "table" ".toc-list" ".page-nav"]]
+               "figure" "figcaption" "table" ".toc-list" ".page-nav"
+               ".downloads" ".downloads .default"]]
       (is (contains? selectors s) (str s " has a rule")))))
 
 (deftest print-break-rules-cover-the-page-furniture

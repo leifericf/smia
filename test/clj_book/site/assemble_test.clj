@@ -74,3 +74,23 @@
 
 (deftest resources-pass-through
   (is (= [] (:resources result))))
+
+(def ^:private downloads
+  {:base   "https://example.com/dl"
+   :assets [{:label "Screen PDF" :file "b-screen.pdf"
+             :note "For screen." :default true}
+            {:label "EPUB" :file "b.epub" :note "For e-readers."}]})
+
+(deftest downloads-config-adds-a-downloads-page
+  (let [pages (:pages (site/assemble book tokens downloads))]
+    (is (contains? pages "downloads.html"))
+    (testing "the home contents links to the downloads page"
+      (is (str/includes? (get pages "index.html") "href=\"downloads.html\"")))
+    (testing "the page links each asset by its full release URL"
+      (is (str/includes? (get pages "downloads.html")
+                         "href=\"https://example.com/dl/b-screen.pdf\""))
+      (is (str/includes? (get pages "downloads.html")
+                         "href=\"https://example.com/dl/b.epub\"")))))
+
+(deftest two-arity-assemble-has-no-downloads-page
+  (is (not (contains? (set (keys pages)) "downloads.html"))))

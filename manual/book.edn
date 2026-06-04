@@ -26,6 +26,22 @@
 
  :book/back-matter [{:role :bibliography} {:role :index}]
 
+ :book/downloads
+ {:base   "https://github.com/leifericf/clj-book/releases/latest/download"
+  :assets [{:label   "Screen PDF"
+            :file    "clj-book-manual-screen.pdf"
+            :note    "Symmetric margins, for reading on screen."
+            :default true}
+           {:label "Print PDF"
+            :file  "clj-book-manual-print.pdf"
+            :note  "Mirrored margins and a binding gutter, for printing."}
+           {:label "Print-ready (PDF/X)"
+            :file  "clj-book-manual-print-x.pdf"
+            :note  "PDF/X-4 with embedded fonts, for a press."}
+           {:label "EPUB"
+            :file  "clj-book-manual.epub"
+            :note  "Reflowable, for e-readers."}]}
+
  :book/print-x
  {:output-intent {:icc "assets/icc/sRGB-v2.icc" :profile-name "sRGB"}
   :fonts [{:family      "Crimson Text"

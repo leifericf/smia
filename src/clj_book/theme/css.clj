@@ -147,6 +147,15 @@
          [".index-entry" {:margin "0 0 2pt"}]
          [".float-list" {:list-style "none" :padding-left "0"}]
 
+         ;; the site-only downloads page
+         [".downloads" {:margin (str block " 0")}]
+         [".downloads .default" {:font-size   "1.15em"
+                                 :font-weight "bold"}]
+         [".downloads .note" {:color  muted
+                              :margin (str "0 0 " block)}]
+         [".downloads ul" {:list-style "none" :padding-left "0"}]
+         [".downloads li" {:margin "0 0 4pt"}]
+
          ;; paged-media hints (honored when the site is printed)
          [".page-break" {:break-before "page"}]
          [".keep-together" {:break-inside "avoid"}]]

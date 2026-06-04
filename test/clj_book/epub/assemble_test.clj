@@ -152,3 +152,8 @@
   (is (= entries
          (:entries (epub/assemble book tokens
                                   {:identifier "urn:clj-book:the-book"})))))
+
+(deftest epub-never-has-a-downloads-page
+  (testing "the downloads page is site-only by construction"
+    (is (nil? (entry "OEBPS/downloads.xhtml")))
+    (is (not-any? #(str/includes? (str (:path %)) "downloads") entries))))
