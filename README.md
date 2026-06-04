@@ -45,12 +45,14 @@ and `clojure -M:run build --help` for the full option list. Scripts can call
 the same engine through the `-X` map API:
 `clojure -X smia.api/build :book-root '"manual"'`.
 
-While you write, `clojure -M:run preview manual` rebuilds the screen edition on
-every save. The JVM stays warm between rebuilds, so a save takes about 150 ms.
-A save that fails to build prints the error and the watcher keeps running; stop
-it with Ctrl-C. Previewing the site edition (`preview manual --edition site`)
-also serves it at `http://localhost:8000/`, because the site's directory URLs
-need a web server to browse.
+While you write, `clojure -M:run:math:diagrams preview manual` rebuilds the
+screen edition on every save (preview renders the book, so it needs the same
+renderer aliases as build). The JVM stays warm between rebuilds, so a save
+takes about 150 ms. A save that fails to build prints the error and the watcher
+keeps running; stop it with Ctrl-C. Previewing the site edition
+(`preview manual --edition site` with the same aliases) also serves it at
+`http://localhost:8000/`, because the site's directory URLs need a web server
+to browse.
 
 ## Editions
 

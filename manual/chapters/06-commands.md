@@ -27,8 +27,10 @@ The `book-root` argument is optional and defaults to `.`, so from inside a book 
 Build the requested editions. With no `--edition`, both PDF editions build:
 
 ```
-clojure -M:run build manual --edition screen --edition print
+clojure -M:run build my-book --edition screen --edition print
 ```
+
+A book that uses math or diagrams composes the optional renderer aliases with the command — this manual builds with `clojure -M:run:math:diagrams build manual`. A build that needs a renderer it cannot load fails with a structured error naming the alias.
 
 PDF output is written under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, and `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
 
@@ -37,7 +39,7 @@ A rebuild overwrites each edition in place, and the site edition removes stale p
 `--licensee TEXT` stamps a "Licensed to TEXT" line in the footer of every PDF page, for distributing a personalized copy per recipient. It applies to the PDF editions only and is not part of the manuscript:
 
 ```
-clojure -M:run build manual --edition print \
+clojure -M:run:math:diagrams build manual --edition print \
   --licensee "Ada Lovelace <ada@example.com>"
 ```
 
@@ -48,8 +50,10 @@ Because the text varies per copy, a stamped build differs between recipients. An
 Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes. A save takes around 150 ms, while each cold `build` pays a few seconds of JVM start-up first:
 
 ```
-clojure -M:run preview manual
+clojure -M:run preview my-book
 ```
+
+Preview renders the book, so it composes the same optional aliases as `build`: previewing this manual, which uses math and diagrams, is `clojure -M:run:math:diagrams preview manual`.
 
 The whole book tree is watched: chapters, `book.edn`, `theme.edn`, references, included code files, and images. Editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and on some platforms faster.
 
@@ -58,7 +62,7 @@ Preview renders only the **screen** edition by default. Rendering dominates the 
 Previewing the **site** edition also starts a small static file server, because the site's directory URLs (see [the editions chapter](#editions)) resolve through a web server, not from the file system:
 
 ```
-clojure -M:run preview manual --edition site
+clojure -M:run:math:diagrams preview manual --edition site
 ```
 
 This rebuilds on every save and serves the site at `http://localhost:8000/`: edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart. Choose another port with `--port`. The server is part of the JDK, adds no dependency, and runs only for the site edition. Live reload would need JavaScript in the page, so you refresh by hand.
