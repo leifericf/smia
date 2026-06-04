@@ -27,7 +27,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
-(declare chapter-id-from-path select-lines select-tagged include-pre? include-paths
+(declare chapter-id-from-path select-lines select-tagged marker-re include-pre? include-paths
          substitute-includes read-include resolve-includes check-chapter-shape
          load-markdown-chapter load-clojure-chapter duplicate-ids
          check-no-duplicate-ids load-references)
@@ -116,22 +116,31 @@
        (take (inc (- to from)))
        (str/join "\n")))
 
+(defn- marker-re
+  "A matcher for a `prefix::name` region marker anywhere in a line. The
+   name is delimited: it must not be followed by another tag-name
+   character, so the tag `x` never matches `tag::xy`. The name is quoted,
+   so a tag with regex-special characters matches literally."
+  [prefix tag]
+  (re-pattern (str prefix "::" (java.util.regex.Pattern/quote tag) "(?![\\p{L}\\p{N}_-])")))
+
 (defn- select-tagged
   "Return the lines of `text` between `tag::name` and `end::name` marker
    lines, the markers themselves excluded. The markers match anywhere in a
-   line, so any comment syntax works. Multiple regions with the same tag
+   line, so any comment syntax works, and the name is delimited so `x`
+   does not match `tag::xy`. Multiple regions with the same tag
    concatenate in file order; an unclosed region runs to the end of the
    file. Returns nil when the tag opens nowhere."
   [text tag]
-  (let [open  (str "tag::" tag)
-        close (str "end::" tag)]
+  (let [open  (marker-re "tag" tag)
+        close (marker-re "end" tag)]
     (loop [lines (str/split-lines text), in? false, found? false, acc []]
       (if-let [line (first lines)]
         (cond
-          (and in? (str/includes? line close))
+          (and in? (re-find close line))
           (recur (rest lines) false found? acc)
 
-          (and (not in?) (str/includes? line open))
+          (and (not in?) (re-find open line))
           (recur (rest lines) true true acc)
 
           :else

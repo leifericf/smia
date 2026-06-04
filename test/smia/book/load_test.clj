@@ -194,6 +194,15 @@
            (#'load/substitute-includes sources tree))
         "regions concatenate in file order, any comment syntax")))
 
+(deftest a-tag-does-not-match-a-longer-tag-name
+  (testing "tag x must not open on tag::xy (marker names are delimited)"
+    (let [sources {"a.clj" (str "tag::xy\nFROM-XY\nend::xy\n"
+                                "tag::x\nFROM-X\nend::x\n")}
+          tree    [:pre {:include "a.clj" :tag "x"}]]
+      (is (= [:pre {} "FROM-X"]
+             (#'load/substitute-includes sources tree))
+          "only the x region, not the xy region"))))
+
 (deftest unclosed-tagged-region-runs-to-the-end-of-file
   (let [sources {"a.clj" "before\n;; tag::x\none\ntwo\n"}
         tree    [:pre {:include "a.clj" :tag "x"}]]
