@@ -44,7 +44,7 @@
         (let [text (.getText (PDFTextStripper.) doc)]
           (is (str/includes? text "Contents"))
           (is (str/includes? text "Quickstart"))
-          (is (str/includes? text "Error catalog"))))
+          (is (str/includes? text "Error Catalog"))))
       (testing "the structural apparatus is present"
         (let [text (.getText (PDFTextStripper.) doc)]
           (is (str/includes? text "Preface")     "named front matter")
