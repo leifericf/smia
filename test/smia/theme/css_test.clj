@@ -88,3 +88,21 @@
     (is (= [".hero" {:padding "2em"}] (last rules)))
     (is (= ["p.fancy" {:color "#bada55"}] (last (butlast rules))))
     (is (str/ends-with? (css/css themed) ".hero {\n  padding: 2em;\n}\n"))))
+
+(deftest css-hatch-accepts-at-rule-wrappers
+  (testing "a rule whose tail is more rules serializes as a wrapped block"
+    (is (= (str "@media (max-width: 40em) {\n"
+                "p {\n  margin: 0;\n}\n"
+                "\n"
+                ".hero {\n  padding: 1em;\n}\n"
+                "}\n")
+           (css/serialize [["@media (max-width: 40em)"
+                            ["p" {:margin "0"}]
+                            [".hero" {:padding "1em"}]]]))))
+  (testing "wrapped rules pass through compile-css and stay deterministic"
+    (let [themed (assoc tokens :css [["@media print" [".no-print" {:display "none"}]]])]
+      (is (= ["@media print" [".no-print" {:display "none"}]]
+             (last (css/compile-css themed))))
+      (is (= (css/css themed) (css/css themed)))
+      (is (str/includes? (css/css themed)
+                         "@media print {\n.no-print {\n  display: none;\n}\n}\n")))))

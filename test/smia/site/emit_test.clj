@@ -83,3 +83,32 @@
       (is (= 1 (count (:warnings result))))
       (is (= :smia.site.emit/missing-resource
              (:warning/type (first (:warnings result))))))))
+
+(deftest bundled-classpath-resources-are-copied
+  (let [out (tmp-dir "bundled")]
+    (emit/emit! {:out-dir   out
+                 :book-root (tmp-dir "bundled-root")
+                 :pages     {"index.html" "<!DOCTYPE html>\n<html></html>"}
+                 :resources []
+                 :bundled   [{:resource "smia/site/search.js" :path "search.js"}]})
+    (testing "the shipped bundle lands beside the pages"
+      (is (.exists (io/file out "search.js")))
+      (is (pos? (.length (io/file out "search.js")))))
+    (testing "the sweep never touches it"
+      (emit/emit! {:out-dir   out
+                   :book-root (tmp-dir "bundled-root")
+                   :pages     {"index.html" "<!DOCTYPE html>\n<html></html>"}
+                   :resources []})
+      (is (.exists (io/file out "search.js"))))))
+
+(deftest missing-bundled-resource-is-a-hard-error
+  (let [out (tmp-dir "bundled-missing")
+        d   (try (emit/emit! {:out-dir   out
+                              :book-root (tmp-dir "x")
+                              :pages     {}
+                              :resources []
+                              :bundled   [{:resource "smia/site/nope.js"
+                                           :path "nope.js"}]})
+                 nil
+                 (catch Exception e (ex-data e)))]
+    (is (= :smia.site.emit/missing-bundled-resource (:error/type d)))))

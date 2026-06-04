@@ -15,6 +15,7 @@
    [smia.html.links :as links]
    [smia.html.serialize :as html-serialize]
    [smia.site.layout :as layout]
+   [smia.site.search-index :as search-index]
    [smia.theme.css :as css]
    [clojure.string :as str]))
 
@@ -130,14 +131,22 @@
    (`:book/site-url`) makes redirect canonicals absolute and adds a
    sorted `sitemap.xml` (canonical pages only, stubs excluded) and a
    `robots.txt` pointing at it. Without `:site-url` neither file is
-   written — a site addressed only relatively cannot name itself."
+   written — a site addressed only relatively cannot name itself.
+
+   The theme's `:site {:search true}` token turns on the search island:
+   the page map gains a deterministic `search-index.json` and a static
+   `search/` fallback page, the chrome gains the form and script tag,
+   and `:bundled` names the shipped `search.js` for the emit shell to
+   copy from the classpath. The default stays zero JavaScript."
   ([book tokens] (assemble book tokens {}))
   ([book tokens {:keys [downloads redirects site-url]}]
-   (let [{:keys [pages resources] :as assembled}
+   (let [search? (boolean (get-in tokens [:site :search]))
+         {:keys [pages resources] :as assembled}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
                          :chrome     (layout/chrome-for tokens)
                          :location   html-assemble/nested-location}
+                  search?   (assoc :search true)
                   downloads (assoc :downloads downloads)))
          site-url (some-> site-url (str/replace #"/*$" "/"))
          page-map (into {"styles.css" (css/css tokens)}
@@ -150,8 +159,15 @@
                                     (set (keep :id pages)) page-map site-url))
          page-map (merge page-map stubs)
          page-map (cond-> page-map
+                    search?
+                    (assoc "search-index.json"
+                           (search-index/index-json
+                             (search-index/index (:specs assembled))))
                     site-url
                     (assoc "sitemap.xml" (sitemap site-url (map :file pages))
                            "robots.txt"  (robots site-url)))]
      {:pages     page-map
-      :resources resources})))
+      :resources resources
+      :bundled   (if search?
+                   [{:resource "smia/site/search.js" :path "search.js"}]
+                   [])})))

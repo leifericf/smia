@@ -27,10 +27,12 @@
    [smia.fo.hiccup :as hiccup]
    [smia.html.expand :as html-expand]
    [smia.html.links :as links]
+   [smia.site.search-index :as search-index]
    [clojure.string :as str]))
 
 (declare default-chrome section-items page-items contents-entries
          links-table home-page build-page resources downloads-spec
+         search-fallback-spec numbered-text
          flat-location nested-location chapter-slug matter-slug)
 
 ;; --- assembly ----------------------------------------------------------------
@@ -51,7 +53,11 @@
    `:highlight?` — enable syntax-highlight token spans.
    `:downloads`  — `{:base :assets}`; when present, synthesize a
                    site-only `downloads.html` page leading the section
-                   pages (only the site edition passes this through)."
+                   pages (only the site edition passes this through).
+   `:search`     — when truthy, synthesize the static search fallback
+                   page (trailing the section pages) and render the
+                   search form and script tag in the chrome (only the
+                   site edition passes this through)."
   ([book] (assemble book {}))
   ([book opts]
    (let [chrome    (merge default-chrome (:chrome opts))
@@ -61,8 +67,11 @@
          dl-spec   (when-let [dl (:downloads opts)]
                      (downloads-spec dl extension locate))
          items     (section-items book extension locate)
-         specs     (cond->> (page-items items)
-                     dl-spec (cons dl-spec))
+         specs     (vec (cond->> (page-items items)
+                          dl-spec (cons dl-spec)))
+         search-sp (when (:search opts)
+                     (search-fallback-spec specs extension locate))
+         specs     (cond-> specs search-sp (conj search-sp))
          _         (let [dupes (->> (cons (:file home-loc) (map :file specs))
                                     frequencies
                                     (keep (fn [[f n]] (when (< 1 n) f))))]
@@ -76,6 +85,11 @@
                                     :level 0
                                     :href  (:url dl-spec)
                                     :text  "Downloads"}))
+         contents  (vec (cond-> contents
+                          search-sp (concat [{:kind  :search
+                                              :level 0
+                                              :href  (:url search-sp)
+                                              :text  "Search"}])))
          table     (links-table items specs (:url home-loc))
          resolver  (links/resolver table)
          base-ctx  {:book-title (:title book)
@@ -83,6 +97,8 @@
                     :contents   contents
                     :home-loc   home-loc
                     :home-url   (:url home-loc)
+                    :search?    (boolean search-sp)
+                    :search-url (:url search-sp)
                     :highlight? (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -92,6 +108,7 @@
                          specs))
       :contents  contents
       :links     table
+      :specs     specs
       :resources (resources book)})))
 
 ;; --- page location strategies ------------------------------------------------
@@ -115,6 +132,7 @@
                (:chapter :appendix) (chapter-slug (:kind spec) spec)
                :matter              (matter-slug (:id spec))
                :downloads           "downloads"
+               :search              "search"
                :home                "index")
         file (str slug "." extension)]
     {:file file :dir "" :url file}))
@@ -133,6 +151,7 @@
                     (slugify (:id spec)) "/")
     :matter    (str (matter-slug (:id spec)) "/")
     :downloads "downloads/"
+    :search    "search/"
     :home      ""))
 
 (defn nested-location
@@ -239,6 +258,65 @@
             :title "Downloads"
             :body  [(into [:html/div {:class "downloads"}] items)]}
            (locate {:kind :downloads} extension))))
+
+(defn- search-fallback-spec
+  "The synthesized static search page: what a reader without JavaScript
+   lands on when the chrome's search form submits. A static site cannot
+   answer the query server-side, so the page lists the book by category
+   with plain links — every page reachable, nothing required. Built from
+   the `:html/*` hatch like the Downloads page."
+  [specs extension locate]
+  (let [loc      (locate {:kind :search} extension)
+        rel      #(links/relativize (:url loc) %)
+        groups   (group-by :kind (filter :id specs))
+        sections (keep
+                   (fn [kind]
+                     (when-let [ss (seq (get groups kind))]
+                       (into [:html/section {:class "search-category"}
+                              [:html/h2 {} (search-index/kind-label kind)]]
+                             [(into [:html/ul {}]
+                                    (map (fn [s]
+                                           [:html/li {}
+                                            [:html/a {:href (rel (:url s))}
+                                             (numbered-text (:number s)
+                                                            (:title s))]])
+                                         ss))])))
+                   [:chapter :appendix :matter :downloads])]
+    (merge {:slug  "search"
+            :kind  :search
+            :id    "search"
+            :title "Search"
+            :body  (vec (cons [:html/p {:class "search-fallback-note"}
+                               (str "With JavaScript enabled, the search box "
+                                    "suggests matches as you type. Without it, "
+                                    "the book is listed here by category.")]
+                              sections))}
+           loc)))
+
+(defn search-form
+  "The search form the chromes render when the search island is on: a
+   plain GET form targeting the static fallback page, so it works with
+   no JavaScript at all. The island mounts on the `data-island` marker
+   and reads the page-relative index url and site root from the data
+   attributes."
+  [ctx]
+  (when (:search? ctx)
+    (let [href-to (:href-to ctx)]
+      [:form {:class          "search"
+              :role           "search"
+              :method         "get"
+              :action         (href-to (:search-url ctx))
+              :data-island    "smia-search"
+              :data-index-url (href-to "search-index.json")
+              :data-root      (href-to "")}
+       [:input {:type "search" :name "q" :placeholder "Search…"
+                :aria-label "Search this book" :autocomplete "off"}]])))
+
+(defn search-script
+  "The deferred script tag for the search island, when it is on."
+  [ctx]
+  (when (:search? ctx)
+    [:script {:defer "defer" :src ((:href-to ctx) "search.js")}]))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
@@ -456,15 +534,17 @@
 
 (defn- default-page-wrap [ctx title main]
   [:html
-   [:head
-    [:meta {:charset "utf-8"}]
-    [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-    [:title {} (if (= title (:book-title ctx))
-                 title
-                 (str title " — " (:book-title ctx)))]
-    [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
+   (into [:head
+          [:meta {:charset "utf-8"}]
+          [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+          [:title {} (if (= title (:book-title ctx))
+                       title
+                       (str title " — " (:book-title ctx)))]
+          [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
+         (when-let [s (search-script ctx)] [s]))
    (into [:body {}]
          (concat
+           (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
            [(into [:main {}] main)]
            (when-let [nav (:nav-hiccup ctx)] [nav])))])

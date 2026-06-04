@@ -191,6 +191,40 @@
          [".downloads ul" {:list-style "none" :padding-left "0"}]
          [".downloads li" {:margin "0 0 4pt"}]
 
+         ;; the search island (opt-in; these rules are inert without it)
+         ["form.search" {:position "relative" :margin "0 0 1em"}]
+         ["form.search input" {:width      "100%"
+                               :box-sizing "border-box"
+                               :padding    "0.4em 0.6em"
+                               :font       "inherit"
+                               :border     (str "1px solid " rule)}]
+         [".search-island" {:position "relative"}]
+         [".search-popover" {:position   "absolute"
+                             :left       "0"
+                             :right      "0"
+                             :z-index    "10"
+                             :background (get color :background "#ffffff")
+                             :border     (str "1px solid " rule)
+                             :box-shadow "0 2px 8px rgba(0, 0, 0, 0.15)"
+                             :max-height "60vh"
+                             :overflow-y "auto"
+                             :padding    "0.5em"
+                             :text-align "left"}]
+         [".search-cat h4" {:margin         "0.5em 0 0.25em"
+                            :color          muted
+                            :font-family    head-family
+                            :font-size      "0.8em"
+                            :text-transform "uppercase"}]
+         [".search-cat ul" {:list-style "none" :margin "0" :padding "0"}]
+         [".search-cat li a" {:display         "block"
+                              :padding         "0.25em 0.4em"
+                              :text-decoration "none"}]
+         [".search-cat li.active a" {:background code-bg}]
+         [".search-hit-snippet" {:display   "block"
+                                 :color     muted
+                                 :font-size "0.85em"}]
+         [".search-fallback-note" {:color muted}]
+
          ;; rendered math and diagrams (inline SVG)
          ["svg.math" {:vertical-align "middle"}]
          [".math-display" {:text-align "center"
@@ -211,17 +245,21 @@
         (:css tokens)))))
 
 (defn serialize
-  "Serialize `rules` to a CSS string. Properties are sorted by name (via
-   `fo.attrs/pairs`) so equal rule data serializes to identical bytes;
-   rule order is the vector's order."
+  "Serialize `rules` to a CSS string. A rule is `[selector prop-map]`,
+   or `[at-rule rule …]` — an `@media`-style wrapper holding plain rules
+   one level deep. Properties are sorted by name (via `fo.attrs/pairs`)
+   so equal rule data serializes to identical bytes; rule order is the
+   vector's order."
   [rules]
   (->> rules
-       (map (fn [[selector props]]
-              (str selector " {\n"
-                   (->> (attrs/pairs props)
-                        (map (fn [[k v]] (str "  " k ": " v ";")))
-                        (str/join "\n"))
-                   "\n}\n")))
+       (map (fn [[selector & [props :as tail]]]
+              (if (map? props)
+                (str selector " {\n"
+                     (->> (attrs/pairs props)
+                          (map (fn [[k v]] (str "  " k ": " v ";")))
+                          (str/join "\n"))
+                     "\n}\n")
+                (str selector " {\n" (serialize tail) "}\n"))))
        (str/join "\n")))
 
 (defn css

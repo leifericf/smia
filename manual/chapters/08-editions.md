@@ -21,7 +21,7 @@ The `artifacts.edn` manifest lists what was built under `:build/editions`, with 
 
 ## The site edition
 
-`--edition site` writes a browsable site under `build/<slug>/site/`: a home `index.html`, one page per chapter and per matter section, a `styles.css` generated from `theme.edn`, and copies of every image the chapters reference. The output contains no JavaScript and no build-tool runtime.
+`--edition site` writes a browsable site under `build/<slug>/site/`: a home `index.html`, one page per chapter and per matter section, a `styles.css` generated from `theme.edn`, and copies of every image the chapters reference. The output contains no JavaScript by default and no build-tool runtime. The one exception is opt-in: the search island ([the theming chapter](#theming)) adds a small script as progressive enhancement, and every page keeps working with JavaScript disabled.
 
 Each page is the `index.html` of its own directory, so the served URL is a clean, extensionless path: a body chapter nests under its part (`part-1/quickstart/`), an appendix under its letter (`appendix-a/errors/`), and matter sits at the root (`preface/`). The slug is the section's `:id`. Internal links are all relative, so the site can be hosted at any domain and under any sub-path. The directory URLs resolve through a web server rather than from the file system; to read a build locally, preview the site. `clojure -M:run preview my-book --edition site` serves it at `http://localhost:8000/` and rebuilds on save (see [the commands chapter](#commands)).
 

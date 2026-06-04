@@ -162,3 +162,55 @@
 (deftest without-a-site-url-no-sitemap-or-robots
   (is (not (contains? pages "sitemap.xml")))
   (is (not (contains? pages "robots.txt"))))
+
+;; --- the search island ----------------------------------------------------------
+
+(def ^:private search-tokens (assoc tokens :site {:search true}))
+(def ^:private search-result (site/assemble book search-tokens))
+(def ^:private search-pages (:pages search-result))
+
+(deftest search-token-adds-the-index-and-fallback-page
+  (is (contains? search-pages "search-index.json"))
+  (is (contains? search-pages "search/index.html"))
+  (testing "the fallback page lists the book by category"
+    (let [fallback (get search-pages "search/index.html")]
+      (is (str/includes? fallback "Chapters"))
+      (is (str/includes? fallback "href=\"../ch-one/\""))))
+  (testing "the index carries kinds and entries"
+    (let [json (get search-pages "search-index.json")]
+      (is (str/includes? json "{\"kind\":\"chapter\",\"label\":\"Chapters\"}"))
+      (is (str/includes? json "\"url\":\"ch-one/\""))))
+  (testing "the search page itself is not in the index"
+    (is (not (str/includes? (get search-pages "search-index.json")
+                            "\"kind\":\"search\"")))))
+
+(deftest search-chrome-is-progressive-enhancement
+  (let [page (get search-pages "ch-one/index.html")]
+    (testing "a plain GET form targets the fallback page"
+      (is (str/includes? page "role=\"search\""))
+      (is (str/includes? page "action=\"../search/\""))
+      (is (str/includes? page "data-island=\"smia-search\"")))
+    (testing "the data attributes carry page-relative paths"
+      (is (str/includes? page "data-index-url=\"../search-index.json\""))
+      (is (str/includes? page "data-root=\"../\"")))
+    (testing "the deferred script tag is page-relative"
+      (is (str/includes? page "<script defer=\"defer\" src=\"../search.js\">")))))
+
+(deftest search-bundle-is-named-for-the-emit-shell
+  (is (= [{:resource "smia/site/search.js" :path "search.js"}]
+         (:bundled search-result))))
+
+(deftest search-index-json-is-deterministic
+  (is (= (get search-pages "search-index.json")
+         (get (:pages (site/assemble book search-tokens)) "search-index.json"))))
+
+(deftest without-the-token-no-search-anywhere
+  (is (not (contains? pages "search-index.json")))
+  (is (not (contains? pages "search/index.html")))
+  (is (= [] (:bundled result)))
+  (is (not (str/includes? (get pages "ch-one/index.html") "search"))))
+
+(deftest shipped-search-bundle-is-on-the-classpath
+  (let [r (clojure.java.io/resource "smia/site/search.js")]
+    (is (some? r))
+    (is (pos? (count (slurp r))))))

@@ -42,6 +42,13 @@ When the tokens cannot express a styling need, `theme.edn` takes two optional ov
       [".hero"   {:padding "2em"}]]
 ```
 
+A rule may also be an at-rule wrapper holding plain rules one level deep — a media query for the site, a print rule:
+
+```edn
+:css [["@media (max-width: 40em)"
+       [".hero" {:padding "1em"}]]]
+```
+
 Nobody writes raw FO, HTML, or CSS strings. The serializers are internal, and all four cells of the matrix are plain data.
 
 ## Editions
@@ -64,6 +71,19 @@ Two layouts ship today:
 Both layouts are pure HTML and CSS with no JavaScript, and both render the same manuscript: switching is a one-line change to `theme.edn`, and nothing in the chapters moves. On a narrow screen the sidebar stacks above the reading column.
 
 Layouts are a set keyed by name. A value outside the known set fails the build with `:smia.site.layout/unknown-layout`, naming the layout it did not recognize.
+
+## Site search
+
+A second `:site` token turns on reader search:
+
+```edn
+:site {:layout :sidebar
+       :search true}
+```
+
+With it, every page carries a search box. As the reader types, a small script suggests matches grouped by what they are — chapters, sections, figures, tables, listings, index terms — straight from the book's own apparatus. The index is a static `search-index.json` the build writes beside the pages; nothing runs on a server, and the index is as deterministic as every other artifact.
+
+The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The default remains off — a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
 
 ## Fonts
 

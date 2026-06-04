@@ -26,15 +26,21 @@
     (is (not (some #(str/includes? (str %) "datomic") keys-flat))
         "v1 alpha must not depend on Datomic")))
 
-(deftest no-clojurescript-or-bundler
-  (let [keys-flat (mapcat keys
-                          (filter map?
-                                  (tree-seq coll? seq deps-edn)))]
+(deftest cljs-toolchain-stays-in-the-dev-only-alias
+  ;; The search island's bundle is compiled at Smia-dev time and ships as
+  ;; a committed classpath resource, so building a book never needs
+  ;; ClojureScript or a JS bundler. The toolchain may appear only inside
+  ;; the dev-only :cljs alias — never in the core deps or any alias a
+  ;; book build composes.
+  (let [without-cljs (update deps-edn :aliases dissoc :cljs)
+        keys-flat    (mapcat keys
+                             (filter map?
+                                     (tree-seq coll? seq without-cljs)))]
     (is (not (some #(str/includes? (str %) "clojurescript") keys-flat))
-        "v1 alpha must not include ClojureScript")
+        "ClojureScript must stay inside the :cljs alias")
     (is (not (some #(re-find #"webpack|shadow-cljs|figwheel" (str %))
                    keys-flat))
-        "v1 alpha must not include a JS bundler")))
+        "the JS bundler must stay inside the :cljs alias")))
 
 (deftest no-external-process-or-asciidoctor
   (doseq [f (src-files)

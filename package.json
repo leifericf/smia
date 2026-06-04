@@ -1,0 +1,8 @@
+{
+  "name": "smia-cljs",
+  "private": true,
+  "description": "Dev-only toolchain for rebuilding the committed search island bundle.",
+  "devDependencies": {
+    "shadow-cljs": "^2.28.20"
+  }
+}

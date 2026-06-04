@@ -66,6 +66,10 @@ Identical inputs should produce equivalent output. Smia serializes FO without pr
 
 XSL-FO has no CSS cascade: every block carries its own properties. Styling is therefore a **style map** from tag to FO properties, derived from the tokens and the edition's page layout and applied as the sugar expands. There is no stylesheet language to learn beyond the tokens in [the theming chapter](#theming).
 
+## No JavaScript required
+
+The site edition treats JavaScript the way print treats it: the reading experience cannot depend on it. A default build ships none at all. The one scripted feature, the opt-in search island, is progressive enhancement over a plain form — with the script blocked, slow, or disabled, the same form still works against a static fallback page. The script itself is built once, when Smia is developed, and ships inside Smia as a finished file: building a book runs no JavaScript toolchain, and a book's build stays a single JVM process.
+
 ## Chapters are programs
 
 A `.clj` chapter is a file whose value is its last form, so a chapter can compute its content: read a real source file, build a table from data, or factor out helpers. The trade-off is explicit. Building such a book runs the author's code, so you build only manuscripts you trust. A Markdown chapter, by contrast, is read as data.

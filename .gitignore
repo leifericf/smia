@@ -13,3 +13,7 @@ target/
 CLAUDE.md
 .mcp.json
 .claude/
+# CLJS toolchain state (dev-only; the release bundle is committed
+# under resources/smia/site/).
+node_modules/
+.shadow-cljs/

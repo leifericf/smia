@@ -13,6 +13,7 @@
    (`CNAME`, `.nojekyll`, `favicon.ico`) are never touched. A full reset
    that also evicts orphaned images is `build --clean`."
   (:require
+   [smia.error :as error]
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
@@ -38,17 +39,30 @@
           (.delete d))))))
 
 (defn emit!
-  "Write `{:pages {path → content-string} :resources [{:src} …]}` under
-   `out-dir`, copying resources from `book-root`. Stale `*.html` pages
-   from a prior build are swept first. Returns
+  "Write `{:pages {path → content-string} :resources [{:src} …]
+   :bundled [{:resource :path} …]}` under `out-dir`, copying resources
+   from `book-root` and bundled files (the shipped search bundle) from
+   the classpath. Stale `*.html` pages from a prior build are swept
+   first. A missing bundled resource is a hard error — it ships inside
+   smia, so its absence is a packaging bug, not author error. Returns
    `{:warnings [{:warning/type :path} …]}`."
-  [{:keys [out-dir book-root pages resources]}]
+  [{:keys [out-dir book-root pages resources bundled]}]
   (sweep-stale-html! out-dir (set (filter #(str/ends-with? % ".html")
                                           (keys pages))))
   (doseq [[path content] (sort-by key pages)]
     (let [f (io/file out-dir path)]
       (io/make-parents f)
       (spit f content)))
+  (doseq [{:keys [resource path]} bundled]
+    (let [from (io/resource resource)
+          to   (io/file out-dir path)]
+      (when-not from
+        (throw (error/ex :smia.site.emit/missing-bundled-resource
+                         (str "Bundled classpath resource not found: " resource)
+                         {:resource resource :path path})))
+      (io/make-parents to)
+      (with-open [in (io/input-stream from)]
+        (io/copy in to))))
   (let [warnings
         (vec (keep (fn [{:keys [src]}]
                      (let [from (io/file book-root src)

@@ -28,11 +28,12 @@
     (str title " — " (:book-title ctx))))
 
 (defn- head [ctx title]
-  [:head
-   [:meta {:charset "utf-8"}]
-   [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
-   [:title {} (page-title ctx title)]
-   [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]])
+  (into [:head
+         [:meta {:charset "utf-8"}]
+         [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+         [:title {} (page-title ctx title)]
+         [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
+        (when-let [s (html-assemble/search-script ctx)] [s])))
 
 (defn- current?
   "True when a contents entry's `href` (an absolute-from-root page url,
@@ -60,11 +61,13 @@
   (let [current-url (:url (:page ctx))
         href-to     (:href-to ctx)]
     [:nav {:class "book-sidebar" :aria-label "Table of contents"}
-     [:div {:class "book-sidebar-inner"}
-      [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
-       (:book-title ctx)]
-      (into [:ol {:class "book-sidebar-list"}]
-            (map #(toc-entry % current-url href-to) (:contents ctx)))]]))
+     (into [:div {:class "book-sidebar-inner"}
+            [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
+             (:book-title ctx)]]
+           (concat
+             (when-let [f (html-assemble/search-form ctx)] [f])
+             [(into [:ol {:class "book-sidebar-list"}]
+                    (map #(toc-entry % current-url href-to) (:contents ctx)))]))]))
 
 (defn- sidebar-page-wrap [ctx title main]
   [:html

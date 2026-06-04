@@ -64,8 +64,9 @@ repeatable `--edition` flag:
   fonts, an ICC output intent, and no link annotations. Requires a
   `:book/print-x` map in `book.edn` naming the fonts and profile.
 - `site`: a static HTML site under `build/<slug>/site/`, one page per chapter,
-  styled by the same `theme.edn`. The output contains no JavaScript and needs
-  nothing but a static file host.
+  styled by the same `theme.edn`. The output contains no JavaScript by default
+  and needs nothing but a static file host; an opt-in search box is added as
+  progressive enhancement, and every page works with JavaScript disabled.
 - `epub`: an EPUB3 package at `build/<slug>/epub/<slug>.epub`, validated with
   epubcheck. The same pages as the site, packaged for e-readers.
 

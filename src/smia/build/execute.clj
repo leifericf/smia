@@ -208,15 +208,16 @@
   "Assemble the static site (pure) and write its page map (shell).
    Returns the artifact entry."
   [{:keys [book-root book tokens config]} {:keys [edition out-dir]}]
-  (let [{:keys [pages resources]} (site-assemble/assemble
-                                    book tokens
-                                    {:downloads (:book/downloads config)
-                                     :redirects (:book/redirects config)
-                                     :site-url  (:book/site-url config)})
+  (let [{:keys [pages resources bundled]} (site-assemble/assemble
+                                            book tokens
+                                            {:downloads (:book/downloads config)
+                                             :redirects (:book/redirects config)
+                                             :site-url  (:book/site-url config)})
         result (site-emit/emit! {:out-dir   out-dir
                                  :book-root book-root
                                  :pages     pages
-                                 :resources resources})]
+                                 :resources resources
+                                 :bundled   bundled})]
     {:edition  edition
      :path     out-dir
      :paths    {:dir out-dir :index (str out-dir "/index.html")}
