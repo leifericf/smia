@@ -46,8 +46,8 @@ jobs:
       - name: Build dogfood user manual (screen + print)
         run: |
           clojure -M:run build manual \
-            --profile screen \
-            --profile print \
+            --edition screen \
+            --edition print \
             --output-root build/ci
 
       - name: Smoke-test the programmatic -X API
