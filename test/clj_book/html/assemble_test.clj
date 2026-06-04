@@ -34,8 +34,11 @@
 (def ^:private book (:manuscript (number/assign manuscript)))
 (def ^:private result (html-assemble/assemble book {}))
 
-(defn- page [file]
+(defn- page-in [result file]
   (first (filter #(= file (:file %)) (:pages result))))
+
+(defn- page [file]
+  (page-in result file))
 
 (defn- nodes
   "Every vector node in `tree` for which `pred` is true."
@@ -168,6 +171,33 @@
     (testing "cross-file hrefs follow the extension"
       (is (contains? (hrefs (:hiccup (nth (:pages r) 2)))
                      "chapter-02.xhtml#sec-b")))))
+
+(def ^:private downloads
+  {:base   "https://example.com/releases/latest/download"
+   :assets [{:label "Screen PDF" :file "book-screen.pdf"
+             :note "For reading on screen." :default true}
+            {:label "Print PDF" :file "book-print.pdf" :note "For printing."}
+            {:label "EPUB" :file "book.epub" :note "For e-readers."}]})
+
+(deftest downloads-option-synthesizes-a-site-only-page
+  (let [r  (html-assemble/assemble book {:downloads downloads})
+        dl (page-in r "downloads.html")]
+    (testing "the page leads the section pages, just after the home page"
+      (is (= "downloads.html" (:file (second (:pages r))))))
+    (testing "every asset is linked by its full release URL"
+      (let [hs (hrefs (:hiccup dl))]
+        (is (contains? hs "https://example.com/releases/latest/download/book-screen.pdf"))
+        (is (contains? hs "https://example.com/releases/latest/download/book-print.pdf"))
+        (is (contains? hs "https://example.com/releases/latest/download/book.epub"))))
+    (testing "the default asset renders as the prominent primary link"
+      (is (seq (nodes (:hiccup dl)
+                      #(and (= :a (first %)) (= "default" (:class (second %))))))))
+    (testing "the home table of contents links to the downloads page"
+      (is (contains? (hrefs (:hiccup (first (:pages r)))) "downloads.html")))))
+
+(deftest without-downloads-there-is-no-downloads-page
+  (is (nil? (page-in result "downloads.html")))
+  (is (not (contains? (hrefs (:hiccup (first (:pages result)))) "downloads.html"))))
 
 (deftest parts-anchor-on-the-home-page
   (let [parted {:title "P" :author nil

@@ -30,7 +30,7 @@
    [clojure.string :as str]))
 
 (declare default-chrome section-items page-items contents-entries
-         links-table home-page build-page resources)
+         links-table home-page build-page resources downloads-spec)
 
 ;; --- assembly ----------------------------------------------------------------
 
@@ -43,14 +43,20 @@
                    :prev :next :contents :resolve :home-file :nav-hiccup`.
    `:extension`  — page file extension (default \"html\"; EPUB content
                    documents pass \"xhtml\").
-   `:highlight?` — enable syntax-highlight token spans."
+   `:highlight?` — enable syntax-highlight token spans.
+   `:downloads`  — `{:base :assets}`; when present, synthesize a
+                   site-only `downloads.html` page leading the section
+                   pages (only the site edition passes this through)."
   ([book] (assemble book {}))
   ([book opts]
    (let [chrome    (merge default-chrome (:chrome opts))
          extension (or (:extension opts) "html")
          home-file (str "index." extension)
+         dl-spec   (when-let [dl (:downloads opts)]
+                     (downloads-spec dl extension))
          items     (section-items book extension)
-         specs     (page-items items)
+         specs     (cond->> (page-items items)
+                     dl-spec (cons dl-spec))
          _         (let [dupes (->> (cons home-file (map :file specs))
                                     frequencies
                                     (keep (fn [[f n]] (when (< 1 n) f))))]
@@ -59,7 +65,11 @@
                                         (str "Two sections assemble to the same "
                                              "page: " (str/join ", " dupes))
                                         {:files (vec dupes)}))))
-         contents  (contents-entries items)
+         contents  (cond->> (contents-entries items)
+                     dl-spec (cons {:kind  :downloads
+                                    :level 0
+                                    :href  (:file dl-spec)
+                                    :text  "Downloads"}))
          resolver  (links/resolver (links-table items specs home-file))
          base-ctx  {:book-title (:title book)
                     :author     (:author book)
@@ -140,6 +150,37 @@
                               (mapv #(str "ref-" (name %))
                                     (keys (:references book))))})))
       (as-> spec (assoc spec :file (str (:slug spec) "." extension)))))
+
+(defn- downloads-spec
+  "The synthesized site-only Downloads page: the asset flagged
+   `:default` (else the first) rendered as a prominent primary link,
+   then the remaining assets as a list, each with its `:note`. Built
+   from the `:html/*` hatch so the link classes and absolute release
+   hrefs pass through `html.expand` untouched (the `:a` sugar would drop
+   the class)."
+  [{:keys [base assets]} extension]
+  (let [href    (fn [a] (str base "/" (:file a)))
+        default (or (first (filter :default assets)) (first assets))
+        others  (remove #(identical? % default) assets)
+        link    (fn [a klass]
+                  [:html/a (cond-> {:href (href a)} klass (assoc :class klass))
+                   (:label a)])
+        items   (concat
+                  [[:html/p {:class "lead"} (link default "default")]]
+                  (when (:note default)
+                    [[:html/p {:class "note"} (:note default)]])
+                  (when (seq others)
+                    [(into [:html/ul {}]
+                           (map (fn [a]
+                                  (into [:html/li {} (link a nil)]
+                                        (when (:note a) [(str " — " (:note a))])))
+                                others))]))]
+    {:file  (str "downloads." extension)
+     :slug  "downloads"
+     :kind  :downloads
+     :id    "downloads"
+     :title "Downloads"
+     :body  [(into [:html/div {:class "downloads"}] items)]}))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
