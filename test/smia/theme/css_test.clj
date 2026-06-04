@@ -106,3 +106,19 @@
       (is (= (css/css themed) (css/css themed)))
       (is (str/includes? (css/css themed)
                          "@media print {\n.no-print {\n  display: none;\n}\n}\n")))))
+
+(deftest dark-mode-is-opt-in-and-honors-the-os-setting
+  (testing "a book without :site {:dark} emits no dark block"
+    (is (not (str/includes? (css/css tokens) "prefers-color-scheme"))))
+  (testing ":site {:dark true} emits a prefers-color-scheme media block"
+    (let [themed (assoc tokens :site {:dark true})
+          out    (css/css themed)]
+      (is (str/includes? out "@media (prefers-color-scheme: dark)"))
+      (is (str/includes? out "background-color: #1a1a1a")
+          "the computed dark background is used by default")))
+  (testing "a :dark token group overrides the computed palette"
+    (let [themed (assoc tokens :site {:dark true} :dark {:background "#000000"})]
+      (is (str/includes? (css/css themed) "background-color: #000000"))))
+  (testing "dark CSS stays deterministic"
+    (let [themed (assoc tokens :site {:dark true})]
+      (is (= (css/css themed) (css/css themed))))))

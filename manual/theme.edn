@@ -28,7 +28,8 @@
  ;; Switch to :plain for the minimal one-column style; drop :search for a
  ;; zero-JavaScript site. The same manuscript builds either way.
  :site    {:layout :sidebar
-           :search true}
+           :search true
+           :dark   true}
  :layout  {:page-size      :digest
            :margin-top     "24mm"
            :margin-bottom  "24mm"

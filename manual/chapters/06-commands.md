@@ -22,6 +22,8 @@ clojure -M:run validate manual
 
 The `book-root` argument is optional and defaults to `.`, so from inside a book directory `clojure -M:run validate` is enough.
 
+A broken cross-reference is a hard error. A hand-written anchor link (`[:a {:href "#id"}]`, say from a `{=hiccup}` escape) that targets no known id is reported as a warning instead: the page still builds, but the dead link is named so you can fix it.
+
 ## build
 
 Build the requested editions. With no `--edition`, both PDF editions build:

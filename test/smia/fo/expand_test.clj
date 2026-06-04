@@ -35,6 +35,13 @@
     ;; the base-14 serif has no triangle glyph, so the PDF stays ASCII
     (is (= [:fo/inline {} "File" " > " "Export"] (ex [:menu "File" "Export"])))))
 
+(deftest table-cells-carry-column-and-row-spans
+  (let [out (ex [:table [:tr [:td {:colspan 2} "wide"] [:td {:rowspan 3} "tall"]]])
+        cells (filter #(and (vector? %) (= :fo/table-cell (first %)))
+                      (tree-seq vector? seq out))]
+    (is (= 2 (:number-columns-spanned (second (first cells)))))
+    (is (= 3 (:number-rows-spanned (second (second cells)))))))
+
 (deftest richer-blocks-expand
   (testing ":example is a kept-together callout with an optional title"
     (let [[tag attrs title body] (ex [:example {:title "Worked"} [:p "x"]])]

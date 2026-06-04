@@ -13,6 +13,7 @@
    [smia.book.attrs :as attrs]
    [smia.book.conditional :as conditional]
    [smia.book.config :as config]
+   [smia.book.linkcheck :as linkcheck]
    [smia.book.load :as book-load]
    [smia.book.number :as number]
    [smia.build.artifacts :as artifacts]
@@ -173,7 +174,8 @@
         ;; Vocabulary, below, is checked before pruning so every branch's
         ;; content is validated, not only the neutral view.
         pruned    (conditional/prune-manuscript book book-ctx build-ctx {} nil)
-        numbered  (:manuscript (number/assign pruned))
+        assigned  (number/assign pruned)
+        numbered  (:manuscript assigned)
         the-theme (theme-compile/compile-theme (:tokens manuscript) :screen)]
     ;; Structural check: numbering resolves every cross-reference and
     ;; citation (a hard error otherwise); assembly then builds the tree.
@@ -184,13 +186,16 @@
             :let    [[_ _ & body] chapter]
             form    body]
       (fo-schema/check form :smia.build.execute/invalid-chapter-content))
-    ;; Opt-in: validate marked code blocks (runs author code; see eval.*).
-    (let [validation (when (:validate-code request)
-                       (eval-validate/validate-chapters! (:chapters book)))]
+    ;; Internal anchor links (`[:a {:href "#id"}]`) that target no known id
+    ;; are surfaced as warnings (xrefs are already hard-checked above).
+    (let [link-warnings (linkcheck/dead-links (:chapters numbered) (:registry assigned))
+          ;; Opt-in: validate marked code blocks (runs author code; see eval.*).
+          validation    (when (:validate-code request)
+                          (eval-validate/validate-chapters! (:chapters book)))]
       {:status     :ok
        :config     (:config-file manuscript)
        :tokens     (:tokens manuscript)
-       :warnings   (:warnings manuscript)
+       :warnings   (into (vec (:warnings manuscript)) link-warnings)
        :validation validation})))
 
 ;; --- private helpers -------------------------------------------------------
@@ -296,7 +301,8 @@
                                             book tokens
                                             {:downloads (:book/downloads config)
                                              :redirects (:book/redirects config)
-                                             :site-url  (:book/site-url config)})
+                                             :site-url  (:book/site-url config)
+                                             :edit-url  (:book/edit-url config)})
         result (site-emit/emit! {:out-dir   out-dir
                                  :book-root book-root
                                  :pages     pages

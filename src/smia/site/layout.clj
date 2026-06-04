@@ -80,6 +80,8 @@
      (into [:div {:class "book-content"}]
            (concat
              [(into [:main {}] main)]
+             (when-let [e (html-assemble/edit-link ctx)]
+               [[:footer {:class "page-footer"} e]])
              (when-let [nav (:nav-hiccup ctx)] [nav])))]]])
 
 (def ^:private sidebar-chrome

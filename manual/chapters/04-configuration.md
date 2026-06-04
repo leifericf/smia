@@ -37,6 +37,7 @@ Some editions read their own `book.edn` keys, all documented in [the editions ch
 - `:book/downloads`: a base URL and a list of downloadable editions, which the `site` edition turns into a Downloads page. The value is a map with a string `:base` and an `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`. See [the distribution chapter](#distribution).
 - `:book/site-url`: the site's public address, an absolute http(s) URL. With it set, the `site` edition writes a `sitemap.xml` over the canonical pages and a `robots.txt` pointing at it; without it, neither file exists — a site addressed only relatively cannot name itself.
 - `:book/redirects`: a map of old URL path to target id, for a published site whose pages have moved: `{"old/markdown/" :markdown}`. The `site` edition writes a stub page at each old path — an instant redirect, a canonical link, and a plain link — so existing bookmarks and search results keep working. A target may be any anchor in the book; an unknown one fails the build.
+- `:book/edit-url`: a base URL, joined to each page's source path to add an "Edit this page" link to the site chrome — for example `"https://github.com/you/book/edit/main"`. Generated pages (the bibliography, index) have no source, so they get no link.
 
 ## Validation
 

@@ -246,8 +246,10 @@
     (filter #(and (vector? %) (= :tr (first %))) (flatten-children children))))
 
 (defn- cell->fo [cell style]
-  (let [[tag _ children] (hiccup/parse-node cell)]
-    [:fo/table-cell (get style :table-cell)
+  (let [[tag attrs children] (hiccup/parse-node cell)]
+    [:fo/table-cell (cond-> (get style :table-cell)
+                      (:colspan attrs) (assoc :number-columns-spanned (:colspan attrs))
+                      (:rowspan attrs) (assoc :number-rows-spanned (:rowspan attrs)))
      (into [:fo/block (when (= tag :th) {:font-weight "bold"})]
            (expand-all children style))]))
 

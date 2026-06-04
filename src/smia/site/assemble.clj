@@ -139,7 +139,7 @@
    and `:bundled` names the shipped `search.js` for the emit shell to
    copy from the classpath. The default stays zero JavaScript."
   ([book tokens] (assemble book tokens {}))
-  ([book tokens {:keys [downloads redirects site-url]}]
+  ([book tokens {:keys [downloads redirects site-url edit-url]}]
    (let [search? (boolean (get-in tokens [:site :search]))
          {:keys [pages resources] :as assembled}
          (html-assemble/assemble
@@ -147,6 +147,7 @@
                          :chrome     (layout/chrome-for tokens)
                          :location   html-assemble/nested-location}
                   search?   (assoc :search true)
+                  edit-url  (assoc :edit-url edit-url)
                   downloads (assoc :downloads downloads)))
          site-url (some-> site-url (str/replace #"/*$" "/"))
          page-map (into {"styles.css" (css/css tokens)}

@@ -85,6 +85,23 @@ With it, every page carries a search box. As the reader types, a small script su
 
 The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The default remains off — a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
 
+## Dark mode
+
+A third `:site` token adds a dark color scheme to the site:
+
+```edn
+:site {:dark true}
+```
+
+The build emits an `@media (prefers-color-scheme: dark)` block, so the page honors the reader's operating-system setting with no toggle and no JavaScript. A computed dark palette is the default; override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel` — with a `:dark` token group:
+
+```edn
+:site {:dark true}
+:dark {:background "#0d1117" :text "#e6edf3"}
+```
+
+A book that does not opt in emits exactly the same stylesheet as before.
+
 ## Fonts
 
 With no font configuration, PDF output uses the base-14 font families. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn`, described in [the editions chapter](#editions). Registered fonts are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics. A list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. Smia bundles no fonts; the manual's manuscript ships its own under the SIL Open Font License, beside the files.

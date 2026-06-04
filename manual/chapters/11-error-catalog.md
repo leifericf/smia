@@ -20,6 +20,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/invalid-downloads`: `:book/downloads` is malformed. It must be a map with a string `:base` and a non-empty `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`.
 - `:smia.book.config/invalid-redirects`: `:book/redirects` is not a map of old URL path (string) to target id (keyword).
 - `:smia.book.config/invalid-site-url`: `:book/site-url` is not an absolute http(s) URL string.
+- `:smia.book.config/invalid-edit-url`: `:book/edit-url` is not an absolute http(s) URL string.
 - `:smia.book.config/invalid-attributes`: `:book/attributes` is not a map of keyword to (string, number, or author Hiccup).
 - `:smia.theme.load/missing`: no `theme.edn`.
 - `:smia.theme.load/missing-group`: a required token group is absent.

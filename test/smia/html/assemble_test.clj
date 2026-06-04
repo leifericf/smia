@@ -232,3 +232,17 @@
         "the part's anchor lives on the home page")
     (is (contains? (hrefs (:hiccup (second (:pages r)))) "index.html#part-1")
         "an xref to the part resolves to the home page anchor")))
+
+(deftest edit-link-builds-from-edit-url-and-source-file
+  (testing "an edit link joins the base url to the page's source file"
+    (let [link (html-assemble/edit-link
+                 {:edit-url "https://github.com/me/book/edit/main"
+                  :page     {:source-file "chapters/01-intro.md"}})]
+      (is (= :a (first link)))
+      (is (= "https://github.com/me/book/edit/main/chapters/01-intro.md"
+             (:href (second link))))
+      (is (= "Edit this page" (last link)))))
+  (testing "no edit-url means no link"
+    (is (nil? (html-assemble/edit-link {:page {:source-file "x.md"}}))))
+  (testing "a page with no source file (generated matter) gets no link"
+    (is (nil? (html-assemble/edit-link {:edit-url "https://e.com" :page {}})))))

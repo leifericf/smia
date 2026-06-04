@@ -102,6 +102,7 @@
                     :search?    (boolean search-sp)
                     :search-url (:url search-sp)
                     :language   language
+                    :edit-url   (:edit-url opts)
                     :highlight? (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -203,23 +204,25 @@
   (-> (case (:kind section)
         (:chapter :appendix)
         (let [parsed (parse-chapter (:content section))]
-          {:kind   (:kind section)
-           :part   (:part section)
-           :slug   (chapter-slug (:kind section) parsed)
-           :title  (:title parsed)
-           :label  (:label parsed)
-           :number (:number parsed)
-           :id     (:id parsed)
-           :body   (:body parsed)})
+          {:kind        (:kind section)
+           :part        (:part section)
+           :slug        (chapter-slug (:kind section) parsed)
+           :title       (:title parsed)
+           :label       (:label parsed)
+           :number      (:number parsed)
+           :id          (:id parsed)
+           :source-file (:file section)
+           :body        (:body parsed)})
 
         :matter
         (if-let [content (:content section)]
           (let [parsed (parse-chapter content)]
-            {:kind  :matter
-             :slug  (matter-slug (:id parsed))
-             :title (:title parsed)
-             :id    (:id parsed)
-             :body  (:body parsed)})
+            {:kind        :matter
+             :slug        (matter-slug (:id parsed))
+             :title       (:title parsed)
+             :id          (:id parsed)
+             :source-file (:file section)
+             :body        (:body parsed)})
           (let [role (:role section)]
             {:kind          :matter
              :slug          (matter-slug (name role))
@@ -324,6 +327,17 @@
   [ctx]
   (when (:search? ctx)
     [:script {:defer "defer" :src ((:href-to ctx) "search.js")}]))
+
+(defn edit-link
+  "An \"Edit this page\" link, when the book set `:book/edit-url` and the
+   current page has a known source file. The href is the base URL joined to
+   the page's source path (e.g. a repository's blob/edit URL)."
+  [ctx]
+  (when-let [base (:edit-url ctx)]
+    (when-let [src (:source-file (:page ctx))]
+      [:a {:class "edit-page"
+           :href  (str (str/replace base #"/*$" "/") src)}
+       (dictionary/localize (:language ctx) :edit-this-page "Edit this page")])))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
@@ -555,6 +569,7 @@
            (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
            [(into [:main {}] main)]
+           (when-let [e (edit-link ctx)] [[:footer {:class "page-footer"} e]])
            (when-let [nav (:nav-hiccup ctx)] [nav])))])
 
 (def default-chrome

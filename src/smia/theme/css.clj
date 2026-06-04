@@ -16,6 +16,38 @@
    [smia.theme.compile :as compile]
    [clojure.string :as str]))
 
+(def ^:private default-dark
+  "The computed dark palette, overridden per key by the theme's `:dark`
+   token group."
+  {:text             "#e6e6e6"
+   :background       "#1a1a1a"
+   :link             "#6ea8fe"
+   :muted            "#9aa0a6"
+   :rule             "#444444"
+   :code-background  "#2a2a2a"
+   :panel            "#242424"})
+
+(defn- dark-rules
+  "When `:site {:dark true}`, an `@media (prefers-color-scheme: dark)`
+   wrapper overriding the palette-driven selectors from the dark palette
+   (the `:dark` token group over `default-dark`). Empty otherwise, so a book
+   that does not opt in emits byte-identical CSS."
+  [tokens]
+  (when (get-in tokens [:site :dark])
+    (let [d (merge default-dark (:dark tokens))]
+      [["@media (prefers-color-scheme: dark)"
+        ["body" {:color (:text d) :background-color (:background d)}]
+        ["a" {:color (:link d)}]
+        ["pre" {:background-color (:code-background d)}]
+        [".file-bar" {:background-color (:panel d)}]
+        [".admonition" {:background-color (:panel d) :border-color (:rule d)}]
+        [".sidebar" {:background-color (:panel d) :border-color (:rule d)}]
+        [".overview" {:background-color (:panel d)}]
+        ["kbd, .button" {:background-color (:panel d) :border-color (:rule d)}]
+        ["th, td" {:border-color (:rule d)}]
+        ["blockquote" {:color (:muted d)}]
+        [".book-sidebar" {:background-color (:panel d)}]]])))
+
 (defn compile-css
   "Compile validated `tokens` into ordered CSS rules
    `[[selector prop-map] …]`."
@@ -163,6 +195,12 @@
                        :margin          "1em auto"
                        :max-width       "42em"
                        :padding         "0 1em"}]
+         [".page-footer" {:max-width "42em"
+                          :margin    "1em auto 0"
+                          :padding   "0 1em"
+                          :font-size "0.85em"}]
+         [".edit-page" {:color muted}]
+         ["details.fold > summary" {:cursor "pointer" :font-weight "bold"}]
          [".toc-list" {:list-style "none" :padding-left "0"}]
          [".toc-list .toc-level-1" {:padding-left "1.5em"}]
          [".toc-list .toc-level-2" {:padding-left "3em"}]
@@ -262,6 +300,11 @@
         (map (fn [[kind color]]
                [(str ".tok-" (name kind)) {:color color}])
              (sort-by key palette))
+
+        ;; opt-in dark mode: an `@media (prefers-color-scheme: dark)` block
+        ;; that honors the OS setting with no toggle and no JavaScript. The
+        ;; `:dark` token group overrides the computed dark palette.
+        (dark-rules tokens)
 
         ;; the theme's :css styling hatch, last so user rules win
         (:css tokens)))))

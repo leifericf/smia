@@ -24,7 +24,7 @@
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-no-duplicate-files check-files-exist
          valid-download-asset? check-downloads check-redirects check-site-url
-         check-attributes unknown-key-warnings compute-warnings)
+         check-edit-url check-attributes unknown-key-warnings compute-warnings)
 
 (defn validate
   "Pure validation of an already-parsed `book.edn` map. Performs no IO.
@@ -48,6 +48,7 @@
   (check-downloads config path)
   (check-redirects config path)
   (check-site-url config path)
+  (check-edit-url config path)
   (check-attributes config path)
   (check-no-duplicate-files config path)
   (compute-warnings config))
@@ -242,6 +243,17 @@
                        (str ":book/site-url must be an absolute http(s) URL "
                             "string in " path ".")
                        {:path path :site-url u})))))
+
+(defn- check-edit-url
+  "`:book/edit-url` (optional) must be an absolute http(s) URL — the site
+   joins it to each page's source path for an \"Edit this page\" link."
+  [config path]
+  (when-let [u (:book/edit-url config)]
+    (when-not (and (string? u) (re-find #"^https?://" u))
+      (throw (error/ex :smia.book.config/invalid-edit-url
+                       (str ":book/edit-url must be an absolute http(s) URL "
+                            "string in " path ".")
+                       {:path path :edit-url u})))))
 
 (defn- valid-attribute-value?
   "A document attribute value is a string, a number, or author Hiccup (a

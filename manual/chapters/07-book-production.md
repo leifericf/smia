@@ -117,7 +117,10 @@ listed in [](#tbl-roles):
 A fenced code block whose info map carries a `:file` gets a filename header bar;
 a `:caption` makes it a numbered listing you can cross-reference. Source is
 syntax-highlighted when the theme enables it, and `:line-numbers true` adds a
-gutter. [](#lst-build) builds a book from the command line:
+gutter. A `:fold` attribute makes a long listing collapsible on the site — it
+becomes a native `<details>` disclosure that folds away with no JavaScript, and
+`:fold "label"` sets the summary text; print and EPUB always show the full
+listing. [](#lst-build) builds a book from the command line:
 
 ```bash {:id :lst-build :file "build.sh" :caption "Building both editions" :line-numbers true :annotations [{:line 1 :note "The book directory that holds book.edn"} {:line 2 :note "Render the on-screen edition"} {:line 3 :note "Render the print edition, with mirrored margins"}]}
 clojure -M:run build my-book \

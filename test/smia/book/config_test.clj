@@ -125,6 +125,20 @@
                  "book.edn"))]
       (is (= :smia.book.config/invalid-attributes (:error/type d))))))
 
+(deftest edit-url-must-be-absolute
+  (testing "an absolute http(s) edit-url passes"
+    (is (vector? (config/validate
+                   {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                    :book/edit-url "https://github.com/me/book/edit/main"}
+                   "book.edn"))))
+  (testing "a relative edit-url is rejected"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/edit-url "edit/main"}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-edit-url (:error/type d))))))
+
 (deftest malformed-redirects-rejected
   (testing "a non-map"
     (let [d (catch-data

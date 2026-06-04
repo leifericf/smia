@@ -32,7 +32,7 @@
         :important "Important" :caution "Caution"
         ;; site chrome
         :contents "Contents" :table-of-contents "Table of contents"
-        :downloads "Downloads" :search "Search"
+        :downloads "Downloads" :search "Search" :edit-this-page "Edit this page"
         :search-placeholder "Search…" :search-aria "Search this book"
         :search-fallback-note
         (str "With JavaScript enabled, the search box suggests matches as you "

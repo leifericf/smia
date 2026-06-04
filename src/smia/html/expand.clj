@@ -121,6 +121,16 @@
   [tag]
   (fn [a c ctx] (into [tag (id-attrs a)] (expand-all c ctx))))
 
+(defn- cell
+  "A table cell (`:td`/`:th`) that keeps its anchor id and any
+   `:colspan`/`:rowspan` spanning attributes."
+  [tag]
+  (fn [a c ctx]
+    (into [tag (cond-> (id-attrs a)
+                 (:colspan a) (assoc :colspan (:colspan a))
+                 (:rowspan a) (assoc :rowspan (:rowspan a)))]
+          (expand-all c ctx))))
+
 ;; --- captions, figures, tables ----------------------------------------------
 
 (defn- captioned?
@@ -259,10 +269,20 @@
             (when by-line [(annotation-list by-line ctx)])
             (when (captioned? author) [(caption-node :figcaption author)])))))
 
-(defn- pre-block [a c ctx]
-  (if (or (:file a) (captioned? a) (:annotations a))
-    (listing-block a c ctx)
-    (code-block a c ctx nil)))
+(defn- pre-block
+  "A code block, optionally foldable on the site. `:fold` wraps the listing
+   in a native `<details>` with a `<summary>` (the `:fold` string, the
+   caption, or a default); the browser folds it with no JavaScript, and PDF
+   ignores `:fold` and always shows the full listing."
+  [a c ctx]
+  (let [rendered (if (or (:file a) (captioned? a) (:annotations a))
+                   (listing-block a c ctx)
+                   (code-block a c ctx nil))]
+    (if-let [fold (:fold a)]
+      [:details {:class "fold"}
+       [:summary {} (if (string? fold) fold (or (:caption a) "Show code"))]
+       rendered]
+      rendered)))
 
 ;; --- book extensions ----------------------------------------------------------
 
@@ -421,8 +441,8 @@
    :thead      (passthrough :thead)
    :tbody      (passthrough :tbody)
    :tr         (passthrough :tr)
-   :td         (passthrough :td)
-   :th         (passthrough :th)
+   :td         (cell :td)
+   :th         (cell :th)
    :a          (fn [a c ctx] (into [:a {:href (:href a)}] (expand-all c ctx)))
    :br         (fn [_ _ _] [:br {}])
    :hr         (fn [_ _ _] [:hr {}])

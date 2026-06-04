@@ -36,6 +36,25 @@
     (is (= [:span {:class "button"} "Save"]
            (html-expand/expand [:button "Save"] ctx)))))
 
+(deftest table-cells-keep-column-and-row-spans
+  (is (= [:td {:colspan 2} "x"]
+         (html-expand/expand [:td {:colspan 2} "x"] ctx)))
+  (is (= [:th {:rowspan 3} "y"]
+         (html-expand/expand [:th {:rowspan 3} "y"] ctx))))
+
+(deftest foldable-code-wraps-the-listing-in-details
+  (testing ":fold wraps the pre in a native disclosure with a summary"
+    (let [out (html-expand/expand [:pre {:lang :clojure :fold "Show it"} "(+ 1 2)"] ctx)]
+      (is (= :details (first out)))
+      (is (= "fold" (:class (second out))))
+      (is (= [:summary {} "Show it"] (nth out 2)))
+      (is (some #(and (vector? %) (= :pre (first %))) (tree-seq vector? seq out)))))
+  (testing "a fold without a label defaults its summary"
+    (let [out (html-expand/expand [:pre {:fold true} "x"] ctx)]
+      (is (= [:summary {} "Show code"] (nth out 2)))))
+  (testing "a plain pre is not wrapped"
+    (is (= :pre (first (html-expand/expand [:pre {} "x"] ctx))))))
+
 (deftest richer-blocks-render
   (testing ":example is a classed div with an optional title"
     (is (= [:div {:class "example"} [:div {:class "example-title"} "Worked"]

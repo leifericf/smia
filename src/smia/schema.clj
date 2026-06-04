@@ -63,6 +63,7 @@
    [:type :map]
    [:spacing :map]
    [:layout :map]
+   [:dark {:optional true} :map]
    [:fo {:optional true} [:map-of :keyword :map]]
    [:css {:optional true}
     [:sequential [:or
@@ -72,7 +73,8 @@
                    [:rules [:+ [:tuple :string :map]]]]]]]
    [:site {:optional true} [:map
                             [:layout {:optional true} :keyword]
-                            [:search {:optional true} :boolean]]]])
+                            [:search {:optional true} :boolean]
+                            [:dark {:optional true} :boolean]]]])
 
 (def Edition
   "A deliverable edition smia can build."

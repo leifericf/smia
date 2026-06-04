@@ -33,6 +33,8 @@ A **description list** pairs a term with its definition. Each `:dt` is set bold,
 
 Table columns are equal width by default. Give `:table` a `:cols` vector of positive numbers, one relative weight per column, to size them: `[:table {:cols [3 1 1]} …]` makes the first column three times as wide. FOP supports only fixed table layout, so weights are how you make room for wide, unbreakable cell content. In Markdown, a bare EDN map on the line directly above a table supplies the same `:cols`, and colons in the header separator row set cell alignment in the usual way.
 
+A cell may span columns or rows: `[:td {:colspan 2} …]` and `[:th {:rowspan 3} …]` carry through to both the HTML and the PDF. Markdown's table grammar has no span syntax, so a table with merged cells is written in Hiccup (directly in a `.clj` chapter or through a `{=hiccup}` escape).
+
 ## Layer 2: book extensions
 
 Some things HTML cannot name. Smia adds them:
