@@ -71,6 +71,24 @@ shown in [](#fig-pipeline):
 
 In Hiccup the same figure is `[:figure {:id :fig-pipeline :caption "…"} [:img …]]`.
 
+### Diagrams from text
+
+A figure need not be a pre-drawn image. A fence whose info string is `plantuml` holds diagram source, rendered to SVG at build time, in process, with a pure-Java layout engine — no external drawing tool. It composes with `:::figure` for numbering, and the figure's caption doubles as the diagram's alt text. [](#fig-frontends) is text in this chapter's source:
+
+:::figure {:id :fig-frontends :caption "The two chapter front-ends meet in author Hiccup"}
+```plantuml
+rectangle "chapter.md" as md
+rectangle "chapter.clj" as clj
+rectangle "author Hiccup" as hiccup
+rectangle "editions" as editions
+md --> hiccup
+clj --> hiccup
+hiccup --> editions
+```
+:::
+
+A diagram outside a figure carries its own `:alt` (or a `:caption`) in the fence's EDN map. Rendering needs the optional `:diagrams` alias, exactly like math's `:math`: `clojure -M:run:diagrams build`. The renderer measures label widths with the build machine's font metrics, so the drawn output is stable on one machine but may differ in detail across platforms; the diagram source in the manuscript is the canonical artifact.
+
 :::admonition {:kind :note}
 A diagram with overlaid callouts, leader lines pointing at parts of an image,
 should be authored as a single pre-rendered image; the page model cannot

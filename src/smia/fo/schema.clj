@@ -21,7 +21,7 @@
     :blockquote :img :hr :figure
     :table :thead :tbody :tr :td :th
     :admonition :sidebar :overview :epigraph :footnote :xref :cite :index
-    :math :page-break :keep-together})
+    :math :diagram :page-break :keep-together})
 
 (defn fo-tag?
   "True for a raw FO tag: a keyword in the `fo` namespace, e.g. `:fo/block`."

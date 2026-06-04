@@ -49,9 +49,10 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.md.compile/invalid-fence-info` / `:smia.md.compile/invalid-raw-escape`: a code-fence info string or raw-escape payload is not readable EDN.
 - `:smia.md.compile/unknown-footnote`: a footnote reference has no definition.
 
-## Math
+## Math and diagrams
 
 - `:smia.math/renderer-unavailable`: the manuscript carries `[:math]` notation but the renderer's optional dependency is not on the classpath. Compose the `:math` alias with the command: `clojure -M:run:math build`.
+- `:smia.diagram/renderer-unavailable`: the manuscript carries a `[:diagram]` but the renderer's optional dependency is not on the classpath. Compose the `:diagrams` alias with the command: `clojure -M:run:diagrams build`.
 
 ## Code validation
 

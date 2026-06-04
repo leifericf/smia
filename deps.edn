@@ -10,13 +10,15 @@
 
  :aliases
  {:test  {:extra-paths ["test" "test/resources"]
-          ;; jlatexmath is here because the dogfood manual carries live
-          ;; math, and the characterization tests build it in-process.
+          ;; jlatexmath and plantuml are here because the dogfood manual
+          ;; carries live math and a live diagram, and the
+          ;; characterization tests build it in-process.
           :extra-deps  {io.github.cognitect-labs/test-runner
                         {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                         org.apache.pdfbox/pdfbox {:mvn/version "3.0.3"}
                         org.w3c/epubcheck {:mvn/version "5.1.0"}
-                        org.scilab.forge/jlatexmath {:mvn/version "1.0.7"}}
+                        org.scilab.forge/jlatexmath {:mvn/version "1.0.7"}
+                        net.sourceforge.plantuml/plantuml-mit {:mvn/version "1.2024.8"}}
           :main-opts   ["-m" "cognitect.test-runner"]
           :exec-fn     cognitect.test-runner.api/test}
 
@@ -35,9 +37,11 @@
   ;; languages it validates; Clojure needs nothing extra, and Java uses the
   ;; in-JDK JShell. Compose with :run / :validate / :build, e.g.
   ;; `clojure -M:run:eval-groovy validate manual --validate-code`.
-  ;; Optional renderers. Math (LaTeX -> SVG at build time) needs JLaTeXMath;
-  ;; compose the alias with the command, e.g. `clojure -M:run:math build`.
-  :math {:extra-deps {org.scilab.forge/jlatexmath {:mvn/version "1.0.7"}}}
+  ;; Optional renderers, composed with the command like the evaluators:
+  ;; math (LaTeX -> SVG) needs JLaTeXMath, diagrams (PlantUML text -> SVG)
+  ;; the MIT PlantUML build, e.g. `clojure -M:run:math:diagrams build`.
+  :math     {:extra-deps {org.scilab.forge/jlatexmath {:mvn/version "1.0.7"}}}
+  :diagrams {:extra-deps {net.sourceforge.plantuml/plantuml-mit {:mvn/version "1.2024.8"}}}
 
   :eval-groovy {:extra-deps {org.apache.groovy/groovy {:mvn/version "4.0.24"}}}
   :eval-kotlin {:extra-deps {org.jetbrains.kotlin/kotlin-scripting-jsr223

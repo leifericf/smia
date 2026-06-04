@@ -272,3 +272,28 @@
 (deftest math-without-rendered-svg-names-the-alias
   (let [d (catch-data #(html-expand/expand [:math {:notation "x^2"}] ctx))]
     (is (= :smia.math/renderer-unavailable (:error/type d)))))
+
+;; --- diagrams -------------------------------------------------------------------
+
+(def ^:private diagram-svg
+  [:svg {:height "60" :width "120" :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M0 0"}]])
+
+(deftest diagram-emits-a-classed-block-with-the-rendered-svg
+  (is (= [:div {:class "diagram" :id "flow"}
+          [:svg {:height "60" :width "120" :xmlns "http://www.w3.org/2000/svg"
+                 :role "img" :aria-label "A calls B" :class "diagram"}
+           [:path {:d "M0 0"}]]]
+         (html-expand/expand
+           [:diagram {:source "A -> B" :alt "A calls B" :id :flow
+                      :svg diagram-svg}] ctx))))
+
+(deftest diagram-without-alt-text-throws
+  (let [d (catch-data #(html-expand/expand
+                         [:diagram {:source "A -> B" :svg diagram-svg}] ctx))]
+    (is (= :smia.html.expand/missing-alt-text (:error/type d)))))
+
+(deftest diagram-without-rendered-svg-names-the-alias
+  (let [d (catch-data #(html-expand/expand
+                         [:diagram {:source "A -> B" :alt "x"}] ctx))]
+    (is (= :smia.diagram/renderer-unavailable (:error/type d)))))

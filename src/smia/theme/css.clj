@@ -191,10 +191,12 @@
          [".downloads ul" {:list-style "none" :padding-left "0"}]
          [".downloads li" {:margin "0 0 4pt"}]
 
-         ;; rendered math (inline SVG)
+         ;; rendered math and diagrams (inline SVG)
          ["svg.math" {:vertical-align "middle"}]
          [".math-display" {:text-align "center"
                            :margin     (str block " 0")}]
+         [".diagram" {:text-align "center"
+                      :margin     (str block " 0")}]
 
          ;; paged-media hints (honored when the site is printed)
          [".page-break" {:break-before "page"}]

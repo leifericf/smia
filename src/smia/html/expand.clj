@@ -24,7 +24,7 @@
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
-   [smia.math.resolve :as math-resolve]
+   [smia.svg.resolve :as svg-resolve]
    [clojure.string :as str]))
 
 (declare expand-all expanders)
@@ -422,7 +422,7 @@
    :cite       (fn [a _ ctx] (cite a ctx))
    :index      (fn [a _ _] (index-mark a))
    :math       (fn [a _ _]
-                 (let [svg (update (math-resolve/rendered-svg a) 1
+                 (let [svg (update (svg-resolve/rendered-svg :math a) 1
                                    assoc
                                    :role "img"
                                    :aria-label (:notation a)
@@ -430,6 +430,19 @@
                    (if (:display a)
                      [:div (assoc (id-attrs a) :class "math-display") svg]
                      svg)))
+   :diagram    (fn [a _ _]
+                 (when-not (:alt a)
+                   (throw (error/ex :smia.html.expand/missing-alt-text
+                                    (str "A diagram has no :alt text. Give the "
+                                         "fence an :alt (or a :caption, which "
+                                         "doubles as one).")
+                                    {:source (:source a)})))
+                 [:div (assoc (id-attrs a) :class "diagram")
+                  (update (svg-resolve/rendered-svg :diagram a) 1
+                          assoc
+                          :role "img"
+                          :aria-label (:alt a)
+                          :class "diagram")])
    :page-break (fn [_ _ _] [:div {:class "page-break"}])
    :keep-together
    (fn [a c ctx]

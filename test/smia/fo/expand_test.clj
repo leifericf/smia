@@ -469,3 +469,17 @@
                            {:xml-declaration? false})]
     (is (str/includes? xml "<svg"))
     (is (str/includes? xml "xmlns=\"http://www.w3.org/2000/svg\""))))
+
+;; --- diagrams -------------------------------------------------------------------
+
+(deftest diagram-becomes-a-centered-instream-foreign-object
+  (let [svg [:svg {:height "60" :width "120"} [:path {:d "M0 0"}]]
+        out (ex [:diagram {:source "A -> B" :alt "x" :id :flow :svg svg}])]
+    (is (= :fo/block (first out)))
+    (is (= "center" (:text-align (second out))))
+    (is (= "flow" (:id (second out))))
+    (is (= [:fo/instream-foreign-object {} svg] (nth out 2)))))
+
+(deftest diagram-without-rendered-svg-names-the-alias
+  (let [d (catch-data #(ex [:diagram {:source "A -> B"}]))]
+    (is (= :smia.diagram/renderer-unavailable (:error/type d)))))

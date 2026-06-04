@@ -45,7 +45,7 @@ jobs:
 
       - name: Build dogfood user manual (screen + print)
         run: |
-          clojure -M:run:math build manual \
+          clojure -M:run:math:diagrams build manual \
             --edition screen \
             --edition print \
             --output-root build/ci

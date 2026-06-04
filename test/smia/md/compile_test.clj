@@ -71,6 +71,19 @@
   (is (= [[:math {:notation "x^2" :display true :id :square}]]
          (md->body "```math {:id :square}\nx^2\n```\n"))))
 
+(deftest plantuml-fence-compiles-to-a-diagram
+  (is (= [[:diagram {:source "A -> B" :id :flow :alt "A calls B"}]]
+         (md->body "```plantuml {:id :flow :alt \"A calls B\"}\nA -> B\n```\n"))))
+
+(deftest diagram-alt-defaults-to-its-caption
+  (is (= [[:diagram {:source "A -> B" :caption "Flow" :alt "Flow"}]]
+         (md->body "```plantuml {:caption \"Flow\"}\nA -> B\n```\n"))))
+
+(deftest figure-caption-reaches-a-bare-diagram-as-alt
+  (is (= [[:figure {:id :arch :caption "The pipeline"}
+           [:diagram {:source "A -> B" :alt "The pipeline"}]]]
+         (md->body ":::figure {:id :arch :caption \"The pipeline\"}\n```plantuml\nA -> B\n```\n:::\n"))))
+
 (deftest sidebar-and-epigraph-directives-compile
   (is (= [[:sidebar {:title "Aside"} [:p "Body."]]]
          (md->body ":::sidebar {:title \"Aside\"}\nBody.\n:::\n")))

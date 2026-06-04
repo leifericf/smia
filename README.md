@@ -20,9 +20,9 @@ Smia produces parts and numbered chapters, appendices, named front and back
 matter, captioned figures and code listings, cross-references that read
 "Figure 1" rather than a bare page number, typographic punctuation, syntax
 highlighting for the common book languages, running heads, an index, and a
-bibliography. LaTeX math renders
-at build time into self-contained SVG, identical in every edition, with no
-JavaScript and no math font needed at read time.
+bibliography. LaTeX math and PlantUML
+diagrams render at build time into self-contained SVG, identical in every
+edition, with no JavaScript and no math font needed at read time.
 
 ## Building a book
 
@@ -31,12 +31,12 @@ buildable manuscript — `book.edn`, `theme.edn`, and a first chapter — into a
 fresh directory. To build the manual that ships with this repository:
 
 ```bash
-clojure -M:run:math build manual
+clojure -M:run:math:diagrams build manual
 ```
 
-The `:math` alias pulls the optional math renderer; the manual's Markdown
-chapter uses live math. A book without math builds with `clojure -M:run build`
-alone.
+The `:math` and `:diagrams` aliases pull the optional math and diagram
+renderers; the manual uses live math and a live diagram. A book using neither
+builds with `clojure -M:run build` alone.
 
 With no `--edition` option, Smia writes the screen and print PDFs under
 `build/smia-manual/pdf/`, next to an `artifacts.edn` manifest. Use

@@ -19,7 +19,7 @@
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
-   [smia.math.resolve :as math-resolve]
+   [smia.svg.resolve :as svg-resolve]
    [clojure.string :as str]))
 
 (declare expand-all expanders default-style)
@@ -609,7 +609,7 @@
      :math       (fn [a _ _]
                    (let [obj [:fo/instream-foreign-object
                               {:alignment-adjust "middle"}
-                              (math-resolve/rendered-svg a)]]
+                              (svg-resolve/rendered-svg :math a)]]
                      (if (:display a)
                        [:fo/block (cond-> {:text-align "center"
                                            :space-before "6pt"
@@ -617,6 +617,13 @@
                                     (:id a) (assoc :id (as-id (:id a))))
                         obj]
                        obj)))
+     :diagram    (fn [a _ _]
+                   [:fo/block (cond-> {:text-align "center"
+                                       :space-before "6pt"
+                                       :space-after "6pt"}
+                                (:id a) (assoc :id (as-id (:id a))))
+                    [:fo/instream-foreign-object {}
+                     (svg-resolve/rendered-svg :diagram a)]])
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together
      (fn [a c s]

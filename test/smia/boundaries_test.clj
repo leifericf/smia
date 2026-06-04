@@ -80,7 +80,7 @@
    "src/smia/highlight/python.clj"
    "src/smia/highlight/javascript.clj"
    "src/smia/highlight/sql.clj"
-   "src/smia/math/resolve.clj"])
+   "src/smia/svg/resolve.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss

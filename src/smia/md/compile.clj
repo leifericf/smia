@@ -177,6 +177,11 @@
       (= :math (:lang attrs)) [:math (-> attrs
                                          (dissoc :lang)
                                          (assoc :notation literal :display true))]
+      ;; A plantuml fence renders to a diagram; its caption doubles as alt.
+      (= :plantuml (:lang attrs))
+      [:diagram (let [a (-> attrs (dissoc :lang) (assoc :source literal))]
+                  (cond-> a
+                    (and (:caption a) (not (:alt a))) (assoc :alt (:caption a))))]
       ;; :include resolves to slurped source in the shell; emit body-less.
       (:include attrs) [:pre attrs]
       :else            [:pre attrs literal])))
@@ -251,14 +256,23 @@
       (into [:admonition attrs] (compile-block-seq (:children node))))
 
     "figure"
-    (let [blocks (compile-block-seq (:children node))
+    (let [attrs  (directive-attrs node)
+          blocks (compile-block-seq (:children node))
           ;; a Markdown image is a paragraph wrapping the image; unwrap a
           ;; lone such paragraph so the figure holds the image directly.
           content (if (and (= 1 (count blocks))
                            (vector? (first blocks)) (= :p (ffirst blocks)))
                     (vec (rest (first blocks)))
-                    blocks)]
-      (into [:figure (directive-attrs node)] content))
+                    blocks)
+          ;; the figure's caption doubles as a bare diagram's alt text.
+          content (mapv (fn [b]
+                          (if (and (vector? b) (= :diagram (first b))
+                                   (map? (second b)) (not (:alt (second b)))
+                                   (:caption attrs))
+                            [:diagram (assoc (second b) :alt (:caption attrs))]
+                            b))
+                        content)]
+      (into [:figure attrs] content))
 
     "sidebar"
     (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node)))
