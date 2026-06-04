@@ -3,14 +3,14 @@
 
 :::overview {:title "What this chapter covers"}
 - Declaring a book's shape in `book.edn`
-- Figures, captioned tables, and code listings — and the generated lists of each
+- Figures, captioned tables, code listings, and the generated lists of each
 - Annotating a listing line by line
 - References, the index, and page mechanics
 :::
 
 A single chapter is only the start. A finished book has parts, numbered chapters
-and appendices, named front and back matter, figures and code listings with
-captions, cross-references that read "Figure 1" rather than a bare page number,
+and appendices, named front and back matter, captioned figures and code
+listings, cross-references that read "Figure 1" rather than a bare page number,
 running heads, an index, and a bibliography. Smia produces all of these from
 data, and this chapter both explains and exercises them.
 
@@ -39,12 +39,12 @@ the zero-config default; to group chapters, use `:book/parts`, and add
  :book/back-matter [{:role :bibliography} {:role :index}]}
 ```
 
-Some matter sections are **generated** — they have a `:role` but no `:file`,
+Some matter sections are **generated**: they have a `:role` but no `:file`,
 because Smia produces their content. Alongside `:bibliography` and `:index`,
 the roles `:list-of-figures`, `:list-of-tables`, and `:list-of-listings` each
 emit a navigation section listing every numbered float of that kind, in document
-order, with a page reference — exactly the lists at the front of this manual.
-Give any of them a `:title` to override the default heading.
+order, with a page reference. The lists at the front of this manual are exactly
+these. Give any of them a `:title` to override the default heading.
 
 Parts are numbered with roman numerals, chapters with arabic, and appendices
 with letters. Sections are unnumbered by default; set
@@ -64,11 +64,11 @@ shown in [](#fig-pipeline):
 In Hiccup the same figure is `[:figure {:id :fig-pipeline :caption "…"} [:img …]]`.
 
 :::admonition {:kind :note}
-A diagram with overlaid callouts — leader lines pointing at parts of an image —
-should be authored as a single pre-rendered image, since the page model has no
-way to position free-floating marks over arbitrary coordinates. To explain a
-diagram's parts, pair the figure with a description list or an annotated listing
-beneath it, which carry their own numbered references.
+A diagram with overlaid callouts, leader lines pointing at parts of an image,
+should be authored as a single pre-rendered image; the page model cannot
+position free-floating marks over arbitrary coordinates. To explain a diagram's
+parts, pair the figure with a description list or an annotated listing beneath
+it, which carry their own numbered references.
 :::
 
 ## Captioned tables
@@ -99,23 +99,22 @@ clojure -M:run build my-book \
   --edition print
 ```
 
-Highlighting is a pure, in-process tokenizer — no subprocess — so builds stay
-deterministic. It ships for Clojure, Java, Kotlin, and Groovy; an unknown
-language falls back to plain monospace.
+Highlighting is a pure, in-process tokenizer, so builds stay deterministic. It
+ships for Clojure, Java, Kotlin, and Groovy; an unknown language falls back to
+plain monospace.
 
 ### Annotating a listing
 
 The numbered marks at the ends of the lines above come from an `:annotations`
-vector in the fence's attribute map — each entry names a 1-based `:line` and a
-`:note`, and Smia emits the matching numbered list beneath the code. The
-notes live in data, so the sample stays pristine: no markers are woven into the
-code itself, and a reader can copy it verbatim. A `:note` may be plain text or
-inline markup, each line carries at most one note, and a `:line` outside the
-listing is an error.
+vector in the fence's attribute map. Each entry names a 1-based `:line` and a
+`:note`, and Smia emits the matching numbered list beneath the code. The notes
+live in data, so no markers are woven into the code itself and a reader can
+copy it verbatim. A `:note` may be plain text or inline markup, each line
+carries at most one note, and a `:line` outside the listing is an error.
 
 ## Sidebars
 
-A `:::sidebar` is a titled callout — a generalization of the admonition with an
+A `:::sidebar` is a titled callout, a generalization of the admonition with an
 arbitrary title and an optional icon:
 
 :::sidebar {:title "On determinism" :icon "*"}
@@ -127,8 +126,8 @@ format embeds a timestamp; the intermediate `.fo` is the equivalence oracle. See
 ## Citations and the index
 
 Cite a bibliography entry inline with `` `key`{=cite} ``, which links to the
-generated bibliography — for example `typesetting`{=cite} on digital
-typesetting`Typesetting`{=index}, or `dataoriented`{=cite} on data-oriented
+generated bibliography, for example `typesetting`{=cite} on digital
+typesetting`Typesetting`{=index} or `dataoriented`{=cite} on data-oriented
 design`Data-oriented design`{=index}. Mark a term for the index with
 `` `term`{=index} ``; Smia collects every mark into an alphabetical index
 with page references. Cross-references`Cross-references`{=index} resolve the same
@@ -150,5 +149,5 @@ short, self-contained example is never split across a page boundary by the
 line-breaker.
 
 That is the whole apparatus: structure, numbering, references, figures,
-listings, sidebars, and page control — all from plain data.
+listings, sidebars, and page control, all from plain data.
 :::

@@ -1,22 +1,22 @@
 # Writing in Markdown
 
-A chapter whose filename ends in `.md` is written in a curated CommonMark dialect and compiled to the same author Hiccup a `.clj` chapter produces. Everything downstream — assembly, expansion, theming, and the screen and print editions — is identical. Markdown is prose-first, so it removes the string-escaping friction of writing prose and code samples directly in Hiccup.
+A chapter whose filename ends in `.md` is written in a CommonMark dialect and compiled to the same author Hiccup a `.clj` chapter produces. Everything downstream is identical: assembly, expansion, theming, and every edition. Markdown is the prose-first surface, so prose and code samples are written without the string escaping a Hiccup file needs.
 
 ## Title, id, and front-matter
 
-- The chapter **title** is the first level-1 heading (`# Title`), which is not repeated in the body.
-- The chapter **id** — the target of cross-references — is derived from the filename, with any leading `NN-` ordering prefix stripped: `chapters/05-theming.md` becomes `:theming`.
-- An optional **front-matter** map — a bare EDN map as the very first content of the file — overrides either and supplies any extra keys. This chapter's neighbor uses one to keep the id `:errors` while the file is named `error-catalog`:
+- The chapter **title** is the first level-1 heading (`# Title`). It is not repeated in the body.
+- The chapter **id**, the target of cross-references, comes from the filename with any leading `NN-` ordering prefix stripped: `chapters/05-theming.md` becomes `:theming`.
+- An optional **front-matter** map, a bare EDN map as the very first content of the file, overrides either and supplies any extra keys. This chapter's neighbor uses one to keep the id `:errors` while the file is named `error-catalog`:
 
 ```edn
 {:id :errors}
 ```
 
-Front-matter is EDN, never YAML, and is read as data — never evaluated.
+Front-matter is EDN rather than YAML, and it is read as data, not evaluated.
 
 ## Extension grammar
 
-Beyond base CommonMark, a small, curated set of constructs maps one-to-one onto the book vocabulary. Attributes everywhere are **EDN maps** — the same literal you would write in Clojure.
+Beyond base CommonMark, a small set of constructs maps one-to-one onto the book vocabulary. Attributes everywhere are **EDN maps**, the same literal you would write in Clojure.
 
 | Need | Markdown | Author Hiccup |
 |---|---|---|
@@ -34,7 +34,7 @@ Beyond base CommonMark, a small, curated set of constructs maps one-to-one onto 
 A code fence's info string is a language token followed by an optional EDN map. An inline escape also works: a code span carrying the payload, immediately followed by the marker `{=hiccup}`.
 
 :::admonition {:kind :note}
-The `{=hiccup}` escape is strictly more powerful than `{=fo}`: spliced author Hiccup re-enters expansion, so sugar nested inside it still expands, whereas raw FO is terminal.
+The `{=hiccup}` escape is the more powerful of the two: spliced author Hiccup re-enters expansion, so sugar nested inside it still expands. Raw FO is terminal.
 :::
 
 ## Overviews and description lists
@@ -64,7 +64,7 @@ A layout variant such as screen or print.
 
 ## Annotating code
 
-A code listing can carry numbered notes anchored to specific lines, without touching the sample itself. Add an `:annotations` vector to the fence's EDN map — each entry names a 1-based `:line` and a `:note`. Smia appends a small numbered mark at the end of each referenced line and emits a matching numbered list beneath the listing:
+A code listing can carry numbered notes anchored to specific lines, without touching the sample itself. Add an `:annotations` vector to the fence's EDN map; each entry names a 1-based `:line` and a `:note`. Smia appends a small numbered mark at the end of each referenced line and emits a matching numbered list beneath the listing:
 
 ````
 ```clojure {:id :ex :caption "The reducing core" :annotations [{:line 1 :note "Defines the accumulator"} {:line 2 :note "Folds the sequence with +"}]}
@@ -73,23 +73,23 @@ A code listing can carry numbered notes anchored to specific lines, without touc
 ```
 ````
 
-Because the notes are data, the code stays pristine and copy-pasteable — no in-text markers. A `:note` may be a plain string or inline markup (for example ``[:span "Folds with " [:code "reduce"]]`` in Hiccup). Each line carries at most one note, and every `:line` must fall within the listing.
+The notes are data, so the code stays exactly as written and a reader can copy it verbatim. A `:note` may be a plain string or inline markup, for example ``[:span "Folds with " [:code "reduce"]]`` in Hiccup. Each line carries at most one note, and every `:line` must fall within the listing.
 
 ## Validating code examples
 
-For a programming book, a code sample should actually work. Mark a fenced block `{:test true}` and run a build or `validate` with `:validate-code true`:
+For a programming book, a code sample should actually work. Mark a fenced block `{:test true}` and run a build or `validate` with `--validate-code`:
 
 ```
 clojure -M:run validate manual --validate-code
 ```
 
-Smia then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation is **verify, not capture**: the rendered text stays exactly as written — only the check runs — so output stays deterministic. The assertion below, for instance, is checked at build time when validation is on:
+Smia then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation verifies; it does not capture output. The rendered text stays exactly as written, only the check runs, so the build remains deterministic. The assertion below, for instance, is checked at build time when validation is on:
 
 ```clojure {:test true}
 (assert (= 6 (reduce + [1 2 3])))
 ```
 
-An optional `:level` in the block's EDN map selects how far to go: `:parse`, `:compile`, `:run` (the default), or `:assert` (the block's value must be truthy).
+An optional `:level` in the block's EDN map selects how far to go: `:parse`, `:compile`, `:run` (the default), or `:assert`, which requires the block's value to be truthy.
 
 ### Shipped languages
 
@@ -100,8 +100,8 @@ An optional `:level` in the block's EDN map selects how far to go: `:parse`, `:c
 | Java | JShell (part of the JDK) | none |
 | Kotlin | JSR-223 scripting | the `:eval-kotlin` alias |
 
-A book pulls in only the evaluators it uses; compose the aliases with the command, for example `clojure -M:run:eval-groovy validate manual --validate-code`. Scala and non-JVM languages are designed for — the registry accepts them as data — but not yet shipped; non-JVM validation would need an external toolchain, stepping outside the pure-JVM, hermetic guarantee.
+A book pulls in only the evaluators it uses; compose the aliases with the command, for example `clojure -M:run:eval-groovy validate manual --validate-code`. The registry accepts further languages as data, but no other evaluators ship today. Validating a non-JVM language would need an external toolchain, and the build deliberately stays within one JVM process.
 
 :::admonition {:kind :warning}
-Validation is **not** sandboxed: a `{:test true}` block runs with the full authority of the build JVM — the same trust model as a `.clj` chapter. This is deliberate, so a validated sample behaves exactly as it will for a reader. Only validate manuscripts you trust.
+Validation is **not** sandboxed: a `{:test true}` block runs with the full authority of the build JVM, the same trust model as a `.clj` chapter. This is deliberate, so a validated sample behaves exactly as it will for a reader. Only validate manuscripts you trust.
 :::

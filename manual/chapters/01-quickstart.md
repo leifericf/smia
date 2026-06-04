@@ -1,10 +1,12 @@
 # Quickstart
 
-Smia turns a Clojure-data manuscript into publication-quality **PDF** — screen and print editions — entirely on the JVM via Apache FOP. There is no Ruby, no asciidoctor, no external binary, and no subprocess.
+Smia builds a manuscript into screen and print PDFs, an EPUB, and a static
+website, all on the JVM. PDFs are rendered with Apache FOP as a library call,
+and the build never leaves the Java process.
 
 ## Prerequisites
 
-All you need is a JVM and the Clojure CLI. Everything else arrives as a Maven dependency.
+A JDK and the Clojure CLI. Everything else is an ordinary Maven dependency.
 
 ## A minimal book
 
@@ -40,9 +42,9 @@ Run the build with the Clojure CLI:
 clojure -M:run build my-book
 ```
 
-With no `--edition` given, both the screen and print editions are produced under `build/my-book/pdf/`, alongside a machine-readable `artifacts.edn` manifest. Run it from inside the book directory and you can drop the path entirely: `clojure -M:run build`.
+With no `--edition` given, the screen and print PDFs are written under `build/my-book/pdf/`, alongside an `artifacts.edn` manifest. The website, the EPUB, and the press-ready PDF/X are selected with `--edition`; [the editions chapter](#editions) describes them all. Run the command from inside the book directory and the path can be dropped: `clojure -M:run build`.
 
-While writing, `clojure -M:run preview my-book` rebuilds the screen edition on every save — see [the commands chapter](#commands).
+While writing, `clojure -M:run preview my-book` rebuilds the book on every save. Previewing the site edition also serves it locally. See [the commands chapter](#commands).
 
 :::admonition {:kind :note}
 Read [the authoring chapter](#authoring) next to learn both front-ends: the Markdown surface and the Hiccup vocabulary it compiles to.

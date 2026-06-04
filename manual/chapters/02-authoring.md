@@ -2,11 +2,11 @@
 
 :::overview
 - The three concentric layers: HTML-flavored sugar, book extensions, and raw FO
-- The everyday tags — paragraphs, lists, tables, and **description lists**
+- The everyday tags: paragraphs, lists, tables, and **description lists**
 - Where to drop down to raw `:fo/*` when the sugar runs out
 :::
 
-You can write a chapter two ways. **Markdown** (see [writing in Markdown](#markdown)) is the prose-first surface: it compiles to the same author Hiccup a `.clj` chapter produces, so everything below describes the vocabulary both front-ends target. **Hiccup** — the HTML-flavored data Clojure developers already produce — is that vocabulary: a true superset with three concentric layers, all in one syntax.
+You can write a chapter two ways. **Markdown** is the prose-first surface; it compiles to the same author Hiccup a `.clj` chapter produces, and [writing in Markdown](#markdown) describes it. **Hiccup** is that vocabulary itself: the HTML-flavored data Clojure developers already know, arranged in three concentric layers. Everything below applies to both front-ends.
 
 ## Layer 1: HTML-flavored sugar
 
@@ -18,7 +18,7 @@ The common case looks like ordinary markup. Paragraphs, headings, lists, emphasi
 - `:strong`, `:em`, `:code`, `:span`, `:a`
 - `:table` / `:thead` / `:tbody` / `:tr` / `:td` / `:th`
 
-`:span` is a neutral inline wrapper — it groups inline content without styling of its own, so you can compose a phrase from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap.
+`:span` is a neutral inline wrapper. It groups inline content without styling of its own, so a phrase can be composed from text and other inline tags. `:code`, `:strong`, and `:em` style what they wrap.
 
 A **description list** pairs a term with its definition. Each `:dt` is set bold, each `:dd` indented beneath it:
 
@@ -28,7 +28,7 @@ A **description list** pairs a term with its definition. Each `:dt` is set bold,
  [:dt "Profile"]    [:dd "A layout variant such as " [:code ":screen"] " or " [:code ":print"] "."]]
 ```
 
-Table columns are equal width by default. Give `:table` a `:cols` vector of positive numbers — one relative weight per column — to size them: `[:table {:cols [3 1 1]} …]` makes the first column three times as wide. FOP supports only fixed table layout, so weights are how you make room for wide, unbreakable cell content. In Markdown, a bare EDN map on the line directly above a table supplies the same `:cols`.
+Table columns are equal width by default. Give `:table` a `:cols` vector of positive numbers, one relative weight per column, to size them: `[:table {:cols [3 1 1]} …]` makes the first column three times as wide. FOP supports only fixed table layout, so weights are how you make room for wide, unbreakable cell content. In Markdown, a bare EDN map on the line directly above a table supplies the same `:cols`.
 
 ## Layer 2: book extensions
 
@@ -42,12 +42,12 @@ Some things HTML cannot name. Smia adds them:
 | `:footnote` | a footnote |
 | `:admonition` | a called-out note, tip, or warning |
 
-An `:overview` panel opens a chapter with a short "what this chapter covers" summary; the panel at the top of this chapter is one. Its label is "Overview" unless you give it a `:title`. In Hiccup it is `[:overview [:ul …]]`.
+An `:overview` panel opens a chapter with a short summary of what it covers; the panel at the top of this chapter is one. Its label is "Overview" unless you give it a `:title`. In Hiccup it is `[:overview [:ul …]]`.
 
 For example, this sentence links to [the theming chapter](#theming) by id.
 
 :::admonition {:kind :tip}
-An admonition takes a `:kind` — one of `:note`, `:tip`, or `:warning`.
+An admonition takes a `:kind`: one of `:note`, `:tip`, or `:warning`.
 :::
 
 ## Layer 3: raw FO
@@ -59,4 +59,4 @@ When you need something the sugar does not cover, drop to raw XSL-FO in the same
  "Anything FO can do, written directly."]
 ```
 
-From Markdown, a `` ```{=hiccup} `` fence splices author Hiccup (which re-expands) and a `` ```{=fo} `` fence splices raw FO verbatim. Because `.clj` chapters are also **programs**, a chapter may `slurp` a real source file or generate repetitive content with ordinary Clojure.
+From Markdown, a `` ```{=hiccup} `` fence splices author Hiccup, which re-expands, and a `` ```{=fo} `` fence splices raw FO verbatim. A `.clj` chapter is also a **program**, so it can `slurp` a real source file or generate repetitive content with ordinary Clojure.

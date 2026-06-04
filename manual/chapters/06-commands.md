@@ -1,10 +1,10 @@
 # Commands
 
-Smia has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one to reach for day to day: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X smia.api/…`, takes an EDN request map and is meant for scripts and other tools.
+Smia has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one for day-to-day work: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X smia.api/…`, takes an EDN request map and is meant for scripts and other tools.
 
 ## validate
 
-Check that the manuscript is well-formed without rendering anything — config, tokens, chapter vocabulary, and cross-references:
+Check that the manuscript is well-formed without rendering anything. Validation covers the config, the theme tokens, the chapter vocabulary, and cross-references:
 
 ```
 clojure -M:run validate manual
@@ -20,40 +20,40 @@ Build the requested editions. With no `--edition`, both PDF editions build:
 clojure -M:run build manual --edition screen --edition print
 ```
 
-PDF outputs land under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`; `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
+PDF output is written under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, and `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
 
-Output is incremental: a rebuild overwrites each edition in place, and the site edition sweeps stale pages so a removed chapter leaves no orphan page (files you add to the site directory yourself, such as a `CNAME`, are kept). Pass `--clean` to remove the whole `build/<slug>/` directory before building — a guaranteed-fresh slate that also discards output from editions you no longer build. `--clean` does nothing under `--dry-run`.
+A rebuild overwrites each edition in place, and the site edition removes stale pages, so a deleted chapter leaves no orphan page. Files you add to the site directory yourself, such as a `CNAME`, are kept. Pass `--clean` to remove the whole `build/<slug>/` directory before building; that also discards output from editions you no longer build. `--clean` does nothing under `--dry-run`.
 
-`--licensee TEXT` stamps a discreet "Licensed to TEXT" line in the footer of every PDF page — a per-recipient watermark for distributing a personalized copy. It applies to the PDF editions only (the HTML and EPUB editions are unaffected) and is not part of the manuscript, so the same book renders a different copy per licensee:
+`--licensee TEXT` stamps a "Licensed to TEXT" line in the footer of every PDF page, for distributing a personalized copy per recipient. It applies to the PDF editions only and is not part of the manuscript:
 
 ```
 clojure -M:run build manual --edition print \
   --licensee "Ada Lovelace <ada@example.com>"
 ```
 
-Because the text varies per copy, a licensee-stamped build is intentionally not byte-identical across recipients; an unstamped build stays reproducible as before.
+Because the text varies per copy, a stamped build differs between recipients. An unstamped build is unaffected.
 
 ## preview
 
-Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes — around 150 ms a save, where each cold `build` pays a few seconds of JVM start-up first:
+Rebuild the book on every save while you write. Preview builds once, then watches the book directory and rebuilds in the same warm JVM whenever a source file changes. A save takes around 150 ms, where each cold `build` pays a few seconds of JVM start-up first:
 
 ```
 clojure -M:run preview manual
 ```
 
-The whole book tree is watched — chapters, `book.edn`, `theme.edn`, references, included code files, and images — while editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and, on some platforms, faster too.
+The whole book tree is watched: chapters, `book.edn`, `theme.edn`, references, included code files, and images. Editor temp files and the build output are ignored. Changes are detected by polling modification times every 250 ms, which is simpler than the JVM's file-watching service and on some platforms faster.
 
-Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
+Preview renders only the **screen** edition by default. Rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering, because page layout is global: page numbers, the table of contents, and keeps all span the document, so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
 
-Previewing the **site** edition also starts a small static file server, because the site's clean directory URLs (see [the editions chapter](#editions)) resolve only through a web server, not from the file system:
+Previewing the **site** edition also starts a small static file server, because the site's directory URLs (see [the editions chapter](#editions)) resolve through a web server, not from the file system:
 
 ```
 clojure -M:run preview manual --edition site
 ```
 
-This rebuilds on every save and serves the site at `http://localhost:8000/` — edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart; choose another port with `--port`. The server is pure JDK, so it adds no dependency, and it runs only for the site edition. There is no live reload (that would need JavaScript); you refresh by hand.
+This rebuilds on every save and serves the site at `http://localhost:8000/`: edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart. Choose another port with `--port`. The server is part of the JDK, adds no dependency, and runs only for the site edition. There is no live reload, which would need JavaScript in the page; you refresh by hand.
 
-A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. For a PDF preview, a viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
+A save that fails, say a typo in front-matter or an unresolved cross-reference, prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. For a PDF preview, a viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
 
 At the REPL the same engine is `smia.build.preview/preview!`, which returns a handle whose `:stop!` ends the session:
 
@@ -65,15 +65,15 @@ At the REPL the same engine is `smia.build.preview/preview!`, which returns a ha
 
 ## Dry run
 
-Add `--dry-run` to a build to print the inspectable build plan without rendering or writing anything.
+Add `--dry-run` to a build to print the build plan without rendering or writing anything.
 
 :::admonition {:kind :warning}
-A `.clj` chapter is a program, so building one runs the author's code — build only manuscripts you trust. A `.md` chapter is read as data and runs nothing, unless you opt into code validation with `--validate-code`, which then evaluates blocks marked `{:test true}`.
+A `.clj` chapter is a program, so building one runs the author's code; build only manuscripts you trust. A `.md` chapter is read as data and runs nothing, unless you opt into code validation with `--validate-code`, which evaluates blocks marked `{:test true}`.
 :::
 
 ## Exit codes
 
-The CLI returns a meaningful exit code, so it composes in scripts and CI:
+The CLI's exit codes are stable, so it composes in scripts and CI:
 
 | Code | Meaning |
 |---|---|
@@ -83,7 +83,7 @@ The CLI returns a meaningful exit code, so it composes in scripts and CI:
 
 ## The programmatic API
 
-Tools that assemble the request themselves call `smia.api/build` and `smia.api/validate` with `-X`, passing an EDN map. Because `-X` reads its arguments as EDN, string values carry both shell and EDN quotes:
+Tools that assemble the request themselves call `smia.api/build` and `smia.api/validate` with `-X`, passing an EDN map. `-X` reads its arguments as EDN, so string values carry both shell and EDN quotes:
 
 ```
 clojure -X smia.api/build :book-root '"manual"' :editions '[:screen :print]'
