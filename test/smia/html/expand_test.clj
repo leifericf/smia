@@ -249,3 +249,26 @@
 (deftest unknown-tag-throws
   (let [d (catch-data #(html-expand/expand [:marquee "x"] ctx))]
     (is (= :smia.html.expand/unknown-tag (:error/type d)))))
+
+;; --- math -----------------------------------------------------------------------
+
+(def ^:private math-svg
+  [:svg {:height "20" :width "34" :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M0 0"}]])
+
+(deftest inline-math-emits-the-rendered-svg
+  (is (= [:svg {:height "20" :width "34" :xmlns "http://www.w3.org/2000/svg"
+                :role "img" :aria-label "x^2" :class "math"}
+          [:path {:d "M0 0"}]]
+         (html-expand/expand [:math {:notation "x^2" :svg math-svg}] ctx))))
+
+(deftest display-math-is-a-centered-block
+  (let [out (html-expand/expand
+              [:math {:notation "x^2" :display true :id :sq :svg math-svg}] ctx)]
+    (is (= :div (first out)))
+    (is (= {:class "math-display" :id "sq"} (second out)))
+    (is (= :svg (first (nth out 2))))))
+
+(deftest math-without-rendered-svg-names-the-alias
+  (let [d (catch-data #(html-expand/expand [:math {:notation "x^2"}] ctx))]
+    (is (= :smia.math/renderer-unavailable (:error/type d)))))

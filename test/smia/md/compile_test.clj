@@ -59,6 +59,18 @@
   (is (= [[:p "Determinism" [:index {:term "Determinism"}] " matters."]]
          (md->body "Determinism`Determinism`{=index} matters.\n"))))
 
+(deftest inline-math-escape-compiles
+  (is (= [[:p "Euler: " [:math {:notation "e^{i\\pi} = -1"}] "."]]
+         (md->body "Euler: `e^{i\\pi} = -1`{=math}.\n"))))
+
+(deftest math-fence-compiles-to-display-math
+  (is (= [[:math {:notation "\\frac{a}{b}" :display true}]]
+         (md->body "```math\n\\frac{a}{b}\n```\n"))))
+
+(deftest math-fence-keeps-its-attrs
+  (is (= [[:math {:notation "x^2" :display true :id :square}]]
+         (md->body "```math {:id :square}\nx^2\n```\n"))))
+
 (deftest sidebar-and-epigraph-directives-compile
   (is (= [[:sidebar {:title "Aside"} [:p "Body."]]]
          (md->body ":::sidebar {:title \"Aside\"}\nBody.\n:::\n")))

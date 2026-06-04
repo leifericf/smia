@@ -26,6 +26,7 @@
    [smia.fo.render :as render]
    [smia.fo.schema :as fo-schema]
    [smia.fo.serialize :as serialize]
+   [smia.math.resolve :as math-resolve]
    [smia.schema :as schema]
    [smia.site.assemble :as site-assemble]
    [smia.site.emit :as site-emit]
@@ -70,7 +71,9 @@
         book          (load-book book-root manuscript)
         _             (when (:enabled validation)
                         (eval-validate/validate-chapters! (:chapters book)))
-        numbered      (:manuscript (number/assign book))
+        ;; Math renders once, after numbering and before the editions
+        ;; split, so every edition carries the same SVG.
+        numbered      (math-resolve/attach-svg (:manuscript (number/assign book)))
         base          {:book-root book-root :book numbered
                        :tokens (:tokens manuscript)
                        :config (:config manuscript)

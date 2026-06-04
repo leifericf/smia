@@ -90,7 +90,7 @@
 
 ;; --- inline raw escapes ----------------------------------------------------
 
-(def ^:private inline-escape-re #"^\{=(hiccup|fo|cite|index)\}")
+(def ^:private inline-escape-re #"^\{=(hiccup|fo|cite|index|math)\}")
 
 (defn- inline-escape-form
   "Build the author node for an inline `` `payload`{=kind} `` escape. The raw
@@ -106,7 +106,8 @@
                                  (.getMessage e))
                             {:source payload}))))
     "cite"  [:cite {:key (keyword (str/trim payload))}]
-    "index" [:index {:term payload}]))
+    "index" [:index {:term payload}]
+    "math"  [:math {:notation payload}]))
 
 (defn- fold-inline-escapes
   "Fold an inline `[:code payload]` immediately followed by a
@@ -172,6 +173,10 @@
                                   "{=hiccup} block is not readable EDN" node)
       (= raw :fo)     (read-edn-1 literal :smia.md.compile/invalid-raw-escape
                                   "{=fo} block is not readable EDN" node)
+      ;; A math fence is display math, not a code listing.
+      (= :math (:lang attrs)) [:math (-> attrs
+                                         (dissoc :lang)
+                                         (assoc :notation literal :display true))]
       ;; :include resolves to slurped source in the shell; emit body-less.
       (:include attrs) [:pre attrs]
       :else            [:pre attrs literal])))

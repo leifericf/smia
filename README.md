@@ -19,7 +19,9 @@ A book is a `book.edn` file, its chapter sources, and a `theme.edn`. From that,
 Smia produces parts and numbered chapters, appendices, named front and back
 matter, captioned figures and code listings, cross-references that read
 "Figure 1" rather than a bare page number, typographic punctuation, syntax
-highlighting, running heads, an index, and a bibliography.
+highlighting, running heads, an index, and a bibliography. LaTeX math renders
+at build time into self-contained SVG, identical in every edition, with no
+JavaScript and no math font needed at read time.
 
 ## Building a book
 
@@ -28,8 +30,12 @@ buildable manuscript — `book.edn`, `theme.edn`, and a first chapter — into a
 fresh directory. To build the manual that ships with this repository:
 
 ```bash
-clojure -M:run build manual
+clojure -M:run:math build manual
 ```
+
+The `:math` alias pulls the optional math renderer; the manual's Markdown
+chapter uses live math. A book without math builds with `clojure -M:run build`
+alone.
 
 With no `--edition` option, Smia writes the screen and print PDFs under
 `build/smia-manual/pdf/`, next to an `artifacts.edn` manifest. Use

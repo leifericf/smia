@@ -148,6 +148,21 @@
     (is (str/includes? opf "href=\"chapter-01.xhtml\" id=\"chapter-01\" media-type=\"application/xhtml+xml\" properties=\"svg\""))
     (is (str/includes? opf "media-type=\"image/svg+xml\""))))
 
+(deftest inline-svg-page-declares-the-svg-property
+  (let [math-book (:manuscript
+                    (number/assign
+                      (assoc manuscript :sections
+                             [{:kind :chapter
+                               :content [:chapter {:id :ch :title "T"}
+                                         [:p [:math {:notation "x"
+                                                     :svg [:svg {:height "20" :width "30"
+                                                                 :xmlns "http://www.w3.org/2000/svg"}
+                                                           [:path {:d "M0 0"}]]}]]]}])))
+        r   (epub/assemble math-book tokens {:identifier "x"})
+        opf (:content (first (filter #(= "OEBPS/content.opf" (:path %))
+                                     (:entries r))))]
+    (is (str/includes? opf "href=\"chapter-01.xhtml\" id=\"chapter-01\" media-type=\"application/xhtml+xml\" properties=\"svg\""))))
+
 (deftest assembly-is-deterministic
   (is (= entries
          (:entries (epub/assemble book tokens

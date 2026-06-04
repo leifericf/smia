@@ -2,6 +2,8 @@
 
 A build produces **editions**, deliverable forms of the same manuscript. One numbered manuscript feeds them all: numbering, cross-reference resolution, index collection, and figure, table, and listing numbering happen once, before any format-specific rendering. Every edition therefore agrees on what "Figure 3" is.
 
+Mathematical notation follows the same once-before-everything rule: each formula renders to SVG right after numbering, and the identical image is inlined into every edition — embedded in the PDFs' page flow, an inline `<svg>` in the site's HTML and the EPUB's XHTML. No edition needs JavaScript, a math font, or a network fetch to show it.
+
 - `:screen`: a PDF with symmetric margins for on-screen reading.
 - `:print`: a PDF with mirrored recto/verso margins and a binding gutter.
 - `:print-x`: the print PDF as PDF/X-4 for press submission.

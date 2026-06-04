@@ -442,3 +442,30 @@
   (let [node [:chapter-ish [:p "x"]]]
     ;; unknown tag both times -> same structured failure, no state
     (is (= (catch-data #(ex node)) (catch-data #(ex node))))))
+
+;; --- math -----------------------------------------------------------------------
+
+(def ^:private math-svg
+  [:svg {:height "20" :width "34" :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M0 0"}]])
+
+(deftest inline-math-becomes-an-instream-foreign-object
+  (is (= [:fo/instream-foreign-object {:alignment-adjust "middle"} math-svg]
+         (ex [:math {:notation "x^2" :svg math-svg}]))))
+
+(deftest display-math-is-a-centered-block
+  (let [out (ex [:math {:notation "x^2" :display true :id :sq :svg math-svg}])]
+    (is (= :fo/block (first out)))
+    (is (= "center" (:text-align (second out))))
+    (is (= "sq" (:id (second out))))
+    (is (= :fo/instream-foreign-object (first (nth out 2))))))
+
+(deftest math-without-rendered-svg-names-the-alias
+  (let [d (catch-data #(ex [:math {:notation "x^2"}]))]
+    (is (= :smia.math/renderer-unavailable (:error/type d)))))
+
+(deftest math-svg-serializes-verbatim-inside-the-fo
+  (let [xml (ser/serialize (ex [:math {:notation "x" :svg math-svg}])
+                           {:xml-declaration? false})]
+    (is (str/includes? xml "<svg"))
+    (is (str/includes? xml "xmlns=\"http://www.w3.org/2000/svg\""))))

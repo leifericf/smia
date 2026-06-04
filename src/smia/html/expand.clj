@@ -24,6 +24,7 @@
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
+   [smia.math.resolve :as math-resolve]
    [clojure.string :as str]))
 
 (declare expand-all expanders)
@@ -420,6 +421,15 @@
    :xref       xref
    :cite       (fn [a _ ctx] (cite a ctx))
    :index      (fn [a _ _] (index-mark a))
+   :math       (fn [a _ _]
+                 (let [svg (update (math-resolve/rendered-svg a) 1
+                                   assoc
+                                   :role "img"
+                                   :aria-label (:notation a)
+                                   :class "math")]
+                   (if (:display a)
+                     [:div (assoc (id-attrs a) :class "math-display") svg]
+                     svg)))
    :page-break (fn [_ _ _] [:div {:class "page-break"}])
    :keep-together
    (fn [a c ctx]

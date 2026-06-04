@@ -19,6 +19,7 @@
    [smia.error :as error]
    [smia.fo.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
+   [smia.math.resolve :as math-resolve]
    [clojure.string :as str]))
 
 (declare expand-all expanders default-style)
@@ -605,6 +606,17 @@
      :xref       xref
      :cite       (fn [a _ s] (cite a s))
      :index      (fn [a _ _] (index-mark a))
+     :math       (fn [a _ _]
+                   (let [obj [:fo/instream-foreign-object
+                              {:alignment-adjust "middle"}
+                              (math-resolve/rendered-svg a)]]
+                     (if (:display a)
+                       [:fo/block (cond-> {:text-align "center"
+                                           :space-before "6pt"
+                                           :space-after "6pt"}
+                                    (:id a) (assoc :id (as-id (:id a))))
+                        obj]
+                       obj)))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together
      (fn [a c s]

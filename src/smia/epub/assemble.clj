@@ -123,13 +123,16 @@
        "application/octet-stream"))
 
 (defn- svg-referenced?
-  "True when a page references an SVG image — its manifest item must
-   then declare the `svg` property."
+  "True when a page references an SVG image or carries one inline
+   (rendered math) — its manifest item must then declare the `svg`
+   property."
   [hiccup]
   (boolean
-    (some #(and (vector? %) (= :img (first %)) (map? (second %))
-                (str/ends-with? (str/lower-case (str (:src (second %))))
-                                ".svg"))
+    (some #(and (vector? %)
+                (or (= :svg (first %))
+                    (and (= :img (first %)) (map? (second %))
+                         (str/ends-with? (str/lower-case (str (:src (second %))))
+                                         ".svg"))))
           (tree-seq vector? seq hiccup))))
 
 (defn- a11y-metas

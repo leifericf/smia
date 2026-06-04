@@ -29,6 +29,8 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 | code block | a fence whose info is `clojure {:test true}` | `[:pre {:lang :clojure :test true} …]` |
 | include source | a fence info of `clojure {:include "src/x.clj" :lines [1 20]}` | `[:pre …]` with the file's text |
 | include a tagged region | a fence info of `clojure {:include "src/x.clj" :tag "core"}` | `[:pre …]` with the region's text |
+| inline math | a code span followed by `{=math}` | `[:math {:notation "…"}]` |
+| display math | a fence whose info is `math` | `[:math {:notation "…" :display true}]` |
 | raw Hiccup | a fence whose info is `{=hiccup}` | spliced author Hiccup (re-expands) |
 | raw FO | a fence whose info is `{=fo}` | spliced FO-Hiccup (verbatim) |
 | table widths | a bare `{:cols [3 1]}` line directly above a table | `[:table {:cols [3 1]} …]` |
@@ -56,6 +58,24 @@ Markdown prose is typeset with typographic punctuation. Straight quotes become c
 Code is exempt: nothing inside a code span or a fenced block is rewritten, so a flag like `--clean` keeps its hyphens when set in code. The `{=hiccup}` and `{=fo}` escapes and every front-matter value are data and stay authored exactly, as do `.clj` chapters. Quotes pair within each block, so a quote that opens before an emphasized word still closes after it, and an unbalanced quote cannot leak into the next paragraph.
 
 Smart punctuation is on by default. A book that wants its typewriter punctuation kept as typed turns it off with one token in `theme.edn`, described in [the theming chapter](#theming): `:type {:smart-punctuation false}`.
+
+## Mathematical notation
+
+Write math as LaTeX. An inline formula is a code span carrying the notation, immediately followed by the `{=math}` marker — `` `e^{i\pi} + 1 = 0`{=math} `` renders as `e^{i\pi} + 1 = 0`{=math} in the running text. A fence whose info string is `math` is display math, set off and centered:
+
+```math
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+```
+
+Smia renders the notation at build time, in process, into SVG whose glyphs are outline paths. The same image appears in every edition — the PDFs, the site, the EPUB — with no JavaScript in the page and no font needed at view time. A formula used twice renders once. Inline math sits on a fixed middle alignment rather than a true text baseline; notation with deep descenders may sit a little high.
+
+Rendering needs the optional `:math` alias, composed with the command the same way as the code evaluators below:
+
+```
+clojure -M:run:math build
+```
+
+A manuscript without math needs nothing. A manuscript with math and no renderer on the classpath fails with `:smia.math/renderer-unavailable`, naming the alias.
 
 ## Overviews and description lists
 
