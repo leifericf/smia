@@ -1,11 +1,17 @@
 # clj-book
 
-clj-book builds technical books as PDF on the JVM. You write your manuscript in
-Markdown (or in Hiccup, the Clojure data it compiles to) and clj-book renders the
-screen and print editions through [Apache FOP](https://xmlgraphics.apache.org/fop/).
-It runs on nothing more than a JDK and the Clojure CLI. There is no Ruby toolchain
-or asciidoctor underneath, and the renderer never shells out to an external binary,
-so a build stays self-contained and reproducible.
+clj-book builds technical books as PDF, EPUB, and a static website on the JVM. You
+write your manuscript in Markdown (or in Hiccup, the Clojure data it compiles to)
+and clj-book renders the screen and print editions through
+[Apache FOP](https://xmlgraphics.apache.org/fop/). It runs on nothing more than a
+JDK and the Clojure CLI. There is no Ruby toolchain or asciidoctor underneath, and
+the renderer never shells out to an external binary, so a build stays self-contained
+and reproducible.
+
+**[Read the manual online](https://leifericf.github.io/clj-book/)** — the manual is
+itself a clj-book, published with clj-book. Every edition (screen PDF, print PDF,
+print-ready PDF/X, and EPUB) is downloadable from the site's Downloads page and the
+repository's [Releases](https://github.com/leifericf/clj-book/releases/latest).
 
 A book is a `book.edn` file together with its chapter sources and a
 `theme.edn`. From that, clj-book gives you parts and numbered chapters,
