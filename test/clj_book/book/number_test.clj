@@ -179,6 +179,28 @@
       (is (= :clj-book.book.number/unresolved-xref (:error/type d)))
       (is (= :nowhere (:to (:error/context d)))))))
 
+(defn- duplicate-id-error [manuscript]
+  (try (assign manuscript) nil
+       (catch Exception e (clj-book.error/data e))))
+
+(deftest a-duplicate-anchor-id-is-a-hard-error
+  (testing "the same heading :id in two chapters fails the numbering pass"
+    (let [d (duplicate-id-error
+              {:sections [(chapter-section :a "A" [:h2 {:id :setup} "Setup"])
+                          (chapter-section :b "B" [:h2 {:id :setup} "Again"])]})]
+      (is (= :clj-book.book.number/duplicate-id (:error/type d)))
+      (is (= "setup" (:id (:error/context d))))))
+  (testing "a heading id colliding with a captioned float id is caught"
+    (let [d (duplicate-id-error
+              {:sections [(chapter-section :a "A"
+                            [:figure {:id :dup :caption "F"} [:img {:src "x"}]]
+                            [:h2 {:id :dup} "Heading"])]})]
+      (is (= :clj-book.book.number/duplicate-id (:error/type d)))))
+  (testing "unique ids across the book still pass"
+    (is (nil? (duplicate-id-error
+                {:sections [(chapter-section :a "A" [:h2 {:id :one} "One"])
+                            (chapter-section :b "B" [:h2 {:id :two} "Two"])]})))))
+
 (deftest an-xref-to-an-inner-heading-id-resolves
   (testing ":keys is defined by an inner [:h2 {:id :keys}] heading, so it resolves"
     (let [out  (assign {:sections [(chapter-section :a "A"

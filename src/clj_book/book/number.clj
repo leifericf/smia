@@ -111,6 +111,20 @@
   (let [acc (update-in acc [:counters k] (fnil inc 0))]
     [acc (get-in acc [:counters k])]))
 
+(defn- register
+  "Add registry `entry` under `id`, or throw if `id` is already taken.
+   Every author-supplied `:id` — on a heading, chapter, appendix, part,
+   matter section, or captioned float — must be unique across the whole
+   book: ids become anchor targets, and a duplicate would otherwise
+   surface only as a late, format-specific render error."
+  [acc id entry]
+  (when (contains? (:registry acc) id)
+    (throw (error/ex :clj-book.book.number/duplicate-id
+                     (str "Duplicate id " (pr-str id) ": an :id must be unique "
+                          "across the whole book.")
+                     {:id id})))
+  (update acc :registry assoc id entry))
+
 ;; --- body sections (headings) ---------------------------------------------
 
 (declare walk walk-seq number-float mark-index)
@@ -148,7 +162,7 @@
         entry     {:kind kind :id id :number num :label label
                    :title (:caption a)}
         acc       (-> acc
-                      (update :registry assoc id (dissoc entry :id))
+                      (register id (dissoc entry :id))
                       (update :floats conj entry))
         [acc kids] (walk-seq ctx acc (children-of node))]
     [acc (into [(first node)
@@ -185,11 +199,10 @@
                     n   (str chapter-number "." sec)
                     acc (-> acc
                             (assoc :sec sec)
-                            (update :registry assoc (name id)
-                                    {:kind :section :number n :title title}))]
+                            (register (name id)
+                                      {:kind :section :number n :title title}))]
                 [acc (into [(first node) a (str n " ")] (children-of node))])
-              [(update acc :registry assoc (name id)
-                       {:kind :section :title title})
+              [(register acc (name id) {:kind :section :title title})
                node]))
           [acc node]))
 
@@ -228,9 +241,9 @@
         [_ a & body] (:content section)
         [acc body'] (number-body acc (vec body) policy num)
         a'        (cond-> a num (assoc :number num :label label :kind k))
-        acc       (update acc :registry assoc (name (:id a))
-                          (cond-> {:kind k :title (:title a)}
-                            num (assoc :number num :label label)))]
+        acc       (register acc (name (:id a))
+                            (cond-> {:kind k :title (:title a)}
+                              num (assoc :number num :label label)))]
     [acc (assoc section :content (into [:chapter a'] body')
                 :number num :label label)]))
 
@@ -240,9 +253,9 @@
   (let [[acc n] (bump acc :part)
         num     (fmt (:parts policy) n)
         label   (str (kind-words :part) " " num)
-        acc     (update acc :registry assoc (str "part-" (:index section))
-                        {:kind :part :number num :label label
-                         :title (:title section)})]
+        acc     (register acc (str "part-" (:index section))
+                          {:kind :part :number num :label label
+                           :title (:title section)})]
     [acc (assoc section :number num :label label)]))
 
 (defn- number-matter
@@ -252,13 +265,13 @@
   (if-let [content (:content section)]
     (let [[_ a & body] content
           [acc body'] (number-body acc (vec body) policy nil)
-          acc (update acc :registry assoc (name (:id a))
-                      {:kind :matter :title (:title a)})]
+          acc (register acc (name (:id a))
+                        {:kind :matter :title (:title a)})]
       [acc (assoc section :content (into [:chapter a] body'))])
-    [(update acc :registry assoc (name (:role section))
-             {:kind :matter
-              :title (or (:title section)
-                         (structure/role-title (:role section)))})
+    [(register acc (name (:role section))
+               {:kind :matter
+                :title (or (:title section)
+                           (structure/role-title (:role section)))})
      section]))
 
 (defn- number-sections
