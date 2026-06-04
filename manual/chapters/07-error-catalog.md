@@ -26,6 +26,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:clj-book.book.load/invalid-chapter` — a loaded chapter is not a `[:chapter {…} …]` form.
 - `:clj-book.book.load/missing-chapter-id` / `:clj-book.book.load/missing-chapter-title` — a `:chapter` is missing its `:id` or `:title`.
 - `:clj-book.book.number/unresolved-xref` — an `:xref` points at an unknown id.
+- `:clj-book.book.number/duplicate-id` — an `:id` is used twice; every id (heading, chapter, appendix, part, matter, or captioned float) must be unique across the whole book, since each becomes an anchor target.
 - `:clj-book.fo.expand/unknown-tag` — an element tag is neither known sugar nor a `:fo/*` tag.
 - `:clj-book.fo.expand/invalid-annotation` — a listing's `:annotations` reference a line outside the listing, or more than one note lands on the same line.
 
@@ -48,6 +49,13 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:clj-book.eval/unsupported-language` — a marked block names a language with no registered evaluator.
 - `:clj-book.eval/missing-language` — a `{:test true}` block has no `:lang`.
 - `:clj-book.eval/evaluator-unavailable` — an evaluator's optional dependency is not on the classpath.
+
+## Editions
+
+- `:clj-book.html.expand/missing-alt-text` — an image has no `:alt` text; every image needs it (use `:alt ""` for a decorative one).
+- `:clj-book.html.expand/fo-tag-in-html` / `:clj-book.fo.expand/html-tag-in-pdf` — a per-format escape hatch was used in the wrong format: a `:fo/*` element in an HTML edition, or a `:html/*` element in a PDF edition.
+- `:clj-book.html.assemble/unsafe-resource-path` — an image `:src` is absolute or contains `..`, so it would escape the output directory; image paths must stay within the book.
+- `:clj-book.html.assemble/duplicate-page` — two sections assemble to the same output filename.
 
 ## Rendering
 
