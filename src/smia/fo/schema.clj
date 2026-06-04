@@ -29,10 +29,11 @@
   "Tags the vocabulary accepts but that a resolve pass eliminates before
    expansion — they have no expander of their own. `:attr` (a document
    attribute reference, `[:attr :version]`) is resolved by
-   `smia.book.attrs` before numbering. Kept separate from `sugar-tags` so
-   the expander-parity invariant (every sugar tag has an expander in every
-   format) stays exact."
-  #{:attr})
+   `smia.book.attrs`, and `:when` (conditional content, `[:when <cond> …]`)
+   by `smia.book.conditional`, both before numbering. Kept separate from
+   `sugar-tags` so the expander-parity invariant (every sugar tag has an
+   expander in every format) stays exact."
+  #{:attr :when})
 
 (defn fo-tag?
   "True for a raw FO tag: a keyword in the `fo` namespace, e.g. `:fo/block`."

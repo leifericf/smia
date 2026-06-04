@@ -283,6 +283,10 @@
    (fn [node]
      (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node))))
 
+   "when"
+   (fn [node]
+     (into [:when (directive-attrs node)] (compile-block-seq (:children node))))
+
    "example"
    (fn [node]
      (into [:example (directive-attrs node)] (compile-block-seq (:children node))))

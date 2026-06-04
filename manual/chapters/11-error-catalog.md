@@ -32,6 +32,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.load/missing-chapter-id` / `:smia.book.load/missing-chapter-title`: a `:chapter` is missing its `:id` or `:title`.
 - `:smia.book.attrs/unknown-attribute`: an `[:attr :k]` reference (or `` `k`{=attr} ``) names an attribute that is not declared in `:book/attributes` or front-matter.
 - `:smia.book.attrs/invalid-attribute`: an `:attr` reference is not the form `[:attr <keyword>]`.
+- `:smia.book.conditional/invalid-condition`: a `:::when` (or `[:when …]`) condition is not one of `{:defined :k}`, `{:equals [:k v]}`, `{:any-of […]}`, `{:all-of […]}`, or `{:not c}`.
 - `:smia.book.number/unresolved-xref`: an `:xref` points at an unknown id.
 - `:smia.book.number/duplicate-id`: an `:id` is used twice. Every id (heading, chapter, appendix, part, matter, or captioned float) must be unique across the whole book, since each becomes an anchor target.
 - `:smia.fo.expand/unknown-tag`: an element tag is neither known sugar nor a `:fo/*` tag.

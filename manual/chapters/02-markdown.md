@@ -25,6 +25,7 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 | overview | a `:::overview` … `:::` block | `[:overview …]` |
 | example | a `:::example {:title "…"}` … `:::` block | `[:example {…} …]` |
 | disclosure | a `:::details {:summary "…"}` (or `:::open`) block | `[:details {…} …]` |
+| conditional | a `:::when {<condition>}` … `:::` block | `[:when {<condition>} …]` |
 | description list | a `:::deflist` block of **bold term** lines and definitions | `[:dl [:dt …] [:dd …] …]` |
 | cross-reference | a link whose target is `#id` | `[:xref {:to :id} …]` |
 | footnote | `text[^1]` plus a `[^1]:` definition | `[:footnote …]` |
@@ -128,6 +129,23 @@ The `ratio?` branch renders as a double so the output stays portable.
 A value you repeat — a version, a product name, a release year — belongs in one place. Declare it once under `:book/attributes` in `book.edn` (see [the configuration chapter](#configuration)), then reference it by name: a code span carrying the attribute name, followed by the `{=attr}` marker. The reference resolves to the declared value. A chapter's front-matter can override an attribute for that chapter, and the build's `--licensee` and the book `:language` are available as `licensee` and `language`.
 
 A value may be a string or author Hiccup, and it resolves before numbering, so an attribute holding a captioned figure is numbered in document order like any other. An undeclared name is a build error rather than a silent blank.
+
+## Conditional content
+
+A `:::when` block keeps or drops its content based on a condition. The condition is the directive's attribute map, one of:
+
+- `{:defined :draft}` — an attribute (or build value) by that name is present
+- `{:equals [:edition :epub]}` — the named value equals the given one
+- `{:any-of [c …]}` / `{:all-of [c …]}` — combine conditions with or / and
+- `{:not c}` — negate a condition
+
+```
+:::when {:equals [:edition :epub]}
+This note appears only in the EPUB edition.
+:::
+```
+
+Conditions evaluate against the chapter's attributes and front-matter, plus the current `:edition`. A condition that names `:edition` makes the content vary by edition; one that does not resolves once for every edition, so the figure and table numbers stay identical across editions. See [the editions chapter](#editions) for how per-edition content interacts with numbering.
 
 ## Annotating code
 

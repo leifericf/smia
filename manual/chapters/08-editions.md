@@ -19,6 +19,12 @@ clojure -M:run build my-book --edition screen --edition site
 
 The `artifacts.edn` manifest lists what was built under `:build/editions`, with one artifact entry per edition.
 
+## Per-edition content
+
+A `:::when` block (see [the Markdown chapter](#markdown)) can hold content for some editions and not others: `:::when {:equals [:edition :epub]}` appears only in the EPUB. This is the one case that bends the once-before-everything rule. When a book has no edition-dependent content, it is numbered once and every edition agrees on "Figure 3", as above. When it does, that book is numbered per edition instead: each edition prunes its own branches first, so a figure present only in the EPUB is numbered there and absent elsewhere, and the surrounding numbers stay correct in every edition. Conditions that do not name `:edition` (a draft flag, a licensee) resolve once and keep the single-numbering guarantee.
+
+A cross-reference is resolved per edition too, so an `:xref` to a target that lives inside an edition-only branch must itself sit in a branch present in the same editions; otherwise that edition reports an unresolved cross-reference.
+
 ## The site edition
 
 `--edition site` writes a browsable site under `build/<slug>/site/`: a home `index.html`, one page per chapter and per matter section, a `styles.css` generated from `theme.edn`, and copies of every image the chapters reference. The output contains no JavaScript by default and no build-tool runtime. The one exception is opt-in: the search island ([the theming chapter](#theming)) adds a small script as progressive enhancement, and every page keeps working with JavaScript disabled.

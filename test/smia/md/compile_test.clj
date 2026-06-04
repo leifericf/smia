@@ -139,6 +139,13 @@
     (is (= [[:p "A " [:mark "key"] " point."]]
            (md->body "A `key`{=mark} point.\n")))))
 
+(deftest when-directive-compiles-to-a-conditional
+  (is (= [[:when {:equals [:edition :epub]} [:p "EPUB only."]]]
+         (md->body ":::when {:equals [:edition :epub]}\nEPUB only.\n:::\n")))
+  (testing "the condition map is the directive's attrs"
+    (is (= [[:when {:defined :draft} [:p "Draft."]]]
+           (md->body ":::when {:defined :draft}\nDraft.\n:::\n")))))
+
 (deftest richer-block-directives-compile
   (testing ":::example carries its title and body"
     (is (= [[:example {:title "A worked case"} [:p "Body."]]]

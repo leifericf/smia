@@ -126,6 +126,43 @@
     (testing "the stylesheet lands beside the pages"
       (is (.exists (io/file (:path art) "styles.css"))))))
 
+;; --- conditional content ----------------------------------------------------
+
+(def ^:private chapter-with-edition-conditional
+  (str "# Demo\n\n"
+       ":::when {:equals [:edition :epub]}\nEPUB-only note.\n:::\n\n"
+       "Common prose.\n"))
+
+(def ^:private chapter-with-plain-conditional
+  (str "# Demo\n\n"
+       ":::when {:defined :draft}\nDraft note.\n:::\n\n"
+       "Common prose.\n"))
+
+(deftest dry-run-reports-per-edition-counts-when-edition-dependent
+  (testing "an edition conditional opts the book into per-edition numbering"
+    (let [root (tmp-book-with-chapter "cond-dry" chapter-with-edition-conditional)
+          p    (execute/build (request "cond-dry-out" :book-root root
+                                       :editions [:screen :epub] :dry-run true))
+          per  (get-in p [:numbering :per-edition])]
+      (is (map? per))
+      (is (= #{:screen :epub} (set (keys per))))
+      (is (every? map? (vals per)))))
+  (testing "a book with no edition conditional numbers once (no per-edition key)"
+    (let [root (tmp-book-with-chapter "plain-dry" chapter-with-plain-conditional)
+          p    (execute/build (request "plain-dry-out" :book-root root
+                                       :editions [:screen :epub] :dry-run true))]
+      (is (nil? (get-in p [:numbering :per-edition]))))))
+
+(deftest ^:integration edition-conditional-build-renders-each-edition
+  ;; The per-edition numbering path must render every requested edition.
+  (let [root (tmp-book-with-chapter "cond-build" chapter-with-edition-conditional)
+        man  (execute/build (request "cond-build-out" :book-root root
+                                     :editions [:screen :epub]))
+        arts (:artifacts man)]
+    (is (= #{:screen :epub} (set (map :edition arts))))
+    (doseq [art arts]
+      (is (.exists (io/file (:path art))) (str (:edition art) " artifact written")))))
+
 ;; --- opt-in code validation -----------------------------------------------
 
 (def ^:private chapter-with-passing-block

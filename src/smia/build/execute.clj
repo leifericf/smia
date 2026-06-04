@@ -11,6 +11,7 @@
   (:require
    [smia.book.assemble :as assemble]
    [smia.book.attrs :as attrs]
+   [smia.book.conditional :as conditional]
    [smia.book.config :as config]
    [smia.book.load :as book-load]
    [smia.book.number :as number]
@@ -37,7 +38,8 @@
   (:import
    (java.time Instant)))
 
-(declare build-paths load-book render-edition! substitute-attrs)
+(declare build-paths load-book render-edition!
+         attr-contexts resolve-content number-for-edition)
 
 (defn prepare
   "Shell: load and validate the manuscript and resolve output paths.
@@ -70,20 +72,27 @@
            licensee]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
-        ;; Document attributes resolve once, before numbering, so an
-        ;; attribute value carrying a numbered float numbers correctly and
-        ;; every edition substitutes identically.
-        substituted   (substitute-attrs book (:config manuscript) licensee)
+        ;; Document attributes resolve once, and edition-independent
+        ;; conditionals prune once, before numbering — so a book without
+        ;; edition-dependent content numbers once and every edition agrees on
+        ;; Figure 3. A book with edition-dependent content opts into
+        ;; per-edition numbering (see `number-for-edition`).
+        resolved      (resolve-content book (:config manuscript) licensee)
         _             (when (:enabled validation)
-                        (eval-validate/validate-chapters! (:chapters substituted)))
-        ;; Math and diagrams render once, after numbering and before the
-        ;; editions split, so every edition carries the same SVG.
-        numbered      (svg-resolve/attach-svg (:manuscript (number/assign substituted)))
-        base          {:book-root book-root :book numbered
-                       :tokens (:tokens manuscript)
-                       :config (:config manuscript)
-                       :licensee licensee}
-        artifacts-out (mapv #(render-edition! base %) edition-steps)
+                        (eval-validate/validate-chapters! (:chapters (:book resolved))))
+        ;; With no edition-dependent content, number and render SVG once and
+        ;; share it; otherwise each edition prepares its own numbered book.
+        shared        (when-not (:per-edition? resolved)
+                        (number-for-edition resolved nil))
+        render-step   (fn [step]
+                        (let [numbered (or shared
+                                           (number-for-edition resolved (:edition step)))
+                              base     {:book-root book-root :book numbered
+                                        :tokens (:tokens manuscript)
+                                        :config (:config manuscript)
+                                        :licensee licensee}]
+                          (render-edition! base step)))
+        artifacts-out (mapv render-step edition-steps)
         finished      (Instant/now)]
     (artifacts/write!
       {:output-dir  (:book-output-dir paths)
@@ -120,15 +129,30 @@
     (if (:dry-run request)
       ;; Surface the numbering summary and the validation plan (block counts
       ;; per language) by loading the book; nothing is rendered or evaluated.
-      (let [book (substitute-attrs
-                   (load-book (:book-root (:request prepared)) (:manuscript prepared))
-                   (:config (:manuscript prepared))
-                   (:licensee (:request prepared)))]
-        (cond-> (assoc-in the-plan [:numbering :counts]
-                          (number/counts (number/assign book)))
+      (let [config   (:config (:manuscript prepared))
+            licensee (:licensee (:request prepared))
+            resolved (resolve-content
+                       (load-book (:book-root (:request prepared)) (:manuscript prepared))
+                       config licensee)
+            {:keys [book per-edition? book-ctx build-ctx]} resolved
+            ;; Counts come from the edition-independent (neutral) view; when
+            ;; content is edition-dependent, the per-edition counts differ and
+            ;; are reported alongside.
+            neutral  (conditional/prune-manuscript book book-ctx build-ctx {} nil)
+            counts   (number/counts (number/assign neutral))]
+        (cond-> (assoc-in the-plan [:numbering :counts] counts)
+          per-edition?
+          (assoc-in [:numbering :per-edition]
+                    (into (sorted-map)
+                          (map (fn [e]
+                                 [e (number/counts
+                                      (number/assign
+                                        (conditional/prune-manuscript
+                                          book book-ctx build-ctx {:edition e} nil)))]))
+                          (:editions (:request prepared))))
           (get-in the-plan [:validation :enabled])
           (assoc-in [:validation :plan]
-                    (eval-registry/plan-validation (:chapters book)))))
+                    (eval-registry/plan-validation (:chapters neutral)))))
       (do
         (when (:clean request)
           (delete-tree! (get-in prepared [:paths :book-output-dir])))
@@ -140,14 +164,22 @@
    rendering. Returns `{:status :ok :warnings [...]}` or throws."
   [request]
   (let [{:keys [manuscript request]} (prepare request)
-        book      (substitute-attrs (load-book (:book-root request) manuscript)
-                                    (:config manuscript) (:licensee request))
-        numbered  (:manuscript (number/assign book))
+        config    (:config manuscript)
+        [book-ctx build-ctx] (attr-contexts config (:licensee request))
+        book      (attrs/substitute (load-book (:book-root request) manuscript)
+                                    book-ctx build-ctx)
+        ;; Resolve every conditional against the edition-independent context
+        ;; (no :edition), so the structural pass sees a clean, numbered tree.
+        ;; Vocabulary, below, is checked before pruning so every branch's
+        ;; content is validated, not only the neutral view.
+        pruned    (conditional/prune-manuscript book book-ctx build-ctx {} nil)
+        numbered  (:manuscript (number/assign pruned))
         the-theme (theme-compile/compile-theme (:tokens manuscript) :screen)]
     ;; Structural check: numbering resolves every cross-reference and
     ;; citation (a hard error otherwise); assembly then builds the tree.
     (assemble/assemble numbered the-theme)
-    ;; Vocabulary check: each chapter body element conforms (humanized).
+    ;; Vocabulary check: each chapter body element conforms (humanized). The
+    ;; conditional bodies are still present here, so every branch is checked.
     (doseq [chapter (:chapters book)
             :let    [[_ _ & body] chapter]
             form    body]
@@ -180,17 +212,45 @@
     book-root config
     {:smart-punctuation (get-in tokens [:type :smart-punctuation] true)}))
 
-(defn- substitute-attrs
-  "Resolve `[:attr :k]` document attributes across the loaded `book` before
-   numbering. The book-wide context is the book's title/author and declared
-   `:book/attributes`, with the build's `licensee` and the book `:language`
-   on top (each chapter's front-matter is merged in between, by the pass)."
+(defn- attr-contexts
+  "The book-wide and build halves of the per-chapter context the attribute
+   and conditional passes share: `[book-context build-context]`. Built-in
+   facts (title, author) and declared `:book/attributes` form the book half;
+   the build's `licensee` and the book `:language` form the build half (each
+   chapter's front-matter is merged between them by the passes)."
+  [config licensee]
+  [(merge {:title (:book/title config) :author (:book/author config)}
+          (:book/attributes config))
+   {:licensee licensee :language (:book/language config)}])
+
+(defn- resolve-content
+  "Resolve attributes, then prune edition-independent conditionals, across a
+   loaded `book`. Returns `{:book <pruned> :per-edition? <bool> :book-ctx ..
+   :build-ctx ..}`: edition-dependent conditionals are still present and are
+   pruned per edition by `number-for-edition`."
   [book config licensee]
-  (attrs/substitute
-    book
-    (merge {:title (:book/title config) :author (:book/author config)}
-           (:book/attributes config))
-    {:licensee licensee :language (:book/language config)}))
+  (let [[book-ctx build-ctx] (attr-contexts config licensee)
+        substituted (attrs/substitute book book-ctx build-ctx)
+        pruned      (conditional/prune-manuscript
+                      substituted book-ctx build-ctx {}
+                      conditional/mentions-edition?)]
+    {:book        pruned
+     :per-edition? (conditional/edition-dependent? pruned)
+     :book-ctx    book-ctx
+     :build-ctx   build-ctx}))
+
+(defn- number-for-edition
+  "Number and attach SVG for one `edition`. When `per-edition?`, that
+   edition's conditional branches are pruned first; otherwise the shared
+   (already edition-independent) manuscript is numbered as-is."
+  [{:keys [book per-edition? book-ctx build-ctx]} edition]
+  (-> (if per-edition?
+        (conditional/prune-manuscript book book-ctx build-ctx
+                                      {:edition edition} nil)
+        book)
+      number/assign
+      :manuscript
+      svg-resolve/attach-svg))
 
 (defn- render-pdf-edition!
   "Assemble -> expand -> serialize -> FOP for one PDF edition. The page
