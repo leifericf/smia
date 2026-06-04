@@ -1,6 +1,6 @@
 # How it works
 
-clj-book is small because it leans on two ideas: everything is plain data, and the only effects live at the edges. This chapter explains the design and the reasoning behind it.
+Smia is small because it leans on two ideas: everything is plain data, and the only effects live at the edges. This chapter explains the design and the reasoning behind it.
 
 ## The pipeline
 
@@ -44,7 +44,7 @@ Because the FO tree is data, it can be assembled, transformed, and inspected wit
 
 ## A superset per format, not a subset
 
-Most engines give you a fixed vocabulary plus an escape hatch. clj-book inverts that: for each output format the author vocabulary is a true superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable by construction; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition — convenience layered on top, not a ceiling. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable by construction.
+Most engines give you a fixed vocabulary plus an escape hatch. Smia inverts that: for each output format the author vocabulary is a true superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable by construction; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition — convenience layered on top, not a ceiling. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable by construction.
 
 :::admonition {:kind :note}
 Sugar nested inside a raw `:fo/*` or `:html/*` element still expands, so the layers compose freely in the same tree.
@@ -56,11 +56,11 @@ Keeping assembly, expansion, and serialization pure means the hard part of the e
 
 ## Why Apache FOP, in-process
 
-FOP is a pure-JVM XSL-FO formatter. Running it as a library call — never as a subprocess — means a build needs only a JVM: no Ruby, no native binary, no toolchain to install. One process also makes errors easy to surface: FOP's events become structured clj-book errors and warnings.
+FOP is a pure-JVM XSL-FO formatter. Running it as a library call — never as a subprocess — means a build needs only a JVM: no Ruby, no native binary, no toolchain to install. One process also makes errors easy to surface: FOP's events become structured Smia errors and warnings.
 
 ## Determinism
 
-Identical inputs should produce equivalent output. clj-book serializes FO without pretty-printing (so `white-space="pre"` survives), emits attributes in sorted order, and pins FOP's document metadata. Two builds of the same manuscript agree on pages, text, and bookmarks.
+Identical inputs should produce equivalent output. Smia serializes FO without pretty-printing (so `white-space="pre"` survives), emits attributes in sorted order, and pins FOP's document metadata. Two builds of the same manuscript agree on pages, text, and bookmarks.
 
 ## Styling without CSS
 

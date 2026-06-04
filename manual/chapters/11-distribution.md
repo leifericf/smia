@@ -38,19 +38,19 @@ This is the manual's own block:
 
 ```clojure {:id :lst-downloads :file "book.edn" :caption "Declaring the downloadable editions"}
 :book/downloads
-{:base   "https://github.com/leifericf/clj-book/releases/latest/download"
+{:base   "https://github.com/leifericf/smia/releases/latest/download"
  :assets [{:label   "Screen PDF"
-           :file    "clj-book-manual-screen.pdf"
+           :file    "smia-manual-screen.pdf"
            :note    "Symmetric margins, for reading on screen."
            :default true}
           {:label "Print PDF"
-           :file  "clj-book-manual-print.pdf"
+           :file  "smia-manual-print.pdf"
            :note  "Mirrored margins and a binding gutter, for printing."}
           {:label "Print-ready (PDF/X)"
-           :file  "clj-book-manual-print-x.pdf"
+           :file  "smia-manual-print-x.pdf"
            :note  "PDF/X-4 with embedded fonts, for a press."}
           {:label "EPUB"
-           :file  "clj-book-manual.epub"
+           :file  "smia-manual.epub"
            :note  "Reflowable, for e-readers."}]}
 ```
 
@@ -58,7 +58,7 @@ Each asset's link is `:base` joined to its `:file`. The asset flagged
 `:default true` renders as a prominent primary link at the top of the page — here,
 the screen PDF, the right choice for most readers — and the rest follow as a list,
 each with its `:note`. At most one asset may be the default. A malformed block fails
-the build with `:clj-book.book.config/invalid-downloads`.
+the build with `:smia.book.config/invalid-downloads`.
 
 Two details make this robust. The `:base` points at `releases/latest/download`, the
 moving target that always resolves to the newest release, so the site never needs
@@ -70,7 +70,7 @@ EPUB never carry a page of links to themselves. Build the site and you will find
 ## Publishing on a date tag
 
 The manual ships a single GitHub Actions workflow, `.github/workflows/release.yml`,
-that does the whole job when you push a tag shaped like a calendar date. clj-book
+that does the whole job when you push a tag shaped like a calendar date. Smia
 uses date tags rather than version numbers; the tag is simply the day you publish.
 
 ```yaml {:id :lst-release-trigger :file ".github/workflows/release.yml" :caption "Triggering on a YYYY-MM-DD tag"}
@@ -106,42 +106,40 @@ git tag 2026-06-04 && git push origin 2026-06-04
 ```
 
 :::admonition {:kind :note}
-clj-book is a build tool: it turns a manuscript into files and stops there. It does
-not deploy, and there is no `clj-book deploy` command. The workflow above is yours to
-own and adapt — it lives in your repository, not inside clj-book — which is why this
+Smia is a build tool: it turns a manuscript into files and stops there. It does
+not deploy, and there is no `smia deploy` command. The workflow above is yours to
+own and adapt — it lives in your repository, not inside Smia — which is why this
 chapter shows it as an example rather than documenting a built-in feature.
 :::
 
 ## The site URL and a custom domain
 
-Until you set up a custom domain, GitHub serves the site at its default project URL,
-a subpath of your account: `https://leifericf.github.io/clj-book/`. clj-book's site
-links are all relative, and the Downloads links are absolute release URLs, so the
-site works unchanged under that subpath — there is nothing to configure for the
-default URL beyond turning Pages on.
+This manual serves from a custom domain, `smia.leifericf.com`, and the workflow
+writes the `CNAME` for it on every build. The step has a baked-in default, so the
+domain works out of the box without any repository configuration:
 
-When you do want a domain, the workflow already reads it from an Actions variable so
-no code has to change:
-
-```yaml {:id :lst-cname :file ".github/workflows/release.yml" :caption "Writing a CNAME only when a domain is configured"}
-- name: Set the custom domain (when configured)
-  if: ${{ vars.PAGES_CUSTOM_DOMAIN != '' }}
+```yaml {:id :lst-cname :file ".github/workflows/release.yml" :caption "Writing the CNAME with a default domain"}
+- name: Set the custom domain
   run: |
-    echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" \
-      > build/release/clj-book-manual/site/CNAME
+    echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" \
+      > build/release/smia-manual/site/CNAME
 ```
 
-Set the `PAGES_CUSTOM_DOMAIN` repository variable, point the domain's DNS at GitHub
-Pages, and the next tagged build serves from it; swapping the README link is then a
-one-line change.
+A fork overrides the domain by setting the `PAGES_CUSTOM_DOMAIN` repository variable;
+its value wins over the default. Smia's site links are all relative and the
+Downloads links are absolute release URLs, so the site also works unchanged at
+GitHub's default project URL (`https://leifericf.github.io/smia/`) if you point
+`PAGES_CUSTOM_DOMAIN` at an empty value and drop the `CNAME`.
 
 ## One-time repository setup
 
 Three things are configured once, in the repository, outside the manuscript:
 
-- In **Settings → Pages**, set the source to **GitHub Actions**.
-- Optionally, set the **`PAGES_CUSTOM_DOMAIN`** Actions variable and the matching DNS
-  record when you adopt a domain.
+- In **Settings → Pages**, set the source to **GitHub Actions**, and set the custom
+  domain to `smia.leifericf.com` with **Enforce HTTPS** on.
+- Point the domain's DNS at GitHub Pages (a `CNAME` record for the subdomain to
+  `leifericf.github.io`), or set the **`PAGES_CUSTOM_DOMAIN`** Actions variable to
+  your own domain.
 - Push the first date tag to trigger the first publish.
 
 From then on, publishing a new edition of the book is one push of a dated tag. The

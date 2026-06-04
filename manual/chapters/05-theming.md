@@ -1,6 +1,6 @@
 # Theming and editions
 
-Styling comes from design **tokens** — never from arbitrary stylesheet strings. For paged output FOP is not a CSS engine, and clj-book does not pretend it is.
+Styling comes from design **tokens** — never from arbitrary stylesheet strings. For paged output FOP is not a CSS engine, and Smia does not pretend it is.
 
 ## theme.edn
 
@@ -54,4 +54,4 @@ Both PDF editions are built by default; pass `:editions '[:print]'` (or repeat `
 
 ## Fonts
 
-With no font configuration, PDF output uses the base-14 font families, so a new book is zero-config and always reproducible. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn` (see [the editions chapter](#editions)); once registered they are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics — a list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. The clj-book platform bundles no fonts; the manual's manuscript ships its own under their SIL Open Font License, beside the files.
+With no font configuration, PDF output uses the base-14 font families, so a new book is zero-config and always reproducible. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn` (see [the editions chapter](#editions)); once registered they are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics — a list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. The Smia platform bundles no fonts; the manual's manuscript ships its own under their SIL Open Font License, beside the files.

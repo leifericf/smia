@@ -1,20 +1,20 @@
-# clj-book
+# Smia
 
-clj-book builds technical books as PDF, EPUB, and a static website on the JVM. You
-write your manuscript in Markdown (or in Hiccup, the Clojure data it compiles to)
-and clj-book renders the screen and print editions through
-[Apache FOP](https://xmlgraphics.apache.org/fop/). It runs on nothing more than a
-JDK and the Clojure CLI. There is no Ruby toolchain or asciidoctor underneath, and
-the renderer never shells out to an external binary, so a build stays self-contained
-and reproducible.
+Smia — Norwegian for *the forge* — builds technical books as PDF, EPUB, and a
+static website on the JVM. You write your manuscript in Markdown (or in Hiccup, the
+Clojure data it compiles to) and Smia renders the screen and print editions through
+[Apache FOP](https://xmlgraphics.apache.org/fop/). It is a Clojure tool that runs on
+nothing more than a JDK and the Clojure CLI. There is no Ruby toolchain or
+asciidoctor underneath, and the renderer never shells out to an external binary, so
+a build stays self-contained and reproducible.
 
-**[Read the manual online](https://leifericf.github.io/clj-book/)** — the manual is
-itself a clj-book, published with clj-book. Every edition (screen PDF, print PDF,
+**[Read the manual online](https://smia.leifericf.com)** — the manual is itself a
+Smia manuscript, published with Smia. Every edition (screen PDF, print PDF,
 print-ready PDF/X, and EPUB) is downloadable from the site's Downloads page and the
-repository's [Releases](https://github.com/leifericf/clj-book/releases/latest).
+repository's [Releases](https://github.com/leifericf/smia/releases/latest).
 
 A book is a `book.edn` file together with its chapter sources and a
-`theme.edn`. From that, clj-book gives you parts and numbered chapters,
+`theme.edn`. From that, Smia gives you parts and numbered chapters,
 appendices, named front and back matter, figures and code listings with captions,
 cross-references that read "Figure 1" instead of a bare page number, in-process
 syntax highlighting, running heads, an index, and a bibliography.
@@ -29,11 +29,11 @@ clojure -M:run build manual
 ```
 
 With no `--edition` option, both the screen and print editions are produced under
-`build/clj-book-manual/pdf/`, next to a machine-readable `artifacts.edn` manifest.
+`build/smia-manual/pdf/`, next to a machine-readable `artifacts.edn` manifest.
 Run `clojure -M:run validate manual` to check a manuscript without rendering,
 and `clojure -M:run build --help` for the full option list. Scripts and other tools
 can call the same engine through the `-X` map API
-(`clojure -X clj-book.api/build :book-root '"manual"'`).
+(`clojure -X smia.api/build :book-root '"manual"'`).
 
 For a live authoring loop, `clojure -M:run preview manual` builds the screen
 edition and then rebuilds it on every save in the same warm JVM — around 150 ms
@@ -78,8 +78,8 @@ unstamped build stays reproducible.
 
 ## Documentation
 
-The manual is itself a clj-book manuscript, under `manual/`. Build it (the
-command above) and read the PDFs in `build/clj-book-manual/pdf/`. It walks through
+The manual is itself a Smia manuscript, under `manual/`. Build it (the
+command above) and read the PDFs in `build/smia-manual/pdf/`. It walks through
 the quickstart, the Markdown and Hiccup authoring vocabulary, `book.edn`
 configuration, theming and editions, the build commands, producing a finished
 book, and the error catalog. The design and architecture are covered in the

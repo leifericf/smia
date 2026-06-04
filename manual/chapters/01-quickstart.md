@@ -1,6 +1,6 @@
 # Quickstart
 
-clj-book turns a Clojure-data manuscript into publication-quality **PDF** — screen and print editions — entirely on the JVM via Apache FOP. There is no Ruby, no asciidoctor, no external binary, and no subprocess.
+Smia turns a Clojure-data manuscript into publication-quality **PDF** — screen and print editions — entirely on the JVM via Apache FOP. There is no Ruby, no asciidoctor, no external binary, and no subprocess.
 
 ## Prerequisites
 
@@ -22,14 +22,14 @@ A Markdown chapter is prose with a single top-level heading for its title:
 ```markdown
 # Introduction
 
-Hello from **clj-book**.
+Hello from **Smia**.
 ```
 
 The equivalent Clojure chapter evaluates to a `[:chapter …]` form:
 
 ```clojure
 [:chapter {:id :intro :title "Introduction"}
- [:p "Hello from " [:strong "clj-book"] "."]]
+ [:p "Hello from " [:strong "Smia"] "."]]
 ```
 
 ## Build it

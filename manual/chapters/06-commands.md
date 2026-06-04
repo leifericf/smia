@@ -1,6 +1,6 @@
 # Commands
 
-clj-book has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one to reach for day to day: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X clj-book.api/…`, takes an EDN request map and is meant for scripts and other tools.
+Smia has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one to reach for day to day: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X smia.api/…`, takes an EDN request map and is meant for scripts and other tools.
 
 ## validate
 
@@ -47,7 +47,7 @@ Preview renders only the **screen** edition by default: rendering dominates the 
 
 A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. A PDF viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
 
-At the REPL the same engine is `clj-book.build.preview/preview!`, which returns a handle whose `:stop!` ends the session:
+At the REPL the same engine is `smia.build.preview/preview!`, which returns a handle whose `:stop!` ends the session:
 
 ```clojure
 (def h (preview! {:book-root "manual"}))
@@ -75,10 +75,10 @@ The CLI returns a meaningful exit code, so it composes in scripts and CI:
 
 ## The programmatic API
 
-Tools that assemble the request themselves call `clj-book.api/build` and `clj-book.api/validate` with `-X`, passing an EDN map. Because `-X` reads its arguments as EDN, string values carry both shell and EDN quotes:
+Tools that assemble the request themselves call `smia.api/build` and `smia.api/validate` with `-X`, passing an EDN map. Because `-X` reads its arguments as EDN, string values carry both shell and EDN quotes:
 
 ```
-clojure -X clj-book.api/build :book-root '"manual"' :editions '[:screen :print]'
+clojure -X smia.api/build :book-root '"manual"' :editions '[:screen :print]'
 ```
 
 The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.

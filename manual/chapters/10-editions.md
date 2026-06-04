@@ -45,7 +45,7 @@ The edition is accessible by construction. Schema.org accessibility metadata is 
                      :features ["structuralNavigation" "tableOfContents" "index"]}
 ```
 
-Two optional `book.edn` keys feed the package metadata: `:book/identifier` (default `urn:clj-book:<slug>`) and `:book/language` (default `"en"`).
+Two optional `book.edn` keys feed the package metadata: `:book/identifier` (default `urn:smia:<slug>`) and `:book/language` (default `"en"`).
 
 The package is byte-reproducible: the modification stamp and every archive entry's timestamp are pinned, so the same manuscript and theme always produce an identical `.epub`. Send the file to any modern reader or store pipeline — EPUB3 is the accepted submission format everywhere that matters.
 
@@ -65,11 +65,11 @@ The edition is gated on a `:book/print-x` map in `book.edn` naming the fonts to 
           :bold-italic "assets/fonts/crimson-text/CrimsonText-BoldItalic.ttf"}]}
 ```
 
-Requesting `:print-x` without the map fails fast with `:clj-book.build.request/print-x-requires-config`. When the map is present, the fonts are embedded in *every* PDF edition — the book's typography should not change with the conformance mode — while the PDF/X mode and output intent apply to `:print-x` alone.
+Requesting `:print-x` without the map fails fast with `:smia.build.request/print-x-requires-config`. When the map is present, the fonts are embedded in *every* PDF edition — the book's typography should not change with the conformance mode — while the PDF/X mode and output intent apply to `:print-x` alone.
 
 Two things must line up with the config:
 
 - The theme's `:type` families must lead with registered family names (the manual's `theme.edn` uses `"Crimson Text, serif"`), and any furniture faces the tokens do not reach are pointed at registered families through the theme's `:fo` override group. PDF/X requires every glyph to come from an embedded font; an unregistered family falls back to a base-14 font and fails the build with a clear error.
-- A press usually mandates its own CMYK output intent. The manual ships a public-domain RGB profile suitable for digital print-on-demand; for offset work, drop the press's profile into the book and point `:output-intent` at it. Press CMYK characterizations are generally not freely redistributable, so clj-book cannot bundle one.
+- A press usually mandates its own CMYK output intent. The manual ships a public-domain RGB profile suitable for digital print-on-demand; for offset work, drop the press's profile into the book and point `:output-intent` at it. Press CMYK characterizations are generally not freely redistributable, so Smia cannot bundle one.
 
-The manual's shipped assets stay under their own licenses, beside the files: the fonts are SIL Open Font License (each family directory carries `OFL.txt` — the OFL requires the license to travel with the fonts, and they are never covered by clj-book's EPL), and the ICC profile is CC0 with its provenance in `NOTICE.txt`.
+The manual's shipped assets stay under their own licenses, beside the files: the fonts are SIL Open Font License (each family directory carries `OFL.txt` — the OFL requires the license to travel with the fonts, and they are never covered by Smia's EPL), and the ICC profile is CC0 with its provenance in `NOTICE.txt`.

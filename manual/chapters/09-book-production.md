@@ -11,7 +11,7 @@
 A single chapter is only the start. A finished book has parts, numbered chapters
 and appendices, named front and back matter, figures and code listings with
 captions, cross-references that read "Figure 1" rather than a bare page number,
-running heads, an index, and a bibliography. clj-book produces all of these from
+running heads, an index, and a bibliography. Smia produces all of these from
 data, and this chapter both explains and exercises them.
 
 :::epigraph {:attribution "C. Designer"}
@@ -40,7 +40,7 @@ the zero-config default; to group chapters, use `:book/parts`, and add
 ```
 
 Some matter sections are **generated** — they have a `:role` but no `:file`,
-because clj-book produces their content. Alongside `:bibliography` and `:index`,
+because Smia produces their content. Alongside `:bibliography` and `:index`,
 the roles `:list-of-figures`, `:list-of-tables`, and `:list-of-listings` each
 emit a navigation section listing every numbered float of that kind, in document
 order, with a page reference — exactly the lists at the front of this manual.
@@ -57,8 +57,8 @@ Wrap an image in a `:::figure` directive with an `:id` and a `:caption` to get a
 numbered, captioned figure. The pipeline that turns your sources into a PDF is
 shown in [](#fig-pipeline):
 
-:::figure {:id :fig-pipeline :caption "The clj-book rendering pipeline"}
-![The clj-book pipeline](images/pipeline.svg)
+:::figure {:id :fig-pipeline :caption "The Smia rendering pipeline"}
+![The Smia pipeline](images/pipeline.svg)
 :::
 
 In Hiccup the same figure is `[:figure {:id :fig-pipeline :caption "…"} [:img …]]`.
@@ -74,7 +74,7 @@ beneath it, which carry their own numbered references.
 ## Captioned tables
 
 A bare EDN map on the line directly above a table supplies its attributes,
-including an `:id` and a `:caption`. The section roles clj-book understands are
+including an `:id` and a `:caption`. The section roles Smia understands are
 listed in [](#tbl-roles):
 
 {:id :tbl-roles :caption "Section roles in a manuscript"}
@@ -107,7 +107,7 @@ language falls back to plain monospace.
 
 The numbered marks at the ends of the lines above come from an `:annotations`
 vector in the fence's attribute map — each entry names a 1-based `:line` and a
-`:note`, and clj-book emits the matching numbered list beneath the code. The
+`:note`, and Smia emits the matching numbered list beneath the code. The
 notes live in data, so the sample stays pristine: no markers are woven into the
 code itself, and a reader can copy it verbatim. A `:note` may be plain text or
 inline markup, each line carries at most one note, and a `:line` outside the
@@ -130,7 +130,7 @@ Cite a bibliography entry inline with `` `key`{=cite} ``, which links to the
 generated bibliography — for example `typesetting`{=cite} on digital
 typesetting`Typesetting`{=index}, or `dataoriented`{=cite} on data-oriented
 design`Data-oriented design`{=index}. Mark a term for the index with
-`` `term`{=index} ``; clj-book collects every mark into an alphabetical index
+`` `term`{=index} ``; Smia collects every mark into an alphabetical index
 with page references. Cross-references`Cross-references`{=index} resolve the same
 way whether they point at a chapter, a section like [](#structure-demo), a
 figure, a table, or a listing.

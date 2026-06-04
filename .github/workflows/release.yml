@@ -62,10 +62,9 @@ jobs:
           test -f "$d/pdf/smia-manual-print-x.pdf"
           test -f "$d/epub/smia-manual.epub"
 
-      - name: Set the custom domain (when configured)
-        if: ${{ vars.PAGES_CUSTOM_DOMAIN != '' }}
+      - name: Set the custom domain
         run: |
-          echo "${{ vars.PAGES_CUSTOM_DOMAIN }}" \
+          echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" \
             > build/release/smia-manual/site/CNAME
 
       - name: Create the Release with every downloadable edition

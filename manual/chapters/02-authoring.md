@@ -32,7 +32,7 @@ Table columns are equal width by default. Give `:table` a `:cols` vector of posi
 
 ## Layer 2: book extensions
 
-Some things HTML cannot name. clj-book adds them:
+Some things HTML cannot name. Smia adds them:
 
 | Tag | Purpose |
 |---|---|

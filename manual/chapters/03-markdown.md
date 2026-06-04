@@ -64,7 +64,7 @@ A layout variant such as screen or print.
 
 ## Annotating code
 
-A code listing can carry numbered notes anchored to specific lines, without touching the sample itself. Add an `:annotations` vector to the fence's EDN map — each entry names a 1-based `:line` and a `:note`. clj-book appends a small numbered mark at the end of each referenced line and emits a matching numbered list beneath the listing:
+A code listing can carry numbered notes anchored to specific lines, without touching the sample itself. Add an `:annotations` vector to the fence's EDN map — each entry names a 1-based `:line` and a `:note`. Smia appends a small numbered mark at the end of each referenced line and emits a matching numbered list beneath the listing:
 
 ````
 ```clojure {:id :ex :caption "The reducing core" :annotations [{:line 1 :note "Defines the accumulator"} {:line 2 :note "Folds the sequence with +"}]}
@@ -83,7 +83,7 @@ For a programming book, a code sample should actually work. Mark a fenced block 
 clojure -M:run validate manual --validate-code
 ```
 
-clj-book then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation is **verify, not capture**: the rendered text stays exactly as written — only the check runs — so output stays deterministic. The assertion below, for instance, is checked at build time when validation is on:
+Smia then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation is **verify, not capture**: the rendered text stays exactly as written — only the check runs — so output stays deterministic. The assertion below, for instance, is checked at build time when validation is on:
 
 ```clojure {:test true}
 (assert (= 6 (reduce + [1 2 3])))
