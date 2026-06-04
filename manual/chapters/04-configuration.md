@@ -1,4 +1,4 @@
-# Configuring the book
+# Configuring the Book
 
 One `book.edn` describes the manuscript. It is an **open map**: required keys are enforced, and any extra keys you add are preserved untouched.
 

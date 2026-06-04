@@ -1,4 +1,4 @@
-# How it works
+# How It Works
 
 Smia is small because it leans on two ideas: everything is plain data, and the only effects live at the edges.
 

@@ -1,4 +1,4 @@
-# Distributing your book
+# Distributing Your Book
 
 :::overview {:title "What this chapter covers"}
 - The publishing split: the site edition for reading, the rest for download

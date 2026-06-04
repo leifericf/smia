@@ -1,5 +1,5 @@
 {:id :errors}
-# Error catalog
+# Error Catalog
 
 Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`, and `:error/context`. The most useful types, grouped by where they arise:
 

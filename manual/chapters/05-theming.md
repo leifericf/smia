@@ -1,4 +1,4 @@
-# Theming and editions
+# Theming and Editions
 
 Styling comes from design **tokens** rather than stylesheet strings. FOP is not a CSS engine, and Smia does not pretend it is.
 
