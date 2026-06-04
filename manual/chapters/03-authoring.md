@@ -6,7 +6,7 @@
 - Where to drop down to raw `:fo/*` when the sugar runs out
 :::
 
-You can write a chapter two ways. **Markdown** is the prose-first surface; it compiles to the same author Hiccup a `.clj` chapter produces, and [writing in Markdown](#markdown) describes it. **Hiccup** is that vocabulary itself: the HTML-flavored data Clojure developers already know, arranged in three concentric layers. Everything below applies to both front-ends.
+Beneath the Markdown surface of [the previous chapter](#markdown) sits **author Hiccup**: the HTML-flavored data Clojure developers already know, arranged in three concentric layers. Markdown compiles to it, and a `.clj` chapter produces it directly, so this vocabulary is what both front-ends target. Everything below applies to both.
 
 ## Layer 1: HTML-flavored sugar
 

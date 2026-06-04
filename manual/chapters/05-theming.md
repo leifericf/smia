@@ -44,15 +44,7 @@ Nobody writes raw FO, HTML, or CSS strings. The serializers are internal, and al
 
 ## Editions
 
-The same manuscript builds into **editions**, the deliverable forms of the book:
-
-- `:screen`: a PDF with symmetric margins for on-screen reading.
-- `:print`: a PDF with mirrored recto/verso margins and a binding gutter on the inside edge.
-- `:print-x`: the print layout as press-ready PDF/X-4.
-- `:site`: a static HTML site styled by the same theme.
-- `:epub`: an EPUB3 package over the same pages.
-
-Both PDF editions build by default. Select a subset by repeating `--edition` on the command line, or with `:editions` in the API. See [the commands chapter](#commands) and [the editions chapter](#editions).
+The same manuscript builds into **editions**, the deliverable forms of the book: screen and print PDFs, a press-ready PDF/X, a static site, and an EPUB. One theme styles them all. Both PDF editions build by default; select a subset by repeating `--edition` on the command line, or with `:editions` in the API. [The editions chapter](#editions) describes each edition, and [the commands chapter](#commands) the flags.
 
 ## Site layout
 

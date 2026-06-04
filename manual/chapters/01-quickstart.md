@@ -47,5 +47,5 @@ With no `--edition` given, the screen and print PDFs are written under `build/my
 While writing, `clojure -M:run preview my-book` rebuilds the book on every save. Previewing the site edition also serves it locally. See [the commands chapter](#commands).
 
 :::admonition {:kind :note}
-Read [the authoring chapter](#authoring) next to learn both front-ends: the Markdown surface and the Hiccup vocabulary it compiles to.
+Read [writing in Markdown](#markdown) next for the prose-first surface, then [the authoring chapter](#authoring) for the Hiccup vocabulary it compiles to.
 :::

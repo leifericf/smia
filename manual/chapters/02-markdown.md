@@ -1,13 +1,13 @@
 # Writing in Markdown
 
-A chapter whose filename ends in `.md` is written in a CommonMark dialect and compiled to the same author Hiccup a `.clj` chapter produces. Everything downstream is identical: assembly, expansion, theming, and every edition. Markdown is the prose-first surface, so prose and code samples are written without the string escaping a Hiccup file needs.
+Markdown is the prose-first way to write a chapter: prose and code samples go down without escaping, and the dialect is CommonMark with a small set of book extensions. A chapter whose filename ends in `.md` compiles to **author Hiccup**, the data vocabulary [the next chapter](#authoring) describes in full, and everything downstream is identical: assembly, expansion, theming, and every edition.
 
 ## Title, id, and front-matter
 
 - The chapter **title** is the first level-1 heading (`# Title`). It is not repeated in the body.
 - The chapter **id**, the target of cross-references, comes from the filename with any leading `NN-` ordering prefix stripped: `chapters/05-theming.md` becomes `:theming`.
 - A **section heading** may end with a bare EDN map to set its attributes, most usefully an anchor id to cross-reference: `## Structure {:id :structure}`.
-- An optional **front-matter** map, a bare EDN map as the very first content of the file, overrides the chapter title or id and supplies any extra keys. This chapter's neighbor uses one to keep the id `:errors` while the file is named `error-catalog`:
+- An optional **front-matter** map, a bare EDN map as the very first content of the file, overrides the chapter title or id and supplies any extra keys. The error-catalog appendix uses one to keep the id `:errors` while the file is named `error-catalog`:
 
 ```edn
 {:id :errors}
