@@ -52,6 +52,23 @@ The same manuscript builds into **editions** — the deliverable forms of the bo
 
 Both PDF editions are built by default; pass `:editions '[:print]'` (or repeat `--edition` on the command line) to select a subset. See [the commands chapter](#commands) and [the editions chapter](#editions).
 
+## Site layout
+
+The `:site` edition can present its pages in more than one **layout**. A layout is the page chrome — the framing around each chapter's content — and you pick one with a single token:
+
+```edn
+:site {:layout :sidebar}
+```
+
+Two layouts ship today:
+
+- `:plain` (the default) — one centered reading column with a contents link and prev/next navigation at the foot of each page. This is the minimal style; a book that sets no `:site` group gets it.
+- `:sidebar` — a two-column "docs" layout with a sticky table-of-contents rail beside the reading column, the current page marked. The page you are reading online uses it.
+
+Both are pure HTML and CSS with no JavaScript, and both render the same manuscript: switching layout is a one-line change to `theme.edn`, nothing in the chapters moves. The sidebar collapses to a single stacked column on a narrow screen through `flex-wrap` alone, so the generated stylesheet stays flat and deterministic — no media queries.
+
+Layouts are an extensible set keyed by name; a value outside the known set is a build-time error, `:smia.site.layout/unknown-layout`, naming the layout it did not recognize.
+
 ## Fonts
 
 With no font configuration, PDF output uses the base-14 font families, so a new book is zero-config and always reproducible. A book that needs its own faces registers them through the `:book/print-x` map in `book.edn` (see [the editions chapter](#editions)); once registered they are embedded in every PDF edition, and the theme's `:type` families lead with the registered names, falling back to the generics — a list like `"Crimson Text, serif"` works as both an FO font-family and a CSS one. The Smia platform bundles no fonts; the manual's manuscript ships its own under their SIL Open Font License, beside the files.

@@ -53,7 +53,9 @@ repeatable `--edition` flag:
 - `site` — a static HTML site under `build/<slug>/site/`: a table-of-contents
   home page, one page per chapter, a stylesheet generated from the same
   `theme.edn`, and copies of referenced images. Cross-references become links,
-  footnotes collect at each chapter's end, and the output needs no server.
+  footnotes collect at each chapter's end, and the output needs no server. The
+  page framing is selectable: a minimal `:plain` column (the default) or a
+  sticky-sidebar docs layout, set with one `theme.edn` token and no JavaScript.
 - `epub` — an accessible, byte-reproducible EPUB3 package at
   `build/<slug>/epub/<slug>.epub`, validated clean under epubcheck. The same
   pages as the site, packaged for e-readers and store pipelines.

@@ -147,6 +147,33 @@
          [".index-entry" {:margin "0 0 2pt"}]
          [".float-list" {:list-style "none" :padding-left "0"}]
 
+         ;; the :sidebar site layout — a sticky TOC rail beside the reading
+         ;; column. `flex-wrap` stacks the two on a narrow viewport, so no
+         ;; @media query is needed (the emitter stays flat and deterministic).
+         [".book-layout" {:display    "flex"
+                          :flex-wrap  "wrap"
+                          :gap        "2em"
+                          :align-items "flex-start"}]
+         [".book-sidebar" {:flex        "1 1 14em"
+                           :max-width   "20em"
+                           :align-self  "flex-start"
+                           :position    "sticky"
+                           :top         "0"
+                           :max-height  "100vh"
+                           :overflow-y  "auto"
+                           :padding     "1em 0"
+                           :font-size   "0.9em"}]
+         [".book-sidebar-title" {:font-family  head-family
+                                 :font-weight  "bold"
+                                 :display      "block"
+                                 :margin-bottom "0.75em"}]
+         [".book-sidebar-list" {:list-style "none" :padding-left "0"}]
+         [".book-sidebar-list .toc-level-1" {:padding-left "1em"}]
+         [".book-sidebar-list .toc-level-2" {:padding-left "2em"}]
+         [".book-sidebar .current" {:font-weight "bold"}]
+         [".book-content" {:flex "999 1 28em" :min-width "0"}]
+         [".book-content main" {:margin "0"}]
+
          ;; the site-only downloads page
          [".downloads" {:margin (str block " 0")}]
          [".downloads .default" {:font-size   "1.15em"

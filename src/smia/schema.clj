@@ -53,14 +53,17 @@
    the required token groups, two optional data-only styling hatches
    mirror the content hatches: `:fo` (tag -> FO property map, merged over
    the compiled PDF style) and `:css` (`[[selector prop-map] …]`,
-   appended after the generated stylesheet rules)."
+   appended after the generated stylesheet rules). The optional `:site`
+   group carries site-edition presentation, currently `:layout` (the
+   named page chrome — see `smia.site.layout`)."
   [:map
    [:color :map]
    [:type :map]
    [:spacing :map]
    [:layout :map]
    [:fo {:optional true} [:map-of :keyword :map]]
-   [:css {:optional true} [:sequential [:tuple :string :map]]]])
+   [:css {:optional true} [:sequential [:tuple :string :map]]]
+   [:site {:optional true} [:map [:layout {:optional true} :keyword]]]])
 
 (def Edition
   "A deliverable edition smia can build."

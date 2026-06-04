@@ -9,6 +9,7 @@
   (:require
    [smia.html.assemble :as html-assemble]
    [smia.html.serialize :as html-serialize]
+   [smia.site.layout :as layout]
    [smia.theme.css :as css]))
 
 (defn assemble
@@ -23,7 +24,8 @@
   ([book tokens downloads]
    (let [{:keys [pages resources]}
          (html-assemble/assemble
-           book (cond-> {:highlight? (get-in tokens [:type :highlight] false)}
+           book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
+                         :chrome     (layout/chrome-for tokens)}
                   downloads (assoc :downloads downloads)))]
      {:pages     (into {"styles.css" (css/css tokens)}
                        (map (fn [{:keys [file hiccup]}]

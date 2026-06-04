@@ -23,6 +23,10 @@
            :literal "#7700aa"}
  :spacing {:paragraph "6pt"
            :block     "8pt"}
+ ;; The online manual dogfoods the sidebar site layout (a sticky table of
+ ;; contents beside the reading column). Switch to :plain for the minimal
+ ;; one-column style; the same manuscript builds either way.
+ :site    {:layout :sidebar}
  :layout  {:page-size      :a4
            :margin-top     "24mm"
            :margin-bottom  "24mm"

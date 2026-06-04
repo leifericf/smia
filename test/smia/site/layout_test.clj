@@ -1,0 +1,73 @@
+(ns smia.site.layout-test
+  (:require
+   [smia.book.number :as number]
+   [smia.book.structure :as structure]
+   [smia.error :as error]
+   [smia.html.assemble :as html-assemble]
+   [smia.site.assemble :as site]
+   [smia.site.layout :as layout]
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing]]))
+
+;; --- chrome-for selection ----------------------------------------------------
+
+(deftest default-and-plain-select-the-minimal-chrome
+  (testing "no :site key falls back to the plain, unchanged chrome"
+    (is (= html-assemble/default-chrome (layout/chrome-for {}))))
+  (testing ":plain selects the same minimal chrome explicitly"
+    (is (= html-assemble/default-chrome
+           (layout/chrome-for {:site {:layout :plain}})))))
+
+(deftest sidebar-selects-a-distinct-chrome
+  (let [chrome (layout/chrome-for {:site {:layout :sidebar}})]
+    (is (not= html-assemble/default-chrome chrome))
+    (is (fn? (:page-wrap chrome)))))
+
+(deftest unknown-layout-is-a-structured-error
+  (try
+    (layout/chrome-for {:site {:layout :nope}})
+    (is false "expected an unknown-layout error")
+    (catch clojure.lang.ExceptionInfo e
+      (let [{:error/keys [type context]} (error/data e)]
+        (is (= :smia.site.layout/unknown-layout type))
+        (is (= :nope (:layout context)))))))
+
+;; --- serialized output through site/assemble --------------------------------
+
+(def ^:private manuscript
+  {:title     "The Book"
+   :author    "An Author"
+   :numbering structure/default-numbering
+   :sections
+   [{:kind :chapter
+     :content [:chapter {:id :ch-one :title "One"}
+               [:h2 {:id :sec-a} "Alpha"]]}
+    {:kind :chapter
+     :content [:chapter {:id :ch-two :title "Two"}
+               [:h2 {:id :sec-b} "Beta"]]}]})
+
+(def ^:private book (:manuscript (number/assign manuscript)))
+
+(defn- assemble-with [layout]
+  (:pages (site/assemble book (cond-> {:color {} :type {} :code {}
+                                       :spacing {} :layout {}}
+                                layout (assoc :site {:layout layout})))))
+
+(deftest sidebar-layout-wraps-every-page-in-a-sidebar-listing-the-chapters
+  (let [pages (assemble-with :sidebar)]
+    (doseq [page ["chapter-01.html" "chapter-02.html"]]
+      (testing (str page " carries the sidebar nav with every chapter")
+        (is (str/includes? (get pages page) "class=\"book-sidebar\""))
+        (is (str/includes? (get pages page) ">One<"))
+        (is (str/includes? (get pages page) ">Two<"))))))
+
+(deftest sidebar-layout-marks-the-current-page
+  (let [pages (assemble-with :sidebar)]
+    (testing "chapter one marks its own entry current, not chapter two's"
+      (let [one (get pages "chapter-01.html")]
+        (is (re-find #"class=\"current\"[^>]*href=\"chapter-01.html\"" one))
+        (is (not (re-find #"class=\"current\"[^>]*href=\"chapter-02.html\"" one)))))))
+
+(deftest plain-layout-emits-no-sidebar
+  (let [pages (assemble-with nil)]
+    (is (not (str/includes? (get pages "chapter-01.html") "book-sidebar")))))

@@ -28,7 +28,7 @@ Paged furniture is rendered for a medium with no pages:
 - The bibliography, the index, and the lists of figures/tables/listings emit links where the PDF prints page numbers.
 - Code listings keep their file bars, syntax highlighting, captions, and annotations.
 
-The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:spacing` map onto generated CSS rules, while `:layout` (page geometry) applies to the PDF editions only — the site supplies its own reading-column layout. The generated stylesheet is deterministic: the same theme always produces byte-identical CSS.
+The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:spacing` map onto generated CSS rules, while `:layout` (page geometry) applies to the PDF editions only — the site supplies its own reading-column layout. The site's page framing is itself selectable through the `:site {:layout …}` token — a minimal `:plain` column or a sticky-sidebar docs layout — covered in [the theming chapter](#theming). The generated stylesheet is deterministic: the same theme always produces byte-identical CSS.
 
 When `book.edn` carries a `:book/downloads` map, the site gains one more page — `downloads.html` — listing the other editions as download links, with the asset flagged `:default` rendered as a prominent primary link. The page is site-only: the PDF and EPUB editions never emit it. It is the bridge from an online manual to its downloadable PDFs and EPUB, and [the distribution chapter](#distribution) walks through setting it up end to end.
 

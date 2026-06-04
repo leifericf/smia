@@ -53,6 +53,16 @@
                ".downloads" ".downloads .default"]]
       (is (contains? selectors s) (str s " has a rule")))))
 
+(deftest sidebar-layout-selectors-are-styled
+  (let [rules     (css/compile-css tokens)
+        selectors (set (map first rules))]
+    (doseq [s [".book-layout" ".book-sidebar" ".book-sidebar-title"
+               ".book-sidebar-list" ".book-sidebar .current" ".book-content"]]
+      (is (contains? selectors s) (str s " has a rule")))
+    (testing "the rail uses flex-wrap so no @media query is emitted"
+      (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
+      (is (not (str/includes? (css/css tokens) "@media"))))))
+
 (deftest print-break-rules-cover-the-page-furniture
   (let [rules (css/compile-css tokens)]
     (is (= "page" (:break-before (rule rules ".page-break"))))

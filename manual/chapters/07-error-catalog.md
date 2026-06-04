@@ -57,6 +57,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.html.expand/fo-tag-in-html` / `:smia.fo.expand/html-tag-in-pdf` — a per-format escape hatch was used in the wrong format: a `:fo/*` element in an HTML edition, or a `:html/*` element in a PDF edition.
 - `:smia.html.assemble/unsafe-resource-path` — an image `:src` is absolute or contains `..`, so it would escape the output directory; image paths must stay within the book.
 - `:smia.html.assemble/duplicate-page` — two sections assemble to the same output filename.
+- `:smia.site.layout/unknown-layout` — the `theme.edn` `:site {:layout …}` token names a site layout outside the known set (`:plain`, `:sidebar`).
 
 ## Rendering
 

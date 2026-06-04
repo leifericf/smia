@@ -65,6 +65,9 @@
       (let [index (slurp (io/file dir "index.html"))]
         (is (str/includes? index "Contents"))
         (is (str/includes? index "The Smia Manual"))))
+    (testing "the manual ships the sidebar layout, on the home and chapter pages"
+      (is (str/includes? (slurp (io/file dir "index.html")) "class=\"book-sidebar\""))
+      (is (str/includes? (slurp (io/file dir "chapter-01.html")) "class=\"book-sidebar\"")))
     (testing "every page the contents links to exists on disk"
       (let [index (slurp (io/file dir "index.html"))
             hrefs (map second (re-seq #"href=\"([^\"#]+\.html)" index))]
