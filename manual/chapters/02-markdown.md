@@ -38,6 +38,22 @@ A code fence's info string is a language token followed by an optional EDN map. 
 The `{=hiccup}` escape is the more powerful of the two: spliced author Hiccup re-enters expansion, so sugar nested inside it still expands. Raw FO is terminal.
 :::
 
+## Smart punctuation
+
+Markdown prose is typeset with typographic punctuation. Straight quotes become curly pairs, apostrophes become right single quotes, `--` becomes an en dash, `---` an em dash, and `...` an ellipsis:
+
+| Typed | Rendered |
+|---|---|
+| `"quoted"` | “quoted” |
+| `it's` | it’s |
+| `pages 3--5` | pages 3–5 |
+| `wait --- now` | wait — now |
+| `and so on...` | and so on… |
+
+Code is exempt: nothing inside a code span or a fenced block is rewritten, so a flag like `--clean` keeps its hyphens when set in code. The `{=hiccup}` and `{=fo}` escapes and every front-matter value are data and stay authored exactly, as do `.clj` chapters. Quotes pair within each block, so a quote that opens before an emphasized word still closes after it, and an unbalanced quote cannot leak into the next paragraph.
+
+Smart punctuation is on by default. A book that wants its typewriter punctuation kept as typed turns it off with one token in `theme.edn`, described in [the theming chapter](#theming): `:type {:smart-punctuation false}`.
+
 ## Overviews and description lists
 
 Open a chapter with a summary panel using `:::overview`; an optional `:title` replaces the default "Overview" label:

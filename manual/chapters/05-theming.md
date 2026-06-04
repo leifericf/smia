@@ -17,6 +17,8 @@ The same file drives every output format. For paged output the tokens compile in
 
 Syntax highlighting is two more tokens. Set `:type {:highlight true}` to enable it, and override the palette with a `:code` group mapping token kinds to colors: `:keyword`, `:string`, `:comment`, `:number`, and `:literal`.
 
+Smart punctuation is also a `:type` token. It is on by default; `:type {:smart-punctuation false}` keeps typewriter punctuation as typed. [The Markdown chapter](#markdown) describes what it rewrites.
+
 ## Styling escape hatches
 
 When the tokens cannot express a styling need, `theme.edn` takes two optional override groups. Both are data, and they mirror the content escape hatches. Content and styling follow the same matrix:

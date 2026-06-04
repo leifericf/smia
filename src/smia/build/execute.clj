@@ -160,9 +160,13 @@
 
 (defn- load-book
   "Shell: load the book's structure and chapter files into the typed,
-   assemble-ready manuscript value (see `book.load/load-manuscript`)."
-  [book-root {:keys [config]}]
-  (book-load/load-manuscript book-root config))
+   assemble-ready manuscript value (see `book.load/load-manuscript`).
+   The theme's `:type` group tunes the Markdown front-end: smart
+   punctuation is on unless `{:smart-punctuation false}`."
+  [book-root {:keys [config tokens]}]
+  (book-load/load-manuscript
+    book-root config
+    {:smart-punctuation (get-in tokens [:type :smart-punctuation] true)}))
 
 (defn- render-pdf-edition!
   "Assemble -> expand -> serialize -> FOP for one PDF edition. The page

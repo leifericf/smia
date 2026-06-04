@@ -22,6 +22,7 @@
    [smia.md.frontmatter :as md-frontmatter]
    [smia.md.parse :as md-parse]
    [smia.md.schema :as md-schema]
+   [smia.md.typography :as md-typography]
    [clojure.edn :as edn]
    [clojure.java.io :as io]
    [clojure.string :as str]))
@@ -35,25 +36,31 @@
   "Read one chapter file at `book-root`/`rel-path`, returning its Hiccup
    value. Dispatches on extension: `.md` via the Markdown front-end, every
    other extension via `load-file`. Throws a structured error if the file
-   is missing or cannot be read/parsed."
-  [book-root rel-path]
-  (let [f (io/file book-root rel-path)]
-    (when-not (.exists f)
-      (throw (error/ex :smia.book.load/missing-chapter
-                       (str "Chapter file not found: " (.getPath f))
-                       {:book-root book-root :path rel-path})))
-    (if (str/ends-with? (str/lower-case rel-path) ".md")
-      (load-markdown-chapter book-root rel-path f)
-      (load-clojure-chapter f))))
+   is missing or cannot be read/parsed.
+
+   `opts` tunes the Markdown front-end: `:smart-punctuation false` turns
+   the typographic punctuation pass off (it is on by default). `.clj`
+   chapters are authored exactly and ignore `opts`."
+  ([book-root rel-path] (load-chapter book-root rel-path {}))
+  ([book-root rel-path opts]
+   (let [f (io/file book-root rel-path)]
+     (when-not (.exists f)
+       (throw (error/ex :smia.book.load/missing-chapter
+                        (str "Chapter file not found: " (.getPath f))
+                        {:book-root book-root :path rel-path})))
+     (if (str/ends-with? (str/lower-case rel-path) ".md")
+       (load-markdown-chapter book-root rel-path f opts)
+       (load-clojure-chapter f)))))
 
 (defn load-chapters
   "Load `rel-paths` (relative to `book-root`) in order, returning a vector
    of Hiccup chapter forms. A duplicate chapter `:id` is a hard error
    (assembly would otherwise silently collapse cross-reference targets)."
-  [book-root rel-paths]
-  (let [chapters (mapv #(load-chapter book-root %) rel-paths)]
-    (check-no-duplicate-ids chapters)
-    chapters))
+  ([book-root rel-paths] (load-chapters book-root rel-paths {}))
+  ([book-root rel-paths opts]
+   (let [chapters (mapv #(load-chapter book-root % opts) rel-paths)]
+     (check-no-duplicate-ids chapters)
+     chapters)))
 
 (defn load-manuscript
   "Shell: normalize `config` into a typed document structure and load every
@@ -67,23 +74,26 @@
    file-backed entry's loaded `:content`; `:chapters` is every loaded form in
    document order (used by the vocabulary and code-validation passes). A flat
    `:book/chapters` book yields a body of chapters with no parts. A duplicate
-   chapter `:id` anywhere in the book is a hard error."
-  [book-root config]
-  (let [{:keys [numbering sections]} (structure/normalize config)
-        loaded   (mapv (fn [s]
-                         (if-let [f (:file s)]
-                           (assoc s :content (load-chapter book-root f))
-                           s))
-                       sections)
-        chapters (vec (keep :content loaded))]
-    (check-no-duplicate-ids chapters)
-    {:title         (:book/title config)
-     :author        (:book/author config)
-     :numbering     numbering
-     :running-heads (:book/running-heads config)
-     :references    (load-references book-root config)
-     :sections      loaded
-     :chapters      chapters}))
+   chapter `:id` anywhere in the book is a hard error.
+
+   `opts` is passed through to `load-chapter` (`:smart-punctuation`)."
+  ([book-root config] (load-manuscript book-root config {}))
+  ([book-root config opts]
+   (let [{:keys [numbering sections]} (structure/normalize config)
+         loaded   (mapv (fn [s]
+                          (if-let [f (:file s)]
+                            (assoc s :content (load-chapter book-root f opts))
+                            s))
+                        sections)
+         chapters (vec (keep :content loaded))]
+     (check-no-duplicate-ids chapters)
+     {:title         (:book/title config)
+      :author        (:book/author config)
+      :numbering     numbering
+      :running-heads (:book/running-heads config)
+      :references    (load-references book-root config)
+      :sections      loaded
+      :chapters      chapters})))
 
 ;; --- private helpers -------------------------------------------------------
 
@@ -180,14 +190,23 @@
   form)
 
 (defn- load-markdown-chapter
-  "Compile a `.md` chapter file into a `[:chapter {…} …]` form."
-  [book-root rel-path ^java.io.File f]
-  (let [source (slurp f)]
+  "Compile a `.md` chapter file into a `[:chapter {…} …]` form. Smart
+   punctuation is applied to the compiled prose (and the H1-derived title)
+   unless `opts` carries `:smart-punctuation false`; front-matter values
+   are EDN data and stay authored exactly."
+  [book-root rel-path ^java.io.File f opts]
+  (let [source   (slurp f)
+        smarten? (not (false? (:smart-punctuation opts)))]
     (try
       (let [{:keys [attrs body]} (md-frontmatter/split source)
             ast                  (md-parse/parse body (.getPath f))
             [_ compiled-attrs & compiled-body] (md-compile/compile ast)
+            compiled-body        (cond-> (vec compiled-body)
+                                   smarten? (md-typography/smarten))
             compiled-body        (mapv #(resolve-includes book-root %) compiled-body)
+            compiled-attrs       (cond-> compiled-attrs
+                                   (and smarten? (:title compiled-attrs))
+                                   (update :title md-typography/smarten-string))
             merged (merge {:id (chapter-id-from-path rel-path)}
                           compiled-attrs
                           attrs)]

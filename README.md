@@ -18,8 +18,8 @@ or from the repository's
 A book is a `book.edn` file, its chapter sources, and a `theme.edn`. From that,
 Smia produces parts and numbered chapters, appendices, named front and back
 matter, captioned figures and code listings, cross-references that read
-"Figure 1" rather than a bare page number, syntax highlighting, running heads,
-an index, and a bibliography.
+"Figure 1" rather than a bare page number, typographic punctuation, syntax
+highlighting, running heads, an index, and a bibliography.
 
 ## Building a book
 

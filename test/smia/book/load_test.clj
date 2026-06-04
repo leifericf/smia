@@ -124,6 +124,37 @@
                 (load/load-chapters (.getPath dir)
                                     ["chapters/01-intro.clj" "chapters/02-body.md"]))))))
 
+(deftest markdown-prose-gets-smart-punctuation
+  (testing "quotes, dashes, and ellipses are smartened by default"
+    (let [dir (tmp-book "md-smart")]
+      (spit-chapter dir "chapters/01-x.md"
+                    "# It's \"Smart\"\n\nDon't quote \"this\" -- or...\n")
+      (let [[_ attrs p] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+        (is (= "It’s “Smart”" (:title attrs)) "the H1 title is smartened")
+        (is (= [:p "Don’t quote “this” – or…"] p))))))
+
+(deftest smart-punctuation-can-be-disabled
+  (let [dir (tmp-book "md-exact")]
+    (spit-chapter dir "chapters/01-x.md" "# T\n\nDon't \"quote\"\n")
+    (let [[_ _ p] (load/load-chapter (.getPath dir) "chapters/01-x.md"
+                                     {:smart-punctuation false})]
+      (is (= [:p "Don't \"quote\""] p)))))
+
+(deftest front-matter-title-is-authored-exactly
+  (testing "only Markdown prose is smartened; an EDN :title is data"
+    (let [dir (tmp-book "md-fm-title")]
+      (spit-chapter dir "chapters/01-x.md"
+                    "{:title \"Don't \\\"Smarten\\\"\"}\n# Ignored\n\nHi\n")
+      (let [[_ attrs] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+        (is (= "Don't \"Smarten\"" (:title attrs)))))))
+
+(deftest clojure-chapters-are-never-smartened
+  (let [dir (tmp-book "clj-exact")]
+    (spit-chapter dir "chapters/01.clj"
+                  "[:chapter {:id :x :title \"X\"} [:p \"Don't \\\"quote\\\"\"]]")
+    (is (= [:chapter {:id :x :title "X"} [:p "Don't \"quote\""]]
+           (load/load-chapter (.getPath dir) "chapters/01.clj")))))
+
 (deftest include-slurps-source-relative-to-book-root
   (let [dir (tmp-book "include")]
     (spit-chapter dir "src/sample.clj" "(ns sample)\n(defn add [a b] (+ a b))\n(add 1 2)\n")
