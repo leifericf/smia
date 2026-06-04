@@ -4,15 +4,38 @@
    All site IO lives here so `site.assemble` stays pure: each page-map
    entry becomes a file under the output directory, and every referenced
    resource (images) is copied from the book root. A missing resource is
-   a warning, not a failure — the site is still browsable without it."
+   a warning, not a failure — the site is still browsable without it.
+
+   The site directory self-corrects: stale `*.html` from a prior build
+   are swept before writing, so a removed chapter leaves no ghost page.
+   Every `.html` in the site dir is clj-book's (authors never hand-write
+   HTML), so the sweep is precise; non-HTML files a user adds for hosting
+   (`CNAME`, `.nojekyll`, `favicon.ico`) are never touched. A full reset
+   that also evicts orphaned images is `build --clean`."
   (:require
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [clojure.string :as str]))
+
+(defn- sweep-stale-html!
+  "Delete top-level `*.html` files in `out-dir` whose names are not in
+   `keep` (the current build's HTML page set)."
+  [out-dir keep]
+  (let [dir (io/file out-dir)]
+    (when (.isDirectory dir)
+      (doseq [^java.io.File f (.listFiles dir)
+              :when (and (.isFile f)
+                         (str/ends-with? (.getName f) ".html")
+                         (not (contains? keep (.getName f))))]
+        (.delete f)))))
 
 (defn emit!
   "Write `{:pages {path → content-string} :resources [{:src} …]}` under
-   `out-dir`, copying resources from `book-root`. Returns
+   `out-dir`, copying resources from `book-root`. Stale `*.html` pages
+   from a prior build are swept first. Returns
    `{:warnings [{:warning/type :path} …]}`."
   [{:keys [out-dir book-root pages resources]}]
+  (sweep-stale-html! out-dir (set (filter #(str/ends-with? % ".html")
+                                          (keys pages))))
   (doseq [[path content] (sort-by key pages)]
     (let [f (io/file out-dir path)]
       (io/make-parents f)

@@ -8,6 +8,28 @@
   (str (System/getProperty "java.io.tmpdir")
        "/clj-book-site-emit-" tag "-" (System/nanoTime)))
 
+(deftest stale-html-pages-are-swept-but-user-files-survive
+  (let [out (tmp-dir "sweep")]
+    (doseq [f ["index.html" "chapter-01.html" "chapter-09.html"]]
+      (io/make-parents (io/file out f))
+      (spit (io/file out f) "<old/>"))
+    (spit (io/file out "CNAME") "example.com")
+    (spit (io/file out ".nojekyll") "")
+    (emit/emit! {:out-dir   out
+                 :book-root (tmp-dir "sweep-root")
+                 :pages     {"index.html"      "<!DOCTYPE html>\n<html></html>"
+                             "chapter-01.html" "<!DOCTYPE html>\n<html></html>"
+                             "styles.css"      "body {\n}\n"}
+                 :resources []})
+    (testing "a page the build no longer generates is removed"
+      (is (not (.exists (io/file out "chapter-09.html")))))
+    (testing "current pages are rewritten fresh"
+      (is (.startsWith ^String (slurp (io/file out "index.html")) "<!DOCTYPE"))
+      (is (.exists (io/file out "styles.css"))))
+    (testing "hand-added non-HTML files are left untouched"
+      (is (= "example.com" (slurp (io/file out "CNAME"))))
+      (is (.exists (io/file out ".nojekyll"))))))
+
 (deftest writes-every-page-to-the-output-directory
   (let [out (tmp-dir "pages")
         result (emit/emit! {:out-dir   out
