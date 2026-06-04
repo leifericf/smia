@@ -18,7 +18,7 @@
 (def ^:private rules
   (mapv (fn [[p k]] [(re-pattern p) k])
         [[";[^\\n]*"                    :comment]
-         ["\"(?:\\\\.|[^\"\\\\])*\""    :string]
+         ["\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"" :string]
          ["\\\\(?:newline|space|tab|return|[\\s\\S])" :string]
          [":[A-Za-z0-9_*+!?<>=./%&-]+"  :literal]
          ["-?\\d[\\d_]*\\.?\\d*(?:[eE][+-]?\\d+)?[MN]?" :number]]))

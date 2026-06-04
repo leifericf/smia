@@ -15,7 +15,7 @@
 
 (def ^:private rules
   (-> (mapv (fn [[p k]] [(re-pattern p) k]) lexer/c-like-rules-base)
-      (conj [#"`(?:\\.|[^`\\])*`" :string])
+      (conj [#"`[^`\\]*(?:\\.[^`\\]*)*`" :string])
       (conj [#"[A-Za-z_$][A-Za-z0-9_$]*" (lexer/keyword-classifier keywords)])))
 
 (defn tokenize [code] (lexer/scan code rules))
