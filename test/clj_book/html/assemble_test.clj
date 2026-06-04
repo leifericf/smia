@@ -2,6 +2,7 @@
   (:require
    [clj-book.book.number :as number]
    [clj-book.book.structure :as structure]
+   [clj-book.error]
    [clj-book.html.assemble :as html-assemble]
    [clojure.test :refer [deftest is testing]]))
 
@@ -101,6 +102,46 @@
 
 (deftest resources-list-referenced-images
   (is (= [{:src "images/cat.png"}] (:resources result))))
+
+(defn- catch-data [thunk]
+  (try (thunk) nil (catch Exception e (clj-book.error/data e))))
+
+(defn- one-img-book [src]
+  (:manuscript
+    (number/assign
+      {:title "B" :author nil :numbering structure/default-numbering
+       :references {}
+       :sections [{:kind :chapter
+                   :content [:chapter {:id :c :title "C"}
+                             [:p [:img {:src src :alt "x"}]]]}]})))
+
+(deftest remote-image-sources-are-not-collected-as-resources
+  (testing "a remote URL stays an href and is not copied as a local file"
+    (doseq [src ["https://example.com/cat.png"
+                 "http://example.com/cat.png"
+                 "data:image/png;base64,AAAA"]]
+      (let [r (html-assemble/assemble (one-img-book src) {})]
+        (is (= [] (:resources r)) (str src " is not a local resource"))))))
+
+(deftest unsafe-image-paths-are-rejected
+  (testing "a parent-escaping path is a structured error before any write"
+    (let [d (catch-data #(html-assemble/assemble
+                           (one-img-book "../secret.png") {}))]
+      (is (= :clj-book.html.assemble/unsafe-resource-path (:error/type d)))
+      (is (= "../secret.png" (:src (:error/context d))))))
+  (testing "a nested parent-escaping segment is caught too"
+    (let [d (catch-data #(html-assemble/assemble
+                           (one-img-book "images/../../secret.png") {}))]
+      (is (= :clj-book.html.assemble/unsafe-resource-path (:error/type d)))))
+  (testing "an absolute path is rejected"
+    (let [d (catch-data #(html-assemble/assemble
+                           (one-img-book "/etc/passwd") {}))]
+      (is (= :clj-book.html.assemble/unsafe-resource-path (:error/type d))))))
+
+(deftest safe-relative-image-paths-are-collected
+  (is (= [{:src "images/sub/cat.png"}]
+         (:resources (html-assemble/assemble
+                       (one-img-book "images/sub/cat.png") {})))))
 
 (deftest contents-entries-cover-chapters-and-sections
   (let [entries (:contents result)]

@@ -410,15 +410,41 @@
 
 ;; --- resources ------------------------------------------------------------------------------
 
+(defn- remote-src?
+  "True for an image source with a URI scheme (`https:`, `data:`, …) —
+   the page links it as-is and the packaging shell copies nothing."
+  [src]
+  (boolean (re-find #"^[A-Za-z][A-Za-z0-9+.-]*:" src)))
+
+(defn- unsafe-src?
+  "True for a local source that would escape the output directory: an
+   absolute path, or any `..` segment. Such a src is used verbatim as a
+   filesystem path (site) and a zip entry name (epub), so an unchecked
+   `..` writes outside the build — a path-traversal/zip-slip footgun."
+  [src]
+  (or (str/starts-with? src "/")
+      (some #{".."} (str/split src #"[/\\]"))))
+
 (defn- resources
-  "Every image source the authored bodies reference, for the packaging
-   shell to copy alongside the pages."
+  "Every local image the authored bodies reference, for the packaging
+   shell to copy alongside the pages. Remote sources are left to the
+   pages; an unsafe (parent-escaping or absolute) source is a structured
+   error before anything is written."
   [book]
   (->> (:sections book)
        (keep :content)
        (mapcat #(tree-seq vector? seq %))
        (keep #(when (and (vector? %) (= :img (first %)) (map? (second %)))
                 (:src (second %))))
+       (remove remote-src?)
+       (map (fn [src]
+              (when (unsafe-src? src)
+                (throw (error/ex :clj-book.html.assemble/unsafe-resource-path
+                                 (str "Image source " (pr-str src) " escapes the "
+                                      "output directory. Image paths must be "
+                                      "relative and stay within the book.")
+                                 {:src src})))
+              src))
        distinct
        sort
        (mapv (fn [src] {:src src}))))
