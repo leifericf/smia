@@ -21,6 +21,7 @@
   (:refer-clojure :exclude [compile])
   (:require
    [smia.error :as error]
+   [smia.md.markers :as markers]
    [smia.md.schema :as schema]
    [clojure.edn :as edn]
    [clojure.string :as str]))
@@ -90,29 +91,15 @@
 
 ;; --- inline raw escapes ----------------------------------------------------
 
-(def ^:private inline-escape-re #"^\{=(hiccup|fo|cite|index|math)\}")
-
-(defn- inline-escape-form
-  "Build the author node for an inline `` `payload`{=kind} `` escape. The raw
-   IR escapes read the payload as EDN; `{=cite}` makes a citation keyed by
-   the payload; `{=index}` marks the payload as an index term."
-  [kind payload]
-  (case kind
-    ("hiccup" "fo")
-    (try (edn/read-string payload)
-         (catch Exception e
-           (throw (error/ex :smia.md.compile/invalid-raw-escape
-                            (str "Inline raw escape is not readable EDN: "
-                                 (.getMessage e))
-                            {:source payload}))))
-    "cite"  [:cite {:key (keyword (str/trim payload))}]
-    "index" [:index {:term payload}]
-    "math"  [:math {:notation payload}]))
+(def ^:private inline-escape-re
+  "Matches a leading `{=marker}` escape, where the alternatives are the keys
+   of `markers/inline-markers` — the regex and the registry can never drift."
+  (re-pattern (str "^\\{=(" (str/join "|" markers/marker-names) ")\\}")))
 
 (defn- fold-inline-escapes
-  "Fold an inline `[:code payload]` immediately followed by a
-   `{=hiccup}` / `{=fo}` / `{=cite}` / `{=index}` marker into the
-   corresponding author node. Any text after the marker is preserved."
+  "Fold an inline `[:code payload]` immediately followed by a `{=marker}`
+   span into the marker's author node (smia.md.markers). Any text after the
+   marker is preserved."
   [items]
   (loop [items (seq items), acc []]
     (if (nil? items)
@@ -121,7 +108,7 @@
             b (second items)]
         (if-let [m (and (vector? a) (= :code (first a))
                         (string? b) (re-find inline-escape-re b))]
-          (let [form    (inline-escape-form (second m) (second a))
+          (let [form    (markers/marker-form (second m) (second a))
                 rest-tx (str/replace-first b inline-escape-re "")
                 more    (nnext items)]
             (recur (if (seq rest-tx) (cons rest-tx more) more)
@@ -248,52 +235,64 @@
       m)
     {}))
 
+(def block-directives
+  "Directive name (string) -> `(fn [node] -> author-hiccup)`. A plain map so
+   the block-extension vocabulary is introspectable, data-driven, and
+   extensible by a map entry, mirroring `compilers`."
+  {"admonition"
+   (fn [node]
+     (let [attrs (schema/check-admonition (directive-attrs node)
+                                          :smia.md.compile/invalid-admonition)]
+       (into [:admonition attrs] (compile-block-seq (:children node)))))
+
+   "figure"
+   (fn [node]
+     (let [attrs  (directive-attrs node)
+           blocks (compile-block-seq (:children node))
+           ;; a Markdown image is a paragraph wrapping the image; unwrap a
+           ;; lone such paragraph so the figure holds the image directly.
+           content (if (and (= 1 (count blocks))
+                            (vector? (first blocks)) (= :p (ffirst blocks)))
+                     (vec (rest (first blocks)))
+                     blocks)
+           ;; the figure's caption doubles as a bare diagram's alt text.
+           content (mapv (fn [b]
+                           (if (and (vector? b) (= :diagram (first b))
+                                    (map? (second b)) (not (:alt (second b)))
+                                    (:caption attrs))
+                             [:diagram (assoc (second b) :alt (:caption attrs))]
+                             b))
+                         content)]
+       (into [:figure attrs] content)))
+
+   "sidebar"
+   (fn [node]
+     (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node))))
+
+   "deflist"
+   (fn [node]
+     (into [:dl (directive-attrs node)] (compile-deflist (:children node))))
+
+   "overview"
+   (fn [node]
+     (let [attrs (schema/check-overview (directive-attrs node)
+                                        :smia.md.compile/invalid-overview)]
+       (into [:overview attrs] (compile-block-seq (:children node)))))
+
+   "epigraph"
+   (fn [node]
+     (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node))))
+
+   "keep-together"
+   (fn [node]
+     (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node))))
+
+   "page-break"
+   (fn [_] [:page-break])})
+
 (defn- compile-directive [node]
-  (case (:name node)
-    "admonition"
-    (let [attrs (schema/check-admonition (directive-attrs node)
-                                         :smia.md.compile/invalid-admonition)]
-      (into [:admonition attrs] (compile-block-seq (:children node))))
-
-    "figure"
-    (let [attrs  (directive-attrs node)
-          blocks (compile-block-seq (:children node))
-          ;; a Markdown image is a paragraph wrapping the image; unwrap a
-          ;; lone such paragraph so the figure holds the image directly.
-          content (if (and (= 1 (count blocks))
-                           (vector? (first blocks)) (= :p (ffirst blocks)))
-                    (vec (rest (first blocks)))
-                    blocks)
-          ;; the figure's caption doubles as a bare diagram's alt text.
-          content (mapv (fn [b]
-                          (if (and (vector? b) (= :diagram (first b))
-                                   (map? (second b)) (not (:alt (second b)))
-                                   (:caption attrs))
-                            [:diagram (assoc (second b) :alt (:caption attrs))]
-                            b))
-                        content)]
-      (into [:figure attrs] content))
-
-    "sidebar"
-    (into [:sidebar (directive-attrs node)] (compile-block-seq (:children node)))
-
-    "deflist"
-    (into [:dl (directive-attrs node)] (compile-deflist (:children node)))
-
-    "overview"
-    (let [attrs (schema/check-overview (directive-attrs node)
-                                       :smia.md.compile/invalid-overview)]
-      (into [:overview attrs] (compile-block-seq (:children node))))
-
-    "epigraph"
-    (into [:epigraph (directive-attrs node)] (compile-block-seq (:children node)))
-
-    "keep-together"
-    (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node)))
-
-    "page-break"
-    [:page-break]
-
+  (if-let [f (get block-directives (:name node))]
+    (f node)
     (err :smia.md.compile/unknown-directive
          (str "Unknown directive: :::" (:name node)) {:name (:name node)} node)))
 

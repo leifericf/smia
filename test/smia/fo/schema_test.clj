@@ -2,6 +2,7 @@
   (:require
    [smia.error :as error]
    [smia.fo.schema :as fo-schema]
+   [clojure.set]
    [clojure.test :refer [deftest is testing]]))
 
 (deftest accepts-ordinary-html-hiccup
@@ -29,6 +30,17 @@
 (deftest rejects-unknown-namespaced-tags
   (is (not (fo-schema/known-tag? :bogus/x)))
   (is (not (fo-schema/valid? [:bogus/x "no"]))))
+
+(deftest resolve-tags-are-known-but-disjoint-from-sugar
+  (testing "resolve-tags is a set kept disjoint from sugar-tags"
+    (is (set? fo-schema/resolve-tags))
+    (is (empty? (clojure.set/intersection fo-schema/resolve-tags
+                                          fo-schema/sugar-tags))
+        "a resolve-time tag must not also be a sugar tag, or parity breaks"))
+  (testing "known-tag? consults resolve-tags"
+    (with-redefs [fo-schema/resolve-tags #{:when}]
+      (is (fo-schema/known-tag? :when))
+      (is (not (fo-schema/known-tag? :still-bogus))))))
 
 (deftest accepts-numbers-as-content
   (is (fo-schema/valid? [:p "answer " 42])))

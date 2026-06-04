@@ -42,6 +42,8 @@ The manuscript, the theme, and the XSL-FO document are all ordinary Clojure data
 
 Because the FO tree is data, it can be assembled, transformed, and inspected with the same tools as any other Clojure value.
 
+The vocabulary itself is data too. The Markdown front-end compiles each block and inline construct through a registry — a map from a node's kind to a function — rather than a fixed `case`, so the set of directives (`:::figure`, `:::sidebar`) and inline markers (`` `…`{=cite} ``) is open: a construct is one map entry. Each output format expands the resulting tags through the same kind of table, and a single test pins the two in step.
+
 ## A superset per format, not a subset
 
 Most engines give you a fixed vocabulary plus an escape hatch. Smia inverts that: for each output format the author vocabulary is a superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable.

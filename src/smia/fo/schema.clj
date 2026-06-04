@@ -23,6 +23,14 @@
     :admonition :sidebar :overview :epigraph :footnote :xref :cite :index
     :math :diagram :page-break :keep-together})
 
+(def resolve-tags
+  "Tags the vocabulary accepts but that a resolve pass eliminates before
+   expansion — they have no expander of their own. Document attributes and
+   conditional content land here as those features ship; empty for now. Kept
+   separate from `sugar-tags` so the expander-parity invariant (every sugar
+   tag has an expander in every format) stays exact."
+  #{})
+
 (defn fo-tag?
   "True for a raw FO tag: a keyword in the `fo` namespace, e.g. `:fo/block`."
   [t]
@@ -35,10 +43,11 @@
   (and (keyword? t) (= "html" (namespace t))))
 
 (defn known-tag?
-  "True for any tag the vocabulary accepts: known sugar/book tag,
-   `:fo/*`, or `:html/*`."
+  "True for any tag the vocabulary accepts: a known sugar/book tag, a
+   resolve-time tag, `:fo/*`, or `:html/*`."
   [t]
-  (or (contains? sugar-tags t) (fo-tag? t) (html-tag? t)))
+  (or (contains? sugar-tags t) (contains? resolve-tags t)
+      (fo-tag? t) (html-tag? t)))
 
 (def Content
   "An author Hiccup element (recursive). The entry point is an element
