@@ -45,7 +45,15 @@ The whole book tree is watched — chapters, `book.edn`, `theme.edn`, references
 
 Preview renders only the **screen** edition by default: rendering dominates the cost of a save, and a tight loop wants one edition. Pass `--edition` to choose others, and `--validate-code` to evaluate `{:test true}` blocks on every rebuild. There is no incremental rendering — page layout is global (page numbers, the table of contents, keeps), so each save re-renders the edition in full. A `.clj` chapter runs on every rebuild, the same trust boundary as `build`.
 
-A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. A PDF viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
+Previewing the **site** edition also starts a small static file server, because the site's clean directory URLs (see [the editions chapter](#editions)) resolve only through a web server, not from the file system:
+
+```
+clojure -M:run preview manual --edition site
+```
+
+This rebuilds on every save and serves the site at `http://localhost:8000/` — edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart; choose another port with `--port`. The server is pure JDK, so it adds no dependency, and it runs only for the site edition. There is no live reload (that would need JavaScript); you refresh by hand.
+
+A save that fails — a typo in front-matter, an unresolved cross-reference — prints the same structured error as `build`, and the session keeps watching; the next save tries again. Stop with Ctrl-C. For a PDF preview, a viewer that reloads a changed file completes the loop: keep the PDF open beside the editor and it refreshes after each save.
 
 At the REPL the same engine is `smia.build.preview/preview!`, which returns a handle whose `:stop!` ends the session:
 

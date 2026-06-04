@@ -38,7 +38,9 @@ can call the same engine through the `-X` map API
 For a live authoring loop, `clojure -M:run preview manual` builds the screen
 edition and then rebuilds it on every save in the same warm JVM — around 150 ms
 a save. A save that fails prints the error and keeps watching; stop with
-Ctrl-C.
+Ctrl-C. Previewing the site edition (`preview manual --edition site`) also serves
+it at `http://localhost:8000/`, since the site's clean directory URLs need a
+server to browse — edit, save, refresh.
 
 ## Editions
 
@@ -57,8 +59,8 @@ repeatable `--edition` flag:
   relative links, and footnotes collect at each chapter's end. The page
   framing is selectable: a minimal `:plain` column (the default) or a
   sticky-sidebar docs layout, set with one `theme.edn` token and no
-  JavaScript. The directory URLs need a static file server to browse (any
-  host, or `python3 -m http.server` locally) — there is still no build
+  JavaScript. The directory URLs are served by any web host; to browse a
+  build locally, `preview` serves it (below). There is still no build
   runtime, database, or client-side script in the output.
 - `epub` — an accessible, byte-reproducible EPUB3 package at
   `build/<slug>/epub/<slug>.epub`, validated clean under epubcheck. The same

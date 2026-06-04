@@ -35,7 +35,9 @@
 (def ^:private preview-options
   (into [["-e" "--edition EDITION" "Edition to preview (screen|print|print-x|site|epub); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
-         [nil "--output-root PATH" "Directory for build output."]]
+         [nil "--output-root PATH" "Directory for build output."]
+         [nil "--port PORT" "Port to serve the site on when previewing it (default 8000)."
+          :parse-fn #(Integer/parseInt %) :default 8000]]
         common-options))
 
 (def ^:private top-level-help
@@ -48,7 +50,7 @@
     "Commands:"
     "  build      Build the requested editions."
     "  validate   Check a manuscript without rendering anything."
-    "  preview    Rebuild the book on every save while you write."
+    "  preview    Rebuild on every save; serve the site when previewing it."
     ""
     "Run \"clojure -M:run <command> --help\" for command-specific options."
     "The book-root positional defaults to \".\" (the current directory)."]))
@@ -127,13 +129,26 @@
 
 (defn- run-preview
   "Start a preview session and block until the watcher thread ends (in
-   practice: until Ctrl-C kills the process). An initial-build failure
-   propagates through `run-subcommand`'s catch and exits 1."
+   practice: until Ctrl-C kills the process). When the site edition is
+   previewed it is also served at `http://localhost:<port>/`. An
+   initial-build failure is reported and exits 1. Parsed directly (not via
+   `run-subcommand`) so the `--port` option reaches `preview!` alongside
+   the request map."
   [args]
-  (run-subcommand args preview-options preview-usage
-                  (fn [request]
-                    (let [handle (preview/preview! request)]
-                      (.join ^Thread (:thread handle))))))
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args preview-options)]
+    (cond
+      (:help options) (do (print-usage preview-usage summary) 0)
+      errors          (do (run! err-println errors)
+                          (err-println summary)
+                          2)
+      :else
+      (try
+        (let [handle (preview/preview! (args->request (first arguments) options)
+                                       {:port (:port options)})]
+          (.join ^Thread (:thread handle)))
+        0
+        (catch Throwable t (report-exception t) 1)))))
 
 ;; --- dispatch ----------------------------------------------------------
 
