@@ -23,7 +23,9 @@ highlighting, running heads, an index, and a bibliography.
 
 ## Building a book
 
-To build the manual that ships with this repository:
+Start a new book with `clojure -M:run init my-book`: it scaffolds a minimal,
+buildable manuscript — `book.edn`, `theme.edn`, and a first chapter — into a
+fresh directory. To build the manual that ships with this repository:
 
 ```bash
 clojure -M:run build manual

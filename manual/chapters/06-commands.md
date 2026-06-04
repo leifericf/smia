@@ -2,6 +2,16 @@
 
 Smia has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one for day-to-day work: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X smia.api/…`, takes an EDN request map and is meant for scripts and other tools.
 
+## init
+
+Scaffold a new book:
+
+```
+clojure -M:run init my-book
+```
+
+The target directory is created when missing, and the slug and title are derived from its name: `my-book` becomes the slug `my-book` and the title "My Book". The scaffold is a complete, buildable manuscript — a `book.edn`, a `theme.edn`, and one Markdown chapter — so the next command can be `build`. A target directory that already has entries is refused with `:smia.book.scaffold/target-not-empty`; `init` never overwrites anything.
+
 ## validate
 
 Check that the manuscript is well-formed without rendering anything. Validation covers the config, the theme tokens, the chapter vocabulary, and cross-references:
@@ -89,4 +99,4 @@ Tools that assemble the request themselves call `smia.api/build` and `smia.api/v
 clojure -X smia.api/build :book-root '"manual"' :editions '[:screen :print]'
 ```
 
-The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well.
+The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well. `smia.api/init` is the scaffold: `clojure -X smia.api/init :target '"my-book"'`.

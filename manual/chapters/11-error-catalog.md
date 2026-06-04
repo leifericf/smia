@@ -9,6 +9,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.build.request/unknown-edition`: an edition outside the supported set was requested.
 - `:smia.build.request/invalid-editions`: `:editions` was not a vector of keywords.
 - `:smia.build.request/print-x-requires-config`: `:print-x` was requested but `book.edn` has no `:book/print-x` map. PDF/X needs embedded fonts and an ICC output intent.
+- `:smia.book.scaffold/target-not-empty`: `init` was pointed at a directory that already has entries. The scaffold never overwrites anything; pick a fresh directory.
 
 ## Configuration and tokens
 

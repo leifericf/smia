@@ -32,6 +32,9 @@
 
 (def ^:private validate-options common-options)
 
+(def ^:private init-options
+  [["-h" "--help" "Show this help."]])
+
 (def ^:private preview-options
   (into [["-e" "--edition EDITION" "Edition to preview (screen|print|print-x|site|epub); repeatable."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
@@ -48,6 +51,7 @@
     "Usage: clojure -M:run <command> [book-root] [options]"
     ""
     "Commands:"
+    "  init       Scaffold a new book into a directory."
     "  build      Build the requested editions."
     "  validate   Check a manuscript without rendering anything."
     "  preview    Rebuild on every save; serve the site when previewing it."
@@ -94,6 +98,7 @@
 
 ;; --- subcommands -------------------------------------------------------
 
+(def ^:private init-usage "Usage: clojure -M:run init [target-dir]")
 (def ^:private build-usage "Usage: clojure -M:run build [book-root] [options]")
 (def ^:private validate-usage "Usage: clojure -M:run validate [book-root] [options]")
 (def ^:private preview-usage "Usage: clojure -M:run preview [book-root] [options]")
@@ -114,6 +119,27 @@
       (try
         (on-request (args->request (first arguments) options))
         0
+        (catch Throwable t (report-exception t) 1)))))
+
+(defn- run-init
+  "Scaffold a new book into the positional target directory (default the
+   current one). Parsed directly (not via `run-subcommand`) because init
+   takes a target, not a request map."
+  [args]
+  (let [{:keys [options arguments errors summary]}
+        (cli/parse-opts args init-options)]
+    (cond
+      (:help options) (do (print-usage init-usage summary) 0)
+      errors          (do (run! err-println errors)
+                          (err-println summary)
+                          2)
+      :else
+      (try
+        (let [{:keys [target files]} (api/init {:target (or (first arguments) ".")})]
+          (println "Initialized a new book in" target)
+          (run! #(println " " %) files)
+          (println "Next: cd into it and run \"clojure -M:run build\".")
+          0)
         (catch Throwable t (report-exception t) 1)))))
 
 (defn- run-build [args]
@@ -158,6 +184,7 @@
   [argv]
   (let [[command & rest] argv]
     (case command
+      "init"              (run-init rest)
       "build"             (run-build rest)
       "validate"          (run-validate rest)
       "preview"           (run-preview rest)

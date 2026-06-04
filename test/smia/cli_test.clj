@@ -42,7 +42,21 @@
 (deftest subcommand-help-succeeds
   (is (= 0 (run-code ["build" "--help"])))
   (is (= 0 (run-code ["validate" "--help"])))
-  (is (= 0 (run-code ["preview" "--help"]))))
+  (is (= 0 (run-code ["preview" "--help"])))
+  (is (= 0 (run-code ["init" "--help"]))))
+
+(deftest init-scaffolds-into-a-fresh-directory
+  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
+                           (str "smia-cli-init-" (System/nanoTime)))]
+    (is (= 0 (run-code ["init" (.getPath dir)])))
+    (is (.exists (java.io.File. dir "book.edn")))))
+
+(deftest init-into-a-non-empty-directory-fails
+  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
+                           (str "smia-cli-init-full-" (System/nanoTime)))]
+    (.mkdirs dir)
+    (spit (java.io.File. dir "occupied.txt") "x")
+    (is (= 1 (run-code ["init" (.getPath dir)])))))
 
 (deftest bad-option-is-a-usage-error
   (is (= 2 (run-code ["build" fixture "--no-such-flag"])))

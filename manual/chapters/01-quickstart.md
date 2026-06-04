@@ -10,7 +10,13 @@ A JDK and the Clojure CLI. Everything else is an ordinary Maven dependency.
 
 ## A minimal book
 
-A manuscript is three kinds of file: one `book.edn`, one or more chapter source files, and a `theme.edn`. The smallest useful `book.edn` is:
+Scaffold one:
+
+```
+clojure -M:run init my-book
+```
+
+This writes a minimal, buildable manuscript into a new `my-book/` directory and refuses a directory that already has anything in it. A manuscript is three kinds of file, and the scaffold contains exactly those: one `book.edn`, one or more chapter source files, and a `theme.edn`. The smallest useful `book.edn` is what `init` writes:
 
 ```edn
 {:book/slug    "my-book"

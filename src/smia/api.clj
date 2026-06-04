@@ -1,9 +1,17 @@
 (ns smia.api
   "Public entrypoints invoked via `clojure -X`."
   (:require
+   [smia.book.scaffold :as scaffold]
    [smia.build.execute :as build]
    [smia.build.request :as request]
    [clojure.pprint :as pp]))
+
+(defn init
+  "Scaffold a minimal, buildable book into `:target` (default \".\"),
+   creating the directory when missing. A non-empty target is refused.
+   Returns `{:target <path> :files [<rel-path> …]}`."
+  [{:keys [target] :or {target "."}}]
+  (scaffold/init! target))
 
 (defn validate
   "Validate a manuscript without producing output artifacts."
