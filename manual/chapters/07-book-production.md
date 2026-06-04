@@ -108,8 +108,9 @@ clojure -M:run build my-book \
 ```
 
 Highlighting is a pure, in-process tokenizer, so builds stay deterministic. It
-ships for Clojure, Java, Kotlin, and Groovy; an unknown language falls back to
-plain monospace.
+ships for Clojure, Java, Kotlin, Groovy, JavaScript, Python, SQL, and shell
+scripts (`bash`); an unknown language falls back to plain monospace. The
+listing above is highlighted as `bash`.
 
 ### Annotating a listing
 

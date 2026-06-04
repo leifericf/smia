@@ -75,7 +75,12 @@
    "src/smia/highlight/clojure.clj"
    "src/smia/highlight/java.clj"
    "src/smia/highlight/kotlin.clj"
-   "src/smia/highlight/groovy.clj"])
+   "src/smia/highlight/groovy.clj"
+   "src/smia/highlight/bash.clj"
+   "src/smia/highlight/python.clj"
+   "src/smia/highlight/javascript.clj"
+   "src/smia/highlight/sql.clj"
+   "src/smia/math/resolve.clj"])
 
 (deftest pure-cores-do-no-io
   (doseq [path pure-core-nss

@@ -19,7 +19,8 @@ A book is a `book.edn` file, its chapter sources, and a `theme.edn`. From that,
 Smia produces parts and numbered chapters, appendices, named front and back
 matter, captioned figures and code listings, cross-references that read
 "Figure 1" rather than a bare page number, typographic punctuation, syntax
-highlighting, running heads, an index, and a bibliography. LaTeX math renders
+highlighting for the common book languages, running heads, an index, and a
+bibliography. LaTeX math renders
 at build time into self-contained SVG, identical in every edition, with no
 JavaScript and no math font needed at read time.
 
