@@ -51,17 +51,20 @@
      :else                       [:a {:href (href-to href)} text])])
 
 (defn- sidebar-toc
-  "The sticky navigation rail: the book title linking home, then every
-   contents entry, with the entry for the current page marked `current`.
-   Hrefs are relativized against the page being rendered."
+  "The navigation rail: the book title linking home, then every contents
+   entry, with the entry for the current page marked `current`. The outer
+   `nav` stretches to the layout's full height (it carries the rail's
+   background); the inner wrapper is the sticky, scrolling part. Hrefs
+   are relativized against the page being rendered."
   [ctx]
   (let [current-url (:url (:page ctx))
         href-to     (:href-to ctx)]
     [:nav {:class "book-sidebar" :aria-label "Table of contents"}
-     [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
-      (:book-title ctx)]
-     (into [:ol {:class "book-sidebar-list"}]
-           (map #(toc-entry % current-url href-to) (:contents ctx)))]))
+     [:div {:class "book-sidebar-inner"}
+      [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
+       (:book-title ctx)]
+      (into [:ol {:class "book-sidebar-list"}]
+            (map #(toc-entry % current-url href-to) (:contents ctx)))]]))
 
 (defn- sidebar-page-wrap [ctx title main]
   [:html

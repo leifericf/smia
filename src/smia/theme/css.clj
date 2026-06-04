@@ -147,22 +147,24 @@
          [".index-entry" {:margin "0 0 2pt"}]
          [".float-list" {:list-style "none" :padding-left "0"}]
 
-         ;; the :sidebar site layout — a sticky TOC rail beside the reading
-         ;; column. `flex-wrap` stacks the two on a narrow viewport, so no
-         ;; @media query is needed (the emitter stays flat and deterministic).
+         ;; the :sidebar site layout — a full-height tinted TOC rail beside
+         ;; a centered reading column. The rail stretches to the layout's
+         ;; height (its background reaches the bottom edge) while the inner
+         ;; wrapper stays sticky; `flex-wrap` stacks the two on a narrow
+         ;; viewport, so no @media query is needed (the emitter stays flat
+         ;; and deterministic).
          [".book-layout" {:display    "flex"
                           :flex-wrap  "wrap"
-                          :gap        "2em"
-                          :align-items "flex-start"}]
-         [".book-sidebar" {:flex        "1 1 14em"
-                           :max-width   "20em"
-                           :align-self  "flex-start"
-                           :position    "sticky"
-                           :top         "0"
-                           :max-height  "100vh"
-                           :overflow-y  "auto"
-                           :padding     "1em 0"
-                           :font-size   "0.9em"}]
+                          :min-height "100vh"}]
+         [".book-sidebar" {:flex             "1 1 14em"
+                           :background-color "#f7f7f7"
+                           :border-right     (str "1px solid " rule)}]
+         [".book-sidebar-inner" {:position   "sticky"
+                                 :top        "0"
+                                 :max-height "100vh"
+                                 :overflow-y "auto"
+                                 :padding    "2em 1.5em"
+                                 :font-size  "0.9em"}]
          [".book-sidebar-title" {:font-family  head-family
                                  :font-weight  "bold"
                                  :display      "block"
@@ -171,8 +173,10 @@
          [".book-sidebar-list .toc-level-1" {:padding-left "1em"}]
          [".book-sidebar-list .toc-level-2" {:padding-left "2em"}]
          [".book-sidebar .current" {:font-weight "bold"}]
-         [".book-content" {:flex "999 1 28em" :min-width "0"}]
-         [".book-content main" {:margin "0"}]
+         [".book-content" {:flex      "999 1 28em"
+                           :min-width "0"
+                           :padding   "2em 2em 0"}]
+         [".book-content main" {:margin "0 auto"}]
 
          ;; the site-only downloads page
          [".downloads" {:margin (str block " 0")}]
