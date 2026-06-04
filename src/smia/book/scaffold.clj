@@ -10,13 +10,21 @@
    [clojure.java.io :as io]
    [clojure.string :as str]))
 
+(def ^:private default-slug
+  "The fallback slug when a directory name has no usable characters."
+  "my-book")
+
 (defn- slugify
   "Normalize a directory name into a `:book/slug`: lower-case, with runs
-   of spaces and underscores as single hyphens."
+   of spaces and underscores as single hyphens, trimmed of leading and
+   trailing hyphens. A name with no usable characters falls back to a
+   default, so the scaffold is always a buildable, titled book."
   [name]
-  (-> name
-      (str/lower-case)
-      (str/replace #"[\s_]+" "-")))
+  (let [slug (-> (or name "")
+                 (str/lower-case)
+                 (str/replace #"[\s_]+" "-")
+                 (str/replace #"^-+|-+$" ""))]
+    (if (str/blank? slug) default-slug slug)))
 
 (defn- title-from
   "Derive a starting `:book/title` from a slug: hyphens to spaces, each

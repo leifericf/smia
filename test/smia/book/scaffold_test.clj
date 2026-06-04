@@ -26,6 +26,13 @@
     (is (= "My First Book" (:book/title config)))
     (is (= ["chapters/01-introduction.md"] (:book/chapters config)))))
 
+(deftest a-blank-name-still-yields-a-titled-book
+  (testing "an empty or punctuation-only name falls back to a default"
+    (doseq [nm ["" "   " "-" "_"]]
+      (let [config (edn/read-string (get (scaffold/files nm) "book.edn"))]
+        (is (seq (:book/slug config)) (str "slug non-blank for " (pr-str nm)))
+        (is (seq (:book/title config)) (str "title non-blank for " (pr-str nm)))))))
+
 (deftest theme-template-carries-the-required-groups
   (let [tokens (edn/read-string (get (scaffold/files "x") "theme.edn"))]
     (is (every? #(map? (get tokens %)) [:color :type :spacing :layout]))))
