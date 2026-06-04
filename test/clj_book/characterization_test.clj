@@ -95,6 +95,26 @@
       (is (.exists (io/file dir "styles.css")))
       (is (.exists (io/file dir "images/pipeline.svg"))))))
 
+(deftest ^:integration manual-downloads-page-is-site-only
+  (let [man      (build! [:site :epub])
+        site-dir (:path (first (filter #(= :site (:edition %)) (:artifacts man))))
+        epub     (artifact-path man :epub)]
+    (testing "the site emits a downloads page linking every published asset"
+      (let [dl (io/file site-dir "downloads.html")]
+        (is (.exists dl))
+        (let [html (slurp dl)]
+          (doseq [asset ["clj-book-manual-screen.pdf"
+                         "clj-book-manual-print.pdf"
+                         "clj-book-manual-print-x.pdf"
+                         "clj-book-manual.epub"]]
+            (is (str/includes? html asset) (str asset " is linked"))))))
+    (testing "the home contents links to the downloads page"
+      (is (str/includes? (slurp (io/file site-dir "index.html"))
+                         "href=\"downloads.html\"")))
+    (testing "the EPUB carries no downloads page"
+      (with-open [zf (java.util.zip.ZipFile. (io/file epub))]
+        (is (nil? (.getEntry zf "OEBPS/downloads.xhtml")))))))
+
 (deftest ^:integration manual-builds-every-edition-in-one-run
   (let [man (build! [:screen :print :site :epub])]
     (is (= [:screen :print :site :epub] (:build/editions man)))

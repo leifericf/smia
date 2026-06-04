@@ -22,6 +22,7 @@ Some editions read their own `book.edn` keys, all documented in [the editions ch
 
 - `:book/print-x` — fonts to embed and the ICC output intent for the PDF/X `print-x` edition (required when you build it).
 - `:book/identifier`, `:book/language`, `:book/accessibility` — EPUB package metadata (all optional, with sensible defaults).
+- `:book/downloads` — a base URL and a list of downloadable editions; the `site` edition turns it into a Downloads page. A map with a string `:base` and an `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`. See [the editions chapter](#editions).
 
 ## Validation
 
