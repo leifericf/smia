@@ -40,7 +40,7 @@
   (:import
    (java.time Instant)))
 
-(declare build-paths load-book render-edition!
+(declare build-paths load-book render-edition! dry-run-plan
          attr-contexts resolve-content number-for-edition)
 
 (defn prepare
@@ -114,6 +114,36 @@
       (doseq [^java.io.File child (reverse (file-seq f))]
         (.delete child)))))
 
+(defn- dry-run-plan
+  "Surface the numbering summary and the validation plan (block counts
+   per language) on `the-plan` by loading the book; nothing is rendered
+   or evaluated."
+  [prepared the-plan]
+  (let [config   (:config (:manuscript prepared))
+        licensee (:licensee (:request prepared))
+        resolved (resolve-content
+                   (load-book (:book-root (:request prepared)) (:manuscript prepared))
+                   config licensee)
+        {:keys [book per-edition? book-ctx build-ctx]} resolved
+        ;; Counts come from the edition-independent (neutral) view; when
+        ;; content is edition-dependent, the per-edition counts differ and
+        ;; are reported alongside.
+        neutral  (conditional/prune-manuscript book book-ctx build-ctx {} nil)
+        counts   (number/counts (number/assign neutral))]
+    (cond-> (assoc-in the-plan [:numbering :counts] counts)
+      per-edition?
+      (assoc-in [:numbering :per-edition]
+                (into (sorted-map)
+                      (map (fn [e]
+                             [e (number/counts
+                                  (number/assign
+                                    (conditional/prune-manuscript
+                                      book book-ctx build-ctx {:edition e} nil)))]))
+                      (:editions (:request prepared))))
+      (get-in the-plan [:validation :enabled])
+      (assoc-in [:validation :plan]
+                (eval-registry/plan-validation (:chapters neutral))))))
+
 (defn build
   "Execute the requested edition builds and return the manifest map.
    build = execute! ∘ plan ∘ prepare.
@@ -129,32 +159,7 @@
   (let [prepared (prepare request)
         the-plan (plan/plan prepared)]
     (if (:dry-run request)
-      ;; Surface the numbering summary and the validation plan (block counts
-      ;; per language) by loading the book; nothing is rendered or evaluated.
-      (let [config   (:config (:manuscript prepared))
-            licensee (:licensee (:request prepared))
-            resolved (resolve-content
-                       (load-book (:book-root (:request prepared)) (:manuscript prepared))
-                       config licensee)
-            {:keys [book per-edition? book-ctx build-ctx]} resolved
-            ;; Counts come from the edition-independent (neutral) view; when
-            ;; content is edition-dependent, the per-edition counts differ and
-            ;; are reported alongside.
-            neutral  (conditional/prune-manuscript book book-ctx build-ctx {} nil)
-            counts   (number/counts (number/assign neutral))]
-        (cond-> (assoc-in the-plan [:numbering :counts] counts)
-          per-edition?
-          (assoc-in [:numbering :per-edition]
-                    (into (sorted-map)
-                          (map (fn [e]
-                                 [e (number/counts
-                                      (number/assign
-                                        (conditional/prune-manuscript
-                                          book book-ctx build-ctx {:edition e} nil)))]))
-                          (:editions (:request prepared))))
-          (get-in the-plan [:validation :enabled])
-          (assoc-in [:validation :plan]
-                    (eval-registry/plan-validation (:chapters neutral)))))
+      (dry-run-plan prepared the-plan)
       (do
         (when (:clean request)
           (delete-tree! (get-in prepared [:paths :book-output-dir])))
