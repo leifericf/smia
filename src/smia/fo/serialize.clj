@@ -12,7 +12,7 @@
   (:require
    [smia.error :as error]
    [smia.fo.attrs :as attrs]
-   [smia.fo.hiccup :as hiccup]
+   [smia.hiccup :as hiccup]
    [clojure.string :as str]))
 
 (def ^:private fo-namespace "http://www.w3.org/1999/XSL/Format")

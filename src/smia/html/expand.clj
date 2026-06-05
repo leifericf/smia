@@ -23,7 +23,7 @@
   (:require
    [smia.book.dictionary :as dictionary]
    [smia.error :as error]
-   [smia.fo.hiccup :as hiccup]
+   [smia.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
    [smia.svg.resolve :as svg-resolve]
    [clojure.string :as str]))
@@ -95,25 +95,17 @@
 
 ;; --- node helpers -----------------------------------------------------------
 
-(defn- flatten-children
-  "Flatten one level of seqs (e.g. produced by `for`) among children."
-  [children]
-  (mapcat (fn [c] (if (seq? c) c [c])) children))
-
 (defn- expand-all [children ctx]
-  (->> (flatten-children children)
+  (->> (hiccup/flatten-children children)
        (map #(expand % ctx))
        (remove nil?)
        vec))
-
-(defn- as-id [v]
-  (when (some? v) (if (keyword? v) (name v) (str v))))
 
 (defn- id-attrs
   "The (possibly empty) HTML attrs carrying only the author's anchor id —
    book-internal attrs like `:number`/`:label` never leak into HTML."
   [author]
-  (cond-> {} (:id author) (assoc :id (as-id (:id author)))))
+  (cond-> {} (:id author) (assoc :id (hiccup/as-id (:id author)))))
 
 (defn- passthrough
   "An expander for a tag that renders as itself: anchor id, expanded
@@ -147,11 +139,6 @@
 
 ;; --- captions, figures, tables ----------------------------------------------
 
-(defn- captioned?
-  "True when a node carries a caption or a numbering-pass label."
-  [author]
-  (or (:caption author) (:label author)))
-
 (defn- caption-node
   "A caption element (`:figcaption` or table `:caption`): the bold
    \"Figure 3.\" label from the numbering pass, then the caption text."
@@ -166,12 +153,12 @@
   (into [:figure (id-attrs author)]
         (concat
           (expand-all children ctx)
-          (when (captioned? author) [(caption-node :figcaption author)]))))
+          (when (hiccup/captioned? author) [(caption-node :figcaption author)]))))
 
 (defn- table-block [author children ctx]
   (into [:table (id-attrs author)]
         (concat
-          (when (captioned? author) [(caption-node :caption author)])
+          (when (hiccup/captioned? author) [(caption-node :caption author)])
           (expand-all children ctx))))
 
 ;; --- code rendering (syntax highlighting, line numbers, annotations) ---------
@@ -188,8 +175,6 @@
           toks)
     [text]))
 
-(defn- code-text [children] (apply str (filter string? children)))
-
 (defn- code-attrs [lang]
   (cond-> {} lang (assoc :class (str "language-" (name lang)))))
 
@@ -198,27 +183,6 @@
    beside its note in the list."
   [n]
   [:sup {:class "annotation-mark"} (str n)])
-
-(defn- annotations->by-line
-  "Validate a listing's `:annotations` and index them as `{line -> {:n
-   ordinal :note note}}` (mirrors `fo.expand`, with this format's error
-   type)."
-  [annotations line-count id]
-  (reduce
-    (fn [acc [i {:keys [line note]}]]
-      (when-not (and (integer? line) (<= 1 line line-count))
-        (throw (error/ex :smia.html.expand/invalid-annotation
-                         (str "Annotation " (inc i) " references line "
-                              (pr-str line) ", outside the listing's "
-                              "1.." line-count " lines.")
-                         {:listing id :line line :lines line-count})))
-      (when (contains? acc line)
-        (throw (error/ex :smia.html.expand/invalid-annotation
-                         (str "Line " line " carries more than one annotation.")
-                         {:listing id :line line})))
-      (assoc acc line {:n (inc i) :note note}))
-    {}
-    (map-indexed vector annotations)))
 
 (defn- code-lines
   "Per-line inline content: an optional right-aligned line-number gutter,
@@ -245,7 +209,7 @@
    force per-line rendering; otherwise the code is one run."
   [author children ctx by-line]
   (let [lang (:lang author)
-        text (code-text children)]
+        text (hiccup/code-text children)]
     [:pre (id-attrs author)
      (into [:code (code-attrs lang)]
            (if (or (:line-numbers author) (seq by-line))
@@ -271,17 +235,18 @@
   [author children ctx]
   (let [annotations (:annotations author)
         by-line     (when (seq annotations)
-                      (annotations->by-line
+                      (hiccup/annotations->by-line
+                        :smia.html.expand/invalid-annotation
                         annotations
-                        (count (str/split (code-text children) #"\n" -1))
-                        (as-id (:id author))))]
+                        (count (str/split (hiccup/code-text children) #"\n" -1))
+                        (hiccup/as-id (:id author))))]
     (into [:figure (assoc (id-attrs author) :class "listing")]
           (concat
             (when-let [file (:file author)]
               [[:div {:class "file-bar"} file]])
             [(code-block (dissoc author :id) children ctx by-line)]
             (when by-line [(annotation-list by-line ctx)])
-            (when (captioned? author) [(caption-node :figcaption author)])))))
+            (when (hiccup/captioned? author) [(caption-node :figcaption author)])))))
 
 (defn- pre-block
   "A code block, optionally foldable on the site. `:fold` wraps the listing
@@ -289,7 +254,7 @@
    caption, or a default); the browser folds it with no JavaScript, and PDF
    ignores `:fold` and always shows the full listing."
   [a c ctx]
-  (let [rendered (if (or (:file a) (captioned? a) (:annotations a))
+  (let [rendered (if (or (:file a) (hiccup/captioned? a) (:annotations a))
                    (listing-block a c ctx)
                    (code-block a c ctx nil))]
     (if-let [fold (:fold a)]
@@ -399,13 +364,13 @@
       :else dest)))
 
 (defn- xref [author children ctx]
-  (let [dest (as-id (:to author))]
+  (let [dest (hiccup/as-id (:to author))]
     (when-not dest
       (throw (error/ex :smia.html.expand/invalid-xref
                        ":xref requires a :to target id."
                        {:attrs author})))
     (into [:a {:class "xref" :href ((:resolve ctx) dest)}]
-          (if (seq (flatten-children children))
+          (if (seq (hiccup/flatten-children children))
             (expand-all children ctx)
             [(composed-xref author dest)]))))
 

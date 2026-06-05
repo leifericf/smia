@@ -18,7 +18,7 @@
   (:require
    [smia.book.dictionary :as dictionary]
    [smia.error :as error]
-   [smia.fo.hiccup :as hiccup]
+   [smia.hiccup :as hiccup]
    [smia.highlight.registry :as highlight]
    [smia.svg.resolve :as svg-resolve]
    [clojure.string :as str]))
@@ -70,19 +70,11 @@
 
 ;; --- node parsing ---------------------------------------------------------
 
-(defn- flatten-children
-  "Flatten one level of seqs (e.g. produced by `for`) among children."
-  [children]
-  (mapcat (fn [c] (if (seq? c) c [c])) children))
-
 (defn- expand-all [children style]
-  (->> (flatten-children children)
+  (->> (hiccup/flatten-children children)
        (map #(expand % style))
        (remove nil?)
        vec))
-
-(defn- as-id [v]
-  (when (some? v) (if (keyword? v) (name v) (str v))))
 
 (defn- links?
   "Should references render as live links? On unless the style says
@@ -167,7 +159,7 @@
    `id` from the author attrs, wrapping the expanded children."
   [tag author children style extra]
   (into [:fo/block (cond-> (merge (get style tag) extra)
-                     (:id author) (assoc :id (as-id (:id author))))]
+                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
         (expand-all children style)))
 
 (defn- styled-inline [props children style]
@@ -193,17 +185,17 @@
   (let [expanded (expand-all children style)
         text     (apply str (filter string? (tree-seq vector? seq (vec expanded))))]
     (into [:fo/block (cond-> (get style tag)
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (cons [:fo/marker {:marker-class-name marker-class} text] expanded))))
 
 ;; --- lists ----------------------------------------------------------------
 
 (defn- list-items [children]
-  (filter #(and (vector? %) (= :li (first %))) (flatten-children children)))
+  (filter #(and (vector? %) (= :li (first %))) (hiccup/flatten-children children)))
 
 (defn- list-block [list-type author children style]
   (let [base (cond-> (get style list-type)
-               (:id author) (assoc :id (as-id (:id author))))]
+               (:id author) (assoc :id (hiccup/as-id (:id author))))]
     (into [:fo/list-block base]
           (map-indexed
             (fn [i item]
@@ -224,7 +216,7 @@
    `:dd` children are ignored, so whitespace and stray nodes are harmless."
   [author children style]
   (into [:fo/block (cond-> (get style :dl)
-                     (:id author) (assoc :id (as-id (:id author))))]
+                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
         (keep (fn [child]
                 (when (vector? child)
                   (let [[tag _ kids] (hiccup/parse-node child)]
@@ -232,18 +224,18 @@
                       :dt (into [:fo/block (get style :dt)] (expand-all kids style))
                       :dd (into [:fo/block (get style :dd)] (expand-all kids style))
                       nil))))
-              (flatten-children children))))
+              (hiccup/flatten-children children))))
 
 ;; --- tables ---------------------------------------------------------------
 
 (defn- cells-of [tr]
   (let [[_ _ children] (hiccup/parse-node tr)]
     (filter #(and (vector? %) (#{:td :th} (first %)))
-            (flatten-children children))))
+            (hiccup/flatten-children children))))
 
 (defn- rows-of [section]
   (let [[_ _ children] (hiccup/parse-node section)]
-    (filter #(and (vector? %) (= :tr (first %))) (flatten-children children))))
+    (filter #(and (vector? %) (= :tr (first %))) (hiccup/flatten-children children))))
 
 (defn- display-align
   "Map an HTML-style vertical alignment to FO's `display-align`. An
@@ -321,7 +313,7 @@
        (mapv (fn [w] (-> w (max auto-floor) (min auto-ceil))))))
 
 (defn- table-block [author children style]
-  (let [kids        (flatten-children children)
+  (let [kids        (hiccup/flatten-children children)
         find1       (fn [t] (first (filter #(and (vector? %) (= t (first %))) kids)))
         thead       (find1 :thead)
         tbody       (find1 :tbody)
@@ -366,18 +358,13 @@
             [[:fo/inline {:font-weight "bold"} (str label ". ")]])
           (when-let [caption (:caption author)] [caption]))))
 
-(defn- captioned?
-  "True when a node carries a caption or a numbering-pass label."
-  [author]
-  (or (:caption author) (:label author)))
-
 (defn- figure-block [author children style]
   (into [:fo/block (cond-> (get style :figure)
-                     (:id author)    (assoc :id (as-id (:id author)))
+                     (:id author)    (assoc :id (hiccup/as-id (:id author)))
                      (:float author) (assoc :float (name (:float author))))]
         (concat
           (expand-all children style)
-          (when (captioned? author) [(caption-block author style)]))))
+          (when (hiccup/captioned? author) [(caption-block author style)]))))
 
 ;; --- code rendering (syntax highlighting, line numbers) -------------------
 
@@ -394,40 +381,16 @@
           toks)
     [text]))
 
-(defn- code-text [children] (apply str (filter string? children)))
-
 (defn- code-block [author children style]
   (into [:fo/block (cond-> (get style :pre)
-                     (:id author) (assoc :id (as-id (:id author))))]
-        (code-content (:lang author) (code-text children) style)))
+                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
+        (code-content (:lang author) (hiccup/code-text children) style)))
 
 (defn- annotation-mark
   "A small theme-styled badge carrying an annotation's ordinal `n`. The same
    mark appears at the end of a code line and beside its note in the list."
   [n style]
   [:fo/inline (get style :annotation-mark) (str n)])
-
-(defn- annotations->by-line
-  "Validate a listing's `:annotations` and index them as `{line -> {:n
-   ordinal :note note}}`. Ordinals are 1-based by vector order. Throws
-   `:smia.fo.expand/invalid-annotation` for a line outside `1..line-count`
-   or a line carrying more than one note."
-  [annotations line-count id]
-  (reduce
-    (fn [acc [i {:keys [line note]}]]
-      (when-not (and (integer? line) (<= 1 line line-count))
-        (throw (error/ex :smia.fo.expand/invalid-annotation
-                         (str "Annotation " (inc i) " references line "
-                              (pr-str line) ", outside the listing's "
-                              "1.." line-count " lines.")
-                         {:listing id :line line :lines line-count})))
-      (when (contains? acc line)
-        (throw (error/ex :smia.fo.expand/invalid-annotation
-                         (str "Line " line " carries more than one annotation.")
-                         {:listing id :line line})))
-      (assoc acc line {:n (inc i) :note note}))
-    {}
-    (map-indexed vector annotations)))
 
 (defn- code-line-block
   "One per-line `:fo/block`: an optional right-aligned line-number gutter of
@@ -449,7 +412,7 @@
   (let [width (count (str (count lines)))
         lang  (:lang author)]
     (into [:fo/block (cond-> (get style :pre)
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (map-indexed
             (fn [i line]
               (let [n (inc i)]
@@ -462,7 +425,7 @@
    or nil) supplies the annotation marks."
   [author children style by-line]
   (if (or (:line-numbers author) (seq by-line))
-    (code-lines-block author (str/split (code-text children) #"\n" -1) style
+    (code-lines-block author (str/split (hiccup/code-text children) #"\n" -1) style
                       (boolean (:line-numbers author))
                       (reduce-kv (fn [m line {:keys [n]}] (assoc m line n)) {}
                                  (or by-line {})))
@@ -488,19 +451,20 @@
   [author children style]
   (let [annotations (:annotations author)
         by-line     (when (seq annotations)
-                      (annotations->by-line
+                      (hiccup/annotations->by-line
+                        :smia.fo.expand/invalid-annotation
                         annotations
-                        (count (str/split (code-text children) #"\n" -1))
-                        (as-id (:id author))))]
+                        (count (str/split (hiccup/code-text children) #"\n" -1))
+                        (hiccup/as-id (:id author))))]
     (into [:fo/block (cond-> (assoc (get style :listing)
                                     :keep-together.within-page "always")
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (concat
             (when-let [file (:file author)]
               [[:fo/block (get style :file-bar) file]])
             [(render-code (dissoc author :id) children style by-line)]
             (when by-line [(annotation-list-block by-line style)])
-            (when (captioned? author) [(caption-block author style)])))))
+            (when (hiccup/captioned? author) [(caption-block author style)])))))
 
 ;; --- book extensions ------------------------------------------------------
 
@@ -524,7 +488,7 @@
         icon  (:icon author)]
     (into [:fo/block (cond-> (assoc (get style :admonition)
                                     :keep-together.within-page "always")
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (concat
             (when title
               [[:fo/block {:font-weight "bold" :space-after "3pt"}
@@ -540,7 +504,7 @@
   (let [title (get author :title "Overview")]
     (into [:fo/block (cond-> (assoc (get style :overview)
                                     :keep-together.within-page "always")
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (concat
             (when title
               [[:fo/block {:font-weight "bold" :space-after "4pt"} title]])
@@ -552,7 +516,7 @@
   [author children style]
   (into [:fo/block (cond-> {:start-indent "24pt" :font-style "italic"
                             :space-before "12pt" :space-after "18pt"}
-                     (:id author) (assoc :id (as-id (:id author))))]
+                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
         (concat
           (expand-all children style)
           (when-let [attr (:attribution author)]
@@ -565,7 +529,7 @@
   [author children style]
   (into [:fo/block (cond-> (assoc (get style :example)
                                   :keep-together.within-page "always")
-                     (:id author) (assoc :id (as-id (:id author))))]
+                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
         (concat
           (when-let [title (:title author)]
             [[:fo/block {:font-weight "bold" :space-after "3pt"} title]])
@@ -578,7 +542,7 @@
   [author children style]
   (let [summary (or (:summary author) (:title author) "Details")]
     (into [:fo/block (cond-> (get style :details)
-                       (:id author) (assoc :id (as-id (:id author))))]
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (cons [:fo/block {:font-weight "bold" :space-after "3pt"} summary]
                 (expand-all children style)))))
 
@@ -621,10 +585,10 @@
 
 (defn- index-mark [author]
   ;; A zero-width anchor the index page-cites; invisible in the flow.
-  [:fo/inline (cond-> {} (:id author) (assoc :id (as-id (:id author))))])
+  [:fo/inline (cond-> {} (:id author) (assoc :id (hiccup/as-id (:id author))))])
 
 (defn- xref [author children style]
-  (let [dest (as-id (:to author))]
+  (let [dest (hiccup/as-id (:to author))]
     (when-not dest
       (throw (error/ex :smia.fo.expand/invalid-xref
                        ":xref requires a :to target id."
@@ -632,7 +596,7 @@
     (into (if (links? style)
             [:fo/basic-link {:internal-destination dest :color "#1a0dab"}]
             [:fo/inline])
-          (if (seq (flatten-children children))
+          (if (seq (hiccup/flatten-children children))
             (expand-all children style)
             (composed-xref author dest)))))
 
@@ -649,7 +613,7 @@
      :h4         (head :h4)
      :h5         (head :h5)
      :h6         (head :h6)
-     :pre        (fn [a c s] (if (or (:file a) (captioned? a) (:annotations a))
+     :pre        (fn [a c s] (if (or (:file a) (hiccup/captioned? a) (:annotations a))
                                (listing-block a c s)
                                (render-code a c s nil)))
      :blockquote (fn [a c s] (styled-block :blockquote a c s {}))
@@ -687,9 +651,9 @@
      :figure     figure-block
      :table      (fn [a c s]
                    (let [tbl (table-block a c s)]
-                     (if (captioned? a)
+                     (if (hiccup/captioned? a)
                        (into [:fo/block (cond-> {:space-before "6pt" :space-after "8pt"}
-                                          (:id a) (assoc :id (as-id (:id a))))]
+                                          (:id a) (assoc :id (hiccup/as-id (:id a))))]
                              [(caption-block a s) tbl])
                        tbl)))
      :thead      (fn [a c s] (styled-block :p a c s {}))
@@ -716,7 +680,7 @@
                        [:fo/block (cond-> {:text-align "center"
                                            :space-before "6pt"
                                            :space-after "6pt"}
-                                    (:id a) (assoc :id (as-id (:id a))))
+                                    (:id a) (assoc :id (hiccup/as-id (:id a))))
                         obj]
                        obj)))
      :diagram    (fn [a _ s]
@@ -724,17 +688,17 @@
                    ;; SVG; print shows its source as a code block instead.
                    (if (= :mermaid (:engine a))
                      [:fo/block (cond-> (get s :pre)
-                                  (:id a) (assoc :id (as-id (:id a))))
+                                  (:id a) (assoc :id (hiccup/as-id (:id a))))
                       (:source a)]
                      [:fo/block (cond-> {:text-align "center"
                                          :space-before "6pt"
                                          :space-after "6pt"}
-                                  (:id a) (assoc :id (as-id (:id a))))
+                                  (:id a) (assoc :id (hiccup/as-id (:id a))))
                       [:fo/instream-foreign-object {}
                        (svg-resolve/rendered-svg :diagram a)]]))
      :page-break (fn [_ _ _] [:fo/block {:break-before "page"}])
      :keep-together
      (fn [a c s]
        (into [:fo/block (cond-> {:keep-together.within-page "always"}
-                          (:id a) (assoc :id (as-id (:id a))))]
+                          (:id a) (assoc :id (hiccup/as-id (:id a))))]
              (expand-all c s)))}))

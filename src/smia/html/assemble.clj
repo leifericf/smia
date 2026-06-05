@@ -25,7 +25,7 @@
    [smia.book.dictionary :as dictionary]
    [smia.book.structure :as structure]
    [smia.error :as error]
-   [smia.fo.hiccup :as hiccup]
+   [smia.hiccup :as hiccup]
    [smia.html.expand :as html-expand]
    [smia.html.links :as links]
    [smia.site.search-index :as search-index]
