@@ -71,7 +71,13 @@
    "--panel"   "#242424"
    "--panel-2" "#2d2d2d"
    "--card"    "#333333"
-   "--line-no" "#8b949e"})
+   "--line-no" "#8b949e"
+   ;; build-time SVG (diagrams, math) carries dark strokes on a transparent
+   ;; ground, so it vanishes on the dark page. The SVG is byte-identical
+   ;; across editions and cannot be re-themed per edition, so the site
+   ;; inverts its lightness in CSS while keeping hue (hue-rotate undoes the
+   ;; hue flip invert causes), so colored diagrams stay recognizable.
+   "--media-filter" "invert(1) hue-rotate(180deg)"})
 
 (def ^:private default-dark-code
   "A readable dark syntax-highlight palette. The light defaults
@@ -115,7 +121,8 @@
              "--panel"   (:panel light)
              "--panel-2" (:panel-2 light)
              "--card"    (:card light)
-             "--line-no" (:line-no light)}
+             "--line-no" (:line-no light)
+             "--media-filter" "none"}
             (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
 
 (defn- dark-var-props
@@ -460,6 +467,16 @@
         ;; the opt-in toggle: explicit overrides that beat the media query
         ;; both ways, plus the button style. Only reachable under `:dark?`.
         (when toggle? (toggle-rules tokens light palette))
+
+        ;; build-time SVG (diagrams, math) inverts its lightness in the dark
+        ;; scheme so dark strokes show; `--media-filter` is `none` in light.
+        ;; The filter targets the `svg` itself, not its wrapper: a diagram is
+        ;; `div.diagram > svg.diagram` and display math is `div.math-display >
+        ;; svg.math`, so filtering both levels would invert twice and cancel.
+        ;; Site-only, so the literal/EPUB stylesheet stays byte-identical.
+        (when dark?
+          [["svg.diagram" {:filter "var(--media-filter)"}]
+           ["svg.math" {:filter "var(--media-filter)"}]])
 
         ;; the theme's :css styling hatch, last so user rules win
         (:css tokens))))))

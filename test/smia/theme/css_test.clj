@@ -186,6 +186,24 @@
           dark   (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
       (is (str/includes? dark "--tok-keyword: #ffcc66;")))))
 
+(deftest dark-mode-inverts-build-time-svg-so-strokes-show
+  (testing "diagrams and math route through a media-filter variable"
+    (let [out (css/css tokens {:dark? true})]
+      (is (str/includes? out "filter: var(--media-filter)"))
+      (testing "the filter targets the svg only, so it is not applied twice"
+        (is (str/includes? out "svg.diagram {"))
+        (is (str/includes? out "svg.math {"))
+        (is (not (str/includes? out ".math-display {\n  filter")))
+        (is (not (re-find #"(?m)^\.diagram \{\n  filter" out))))
+      (testing "light keeps the filter off, dark inverts lightness but keeps hue"
+        (is (str/includes? out "--media-filter: none;"))
+        (let [dark (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+          (is (str/includes? dark "--media-filter: invert("))))))
+  (testing "the literal path adds no filter and no media-filter variable"
+    (let [out (css/css tokens)]
+      (is (not (str/includes? out "media-filter")))
+      (is (not (str/includes? out "filter:"))))))
+
 (deftest dark-mode-keeps-line-numbers-visible
   (testing "line numbers route through a variable with a brighter dark value"
     (let [out  (css/css tokens {:dark? true})]

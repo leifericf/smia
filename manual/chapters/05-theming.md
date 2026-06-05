@@ -103,6 +103,8 @@ A computed dark palette is the default, including a brighter syntax-highlight pa
        :code {:keyword "#ff7b72" :string "#a5d6ff"}}
 ```
 
+Build-time SVG — math and diagrams — renders identical bytes into every edition, so it cannot be recolored for the dark scheme. The site instead inverts its lightness in CSS while keeping its hue, so a black-on-transparent diagram reads as light strokes on the dark page and a colored diagram stays recognizable. This is a site dark-scheme effect only; the SVG itself is untouched.
+
 The custom-property layer is the site's alone; the EPUB keeps a literal stylesheet, since e-readers do their own theming and older ones support custom properties unevenly. A book that does not opt in emits exactly the same stylesheet as before.
 
 ### A reader-controlled toggle
