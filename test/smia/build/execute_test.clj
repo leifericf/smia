@@ -84,6 +84,22 @@
         "clean removed the stale output before rebuilding")
     (is (.exists (io/file slug-dir "pdf")) "the build regenerated its output")))
 
+(deftest clean-deletes-a-symlink-entry-without-following-it
+  (let [outside (io/file (tmp-dir "link-target"))
+        root    (io/file (tmp-dir "link-root"))]
+    (.mkdirs outside)
+    (.mkdirs root)
+    (spit (io/file outside "keep.txt") "kept")
+    (spit (io/file root "own.txt") "build output")
+    (java.nio.file.Files/createSymbolicLink
+      (.toPath (io/file root "link"))
+      (.toPath outside)
+      (make-array java.nio.file.attribute.FileAttribute 0))
+    (#'execute/delete-tree! (str root))
+    (is (not (.exists root)) "the tree itself is removed")
+    (is (.exists (io/file outside "keep.txt"))
+        "files behind a symlink inside the tree are untouched")))
+
 (deftest ^:integration clean-is-a-no-op-under-dry-run
   (let [req      (request "cleandry" :editions [:screen])
         slug-dir (io/file (:output-root req) "tiny-book")]

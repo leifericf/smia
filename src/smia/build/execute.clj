@@ -107,12 +107,18 @@
 
 (defn- delete-tree!
   "Recursively delete the file or directory at `path` (children before
-   parents). A no-op when it does not exist."
+   parents). A symbolic link is deleted as an entry, never followed —
+   the sweep must not escape the tree through a planted link. A no-op
+   when the path does not exist."
   [path]
-  (let [f (io/file path)]
-    (when (.exists f)
-      (doseq [^java.io.File child (reverse (file-seq f))]
-        (.delete child)))))
+  (letfn [(del! [^java.io.File f]
+            (when (and (.isDirectory f)
+                       (not (java.nio.file.Files/isSymbolicLink (.toPath f))))
+              (run! del! (.listFiles f)))
+            (.delete f))]
+    (let [f (io/file path)]
+      (when (.exists f)
+        (del! f)))))
 
 (defn- dry-run-plan
   "Surface the numbering summary and the validation plan (block counts
