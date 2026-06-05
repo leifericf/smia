@@ -253,3 +253,60 @@
     (is (= [:p [:pre {:lang :clojure} "line-2\nline-3"]]
            (#'load/substitute-includes sources tree))
         "the :lines range is applied and :include/:lines are dropped")))
+
+;; --- data-sourced tables ----------------------------------------------------
+
+(deftest data-table-directive-reads-csv-with-a-header
+  (let [dir (tmp-book "data-csv")]
+    (spit-chapter dir "data/grid.csv" "A,B\n1,2\n3,4\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  (str "# D\n\n:::table {:data \"data/grid.csv\" :header true"
+                       " :id :grid :caption \"A grid\"}\n:::\n"))
+    (let [[_ _ table] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= [:table {:id :grid :caption "A grid"}
+              [:thead [:tr [:th "A"] [:th "B"]]]
+              [:tbody [:tr [:td "1"] [:td "2"]] [:tr [:td "3"] [:td "4"]]]]
+             table)
+          "the data keys are dropped and the rows are built from the file"))))
+
+(deftest data-table-without-a-header-is-all-body
+  (let [dir (tmp-book "data-nohdr")]
+    (spit-chapter dir "data/g.csv" "1,2\n3,4\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/g.csv\"}\n:::\n")
+    (let [[_ _ table] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= [:table {} [:tbody [:tr [:td "1"] [:td "2"]]
+                         [:tr [:td "3"] [:td "4"]]]]
+             table)))))
+
+(deftest data-table-infers-format-from-the-extension
+  (let [dir (tmp-book "data-tsv")]
+    (spit-chapter dir "data/g.tsv" "A\tB\n1\t2\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/g.tsv\" :header true}\n:::\n")
+    (let [[_ _ table] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= [:thead [:tr [:th "A"] [:th "B"]]] (nth table 2))))))
+
+(deftest data-table-reads-edn-rows
+  (let [dir (tmp-book "data-edn")]
+    (spit-chapter dir "data/g.edn" "[[\"A\" \"B\"] [1 2]]")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/g.edn\" :header true}\n:::\n")
+    (let [[_ _ table] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
+      (is (= [:tbody [:tr [:td "1"] [:td "2"]]] (nth table 3))))))
+
+(deftest missing-data-file-is-a-hard-error
+  (let [dir (tmp-book "data-missing")]
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/nope.csv\"}\n:::\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/missing-data (:error/type d)))
+      (is (= "data/nope.csv" (get-in d [:error/context :data]))))))
+
+(deftest data-table-paths-are-collected-in-order-and-deduplicated
+  (let [tree [:chapter {:id :x :title "X"}
+              [:table {:data "a.csv"}]
+              [:p "prose"]
+              [:table {:data "b.csv"}]
+              [:table {:data "a.csv" :header true}]]]
+    (is (= ["a.csv" "b.csv"] (#'load/data-table-paths tree)))))

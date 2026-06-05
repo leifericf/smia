@@ -16,6 +16,7 @@
    prefix is stripped) and the `:title` from the first H1; front-matter
    overrides both."
   (:require
+   [smia.book.datatable :as datatable]
    [smia.book.structure :as structure]
    [smia.error :as error]
    [smia.md.compile :as md-compile]
@@ -216,6 +217,84 @@
                       (include-paths node))]
     (substitute-includes sources node)))
 
+(defn- data-table?
+  "True for a `[:table {:data …} …]` node — a table whose rows come from a
+   data file rather than authored markup."
+  [node]
+  (and (vector? node) (= :table (first node))
+       (map? (second node)) (:data (second node))))
+
+(defn- data-table-paths
+  "Pure: every `:data` source path referenced in a chapter tree, in
+   document order and deduplicated."
+  [node]
+  (into [] (comp (filter data-table?)
+                 (map (comp :data second))
+                 (distinct))
+        (tree-seq vector? seq node)))
+
+(defn- data-format
+  "The data-table format: the explicit `:format`, else inferred from the
+   file extension (`.tsv`/`.edn`, defaulting to `:csv`)."
+  [{:keys [data format]}]
+  (or format
+      (cond
+        (str/ends-with? data ".tsv") :tsv
+        (str/ends-with? data ".edn") :edn
+        :else                        :csv)))
+
+(defn- rows->table
+  "Build a `[:table …]` from parsed `rows`. With `:header true` the first
+   row becomes a `:thead` of `:th` cells and the rest a `:tbody`; otherwise
+   every row is a `:tbody` of `:td` cells. The data-sourcing keys
+   (`:data`, `:format`, `:header`) are dropped from the table's attrs so
+   what reaches expansion is an ordinary table."
+  [attrs rows]
+  (when (empty? rows)
+    (throw (error/ex :smia.book.load/empty-data
+                     (str "Data-table source is empty: " (:data attrs))
+                     {:data (:data attrs)})))
+  (let [tattrs   (dissoc attrs :data :format :header)
+        row-of   (fn [tag cells] (into [:tr] (map (fn [c] [tag c]) cells)))]
+    (if (:header attrs)
+      [:table tattrs
+       [:thead (row-of :th (first rows))]
+       (into [:tbody] (map #(row-of :td %) (rest rows)))]
+      (into [:table tattrs] [(into [:tbody] (map #(row-of :td %) rows))]))))
+
+(defn- substitute-data-tables
+  "Pure: replace every `[:table {:data …}]` node with a table built from
+   the parsed `sources` (path -> file text), per the node's `:format` and
+   `:header`."
+  [sources node]
+  (cond
+    (data-table? node)
+    (let [attrs (second node)]
+      (rows->table attrs (datatable/rows (get sources (:data attrs))
+                                         (data-format attrs))))
+    (vector? node) (mapv #(substitute-data-tables sources %) node)
+    :else          node))
+
+(defn- read-data
+  "Shell: slurp the data-table source at `book-root`/`path`. A missing file
+   is a hard error."
+  [book-root path]
+  (let [f (io/file book-root path)]
+    (when-not (.exists f)
+      (throw (error/ex :smia.book.load/missing-data
+                       (str "Data-table source file not found: " (.getPath f))
+                       {:book-root book-root :data path})))
+    (slurp f)))
+
+(defn- resolve-data-tables
+  "Shell: resolve every `[:table {:data …}]` in a chapter tree. Collecting
+   the source paths and substituting the parsed rows back are pure steps;
+   only the read between them touches the filesystem."
+  [book-root node]
+  (let [sources (into {} (map (fn [p] [p (read-data book-root p)]))
+                      (data-table-paths node))]
+    (substitute-data-tables sources node)))
+
 (defn- check-chapter-shape
   "Validate that `form` is a well-formed `[:chapter {:id <keyword>
    :title <string>} …]` — the contract assembly relies on. Throws a
@@ -252,7 +331,10 @@
             [_ compiled-attrs & compiled-body] (md-compile/compile ast)
             compiled-body        (cond-> (vec compiled-body)
                                    smarten? (md-typography/smarten))
-            compiled-body        (mapv #(resolve-includes book-root %) compiled-body)
+            compiled-body        (mapv #(->> %
+                                              (resolve-includes book-root)
+                                              (resolve-data-tables book-root))
+                                        compiled-body)
             compiled-attrs       (cond-> compiled-attrs
                                    (and smarten? (:title compiled-attrs))
                                    (update :title md-typography/smarten-string))

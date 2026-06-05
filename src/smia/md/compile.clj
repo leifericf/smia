@@ -308,6 +308,12 @@
    (fn [node]
      (into [:open (directive-attrs node)] (compile-block-seq (:children node))))
 
+   "table"
+   ;; A data-sourced table: body-less, the rows come from the named file.
+   ;; The loader (smia.book.load) reads :data and parses it per :format into
+   ;; the table's rows; here the directive just carries the attributes.
+   (fn [node] [:table (directive-attrs node)])
+
    "keep-together"
    (fn [node]
      (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node))))

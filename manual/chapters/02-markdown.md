@@ -42,6 +42,7 @@ Beyond base CommonMark, a small set of constructs maps one-to-one onto the book 
 | raw Hiccup | a fence whose info is `{=hiccup}` | spliced author Hiccup (re-expands) |
 | raw FO | a fence whose info is `{=fo}` | spliced FO-Hiccup (verbatim) |
 | table widths | a bare `{:cols [3 1]}` line directly above a table | `[:table {:cols [3 1]} …]` |
+| data table | a `:::table {:data "data/x.csv"}` block | `[:table …]` built from the file's rows |
 
 A code fence's info string is a language token followed by an optional EDN map. An inline escape also works: a code span carrying the payload, immediately followed by the marker `{=hiccup}`.
 
@@ -123,6 +124,17 @@ Two block directives group richer content. A `:::example` is a titled worked-exa
 The `ratio?` branch renders as a double so the output stays portable.
 :::
 ```
+
+## Data tables
+
+A `:::table` directive builds a table from a data file rather than from rows typed by hand. It names the file in `:data`; the build reads it relative to the book root and fills the table with its rows:
+
+```
+:::table {:data "data/benchmarks.csv" :header true :id :bench :caption "Run times"}
+:::
+```
+
+The format follows the file extension — `.csv`, `.tsv`, or `.edn` — or an explicit `:format` overrides it. CSV and TSV are read in the usual way, with quoted fields and doubled quotes; an EDN file is a sequence of row sequences. With `:header true` the first row becomes the table head. Any other attribute (`:id`, `:caption`, `:cols`, including `:cols :auto`) rides along to the table, so a data table numbers, captions, and sizes like any other. A missing file is a build error.
 
 ## Document attributes
 
