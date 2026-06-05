@@ -116,9 +116,14 @@
       (is (not (str/includes? home "class=\"toc\""))))
     (testing "the sidebar rail is still the navigation, and links the chapters"
       (is (str/includes? home "class=\"book-sidebar\""))
-      (is (str/includes? home "href=\"ch-one/\"")))))
+      (is (str/includes? home "href=\"ch-one/\"")))
+    (testing "the title card is a centered cover"
+      (is (str/includes? home "class=\"book-header cover\"")))))
 
 (deftest plain-home-page-keeps-its-contents-list
   (let [home (get (assemble-with nil) "index.html")]
     (is (str/includes? home "class=\"toc\""))
-    (is (str/includes? home "Contents"))))
+    (is (str/includes? home "Contents"))
+    (testing "a landing that carries its own contents is not a full cover"
+      (is (str/includes? home "class=\"book-header\""))
+      (is (not (str/includes? home "class=\"book-header cover\""))))))

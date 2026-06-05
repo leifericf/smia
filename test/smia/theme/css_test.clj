@@ -78,6 +78,14 @@
     (testing "motion yields to a reader who asks for less of it"
       (is (str/includes? out "@media (prefers-reduced-motion: reduce)")))))
 
+(deftest title-card-home-becomes-a-centered-cover
+  (let [rules (css/compile-css tokens)
+        cover (rule rules ".book-header.cover")]
+    (is (= "center" (:text-align (rule rules ".book-header"))))
+    (is (= "flex" (:display cover)))
+    (is (= "center" (:justify-content cover)))
+    (is (some? (:min-height cover)))))
+
 (deftest chrome-links-are-quiet-and-focus-is-visible
   (let [rules (css/compile-css tokens)
         nav   (rule rules ".toc a, .page-nav a, .page-footer a")

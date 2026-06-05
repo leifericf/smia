@@ -406,6 +406,20 @@
                                 :padding-bottom "6pt"
                                 :margin-top     "0.25em"}]
          [".book-author" {:color muted}]
+         ;; the home page's title block. A plain landing centers its title
+         ;; above the contents; a title-card landing (the sidebar layout,
+         ;; whose rail already carries the contents) becomes a full-height
+         ;; centered cover so the page does not read as empty.
+         [".book-header" {:text-align "center"}]
+         [".book-header.cover" {:display         "flex"
+                                :flex-direction  "column"
+                                :justify-content "center"
+                                :align-items     "center"
+                                :min-height      "72vh"}]
+         [".book-header.cover h1" {:font-size   "clamp(2em, 6vw, 3.2em)"
+                                   :line-height "1.1"
+                                   :margin      "0 0 0.5em"}]
+         [".book-header.cover .book-author" {:font-size "1.15em"}]
          [".page-nav" {:display         "flex"
                        :gap             "1em"
                        :justify-content "center"

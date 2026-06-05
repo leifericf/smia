@@ -734,8 +734,12 @@
           (when label [[:p {:class "chapter-label"} label]])
           [[:h1 {:id id} title]])))
 
-(defn- book-header [{:keys [title author]}]
-  (into [:header {:class "book-header"} [:h1 {} title]]
+(defn- book-header
+  "The home page's title block. When `cover?` (the chrome carries the
+   contents elsewhere, so the landing is a title card and nothing else), it
+   gains the `cover` class the stylesheet centers into a full-height cover."
+  [{:keys [title author]} cover?]
+  (into [:header {:class (str "book-header" (when cover? " cover"))} [:h1 {} title]]
         (when author [[:p {:class "book-author"} author]])))
 
 (defn- toc-nav
@@ -816,8 +820,9 @@
                        :page spec
                        :href-to href-to
                        :resolve #(resolver % (:url spec)))
-        main    (cond-> [(book-header book)]
-                  (get chrome :home-toc? true)
+        toc?    (get chrome :home-toc? true)
+        main    (cond-> [(book-header book (not toc?))]
+                  toc?
                   (conj (toc-nav contents href-to (:language base-ctx))))]
     (assoc spec :hiccup
            (wrap-page chrome ctx (:title book) main))))
