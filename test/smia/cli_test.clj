@@ -1,7 +1,9 @@
 (ns smia.cli-test
   (:require
+   [smia.api :as api]
    [smia.cli :as cli]
    [smia.build.request :as request]
+   [clojure.edn :as edn]
    [clojure.test :refer [deftest is testing]]))
 
 (def ^:private fixture "test/fixtures/synthetic/valid-book")
@@ -12,6 +14,28 @@
   (binding [*out* (java.io.StringWriter.)
             *err* (java.io.StringWriter.)]
     (cli/run argv)))
+
+(defn- run-captured
+  "Run the CLI and return `{:code :out :err}` with both streams captured."
+  [argv]
+  (let [out (java.io.StringWriter.)
+        err (java.io.StringWriter.)]
+    (binding [*out* out *err* err]
+      {:code (cli/run argv) :out (str out) :err (str err)})))
+
+(defn- scaffold-book!
+  "Scaffold a fresh book into a temp directory and return its path."
+  [label]
+  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
+                           (str "smia-cli-" label "-" (System/nanoTime)))]
+    (api/init {:target (.getPath dir)})
+    (.getPath dir)))
+
+(defn- add-config-key!
+  "Rewrite the book's book.edn with `k` set to `v`."
+  [book-root k v]
+  (let [f (java.io.File. (str book-root) "book.edn")]
+    (spit f (pr-str (assoc (edn/read-string (slurp f)) k v)))))
 
 (def ^:private args->request #'cli/args->request)
 
@@ -84,6 +108,24 @@
 
 (deftest validate-succeeds
   (is (= 0 (run-code ["validate" fixture]))))
+
+(deftest validate-prints-each-warning
+  (testing "A warning's content reaches the user, not only its count"
+    (let [root (scaffold-book! "warn-validate")]
+      (add-config-key! root :custom/extension true)
+      (let [{:keys [code out err]} (run-captured ["validate" root])]
+        (is (= 0 code))
+        (is (re-find #"(?i)warning" err))
+        (is (re-find #"custom/extension" err))
+        (is (re-find #"1 warning" out))))))
+
+(deftest dry-run-build-prints-warnings
+  (testing "Build surfaces manuscript warnings even on a dry run"
+    (let [root (scaffold-book! "warn-build")]
+      (add-config-key! root :custom/extension true)
+      (let [{:keys [code err]} (run-captured ["build" root "--dry-run"])]
+        (is (= 0 code))
+        (is (re-find #"custom/extension" err))))))
 
 (deftest unknown-edition-is-a-runtime-error
   (testing "A structured pipeline error maps to exit 1, not a stack trace"

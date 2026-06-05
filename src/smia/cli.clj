@@ -83,6 +83,35 @@
 (defn- err-println [& xs]
   (binding [*out* *err*] (apply println xs)))
 
+(defn- warning-line
+  "Render one pipeline warning as a single human-readable line. Warnings
+   come in several shapes (`:warning/note`, FOP `:message`, bare
+   `:warning/type` with context), so unknown shapes fall back to EDN."
+  [w]
+  (cond
+    (string? w)        w
+    (:warning/note w)  (str (:warning/note w)
+                            (when-let [ks (:warning/keys w)]
+                              (str " " (pr-str ks))))
+    (:message w)       (:message w)
+    (:warning/type w)  (pr-str (dissoc w :warning/type))
+    :else              (pr-str w)))
+
+(defn- report-warnings
+  "Print each warning to stderr, prefixed, so a quiet success stays quiet
+   on stdout but no warning is ever silently dropped."
+  [warnings]
+  (run! #(err-println "warning:" (warning-line %)) warnings))
+
+(defn- result-warnings
+  "Collect every warning a build or plan result carries: manuscript-level
+   warnings (manifest metadata; plan skeleton on a dry run) and the
+   per-edition warnings on each artifact entry."
+  [result]
+  (concat (get-in result [:build/metadata :warnings])
+          (get-in result [:manifest-skeleton :metadata :warnings])
+          (mapcat :warnings (:artifacts result))))
+
 (defn- report-exception
   "Render a structured smia error as a clean diagnostic; fall back to a
    stack trace only for unexpected (non-structured) throwables."
@@ -143,12 +172,16 @@
         (catch Throwable t (report-exception t) 1)))))
 
 (defn- run-build [args]
-  (run-subcommand args build-options build-usage api/build))
+  (run-subcommand args build-options build-usage
+                  (fn [request]
+                    (let [result (api/build request)]
+                      (report-warnings (result-warnings result))))))
 
 (defn- run-validate [args]
   (run-subcommand args validate-options validate-usage
                   (fn [request]
                     (let [{:keys [warnings]} (api/validate request)]
+                      (report-warnings warnings)
                       (if (seq warnings)
                         (println "ok —" (count warnings) "warning(s)")
                         (println "ok"))))))
