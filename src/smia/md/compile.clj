@@ -148,7 +148,12 @@
              (str "Unrecognized raw-escape fence info: " info) {:info info} node))
       :else
       (let [brace (str/index-of info "{")
-            lang  (str/trim (if brace (subs info 0 brace) info))
+            ;; CommonMark's info string is a language "word" optionally
+            ;; followed by more text; only the first whitespace-delimited
+            ;; token is the language, so trailing words never fold into a
+            ;; garbage keyword like `:clojure [1 2]`.
+            lang  (first (str/split (str/trim (if brace (subs info 0 brace) info))
+                                    #"\s+"))
             attrs (when brace
                     (let [m (read-edn-1 (subs info brace)
                                         :smia.md.compile/invalid-fence-info

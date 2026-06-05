@@ -358,6 +358,13 @@
   (is (= [[:pre {:test true :lang :clojure} "(+ 1 2)"]]
          (md->body "```clojure {:test true}\n(+ 1 2)\n```\n"))))
 
+(deftest fenced-code-lang-is-only-the-first-info-word
+  (testing "extra words after the language are ignored, not folded into the keyword"
+    (is (= [[:pre {:lang :clojure} "code"]]
+           (md->body "```clojure ignored words\ncode\n```\n")))
+    (is (= [[:pre {:test true :lang :clojure} "code"]]
+           (md->body "```clojure extra {:test true}\ncode\n```\n")))))
+
 (deftest include-fence-is-body-less
   (is (= [[:pre {:include "src/x.clj" :lines [1 3] :lang :clojure}]]
          (md->body "```clojure {:include \"src/x.clj\" :lines [1 3]}\n```\n"))))
