@@ -284,6 +284,12 @@
            [:tbody [:tr [:td "1"] [:td "2"]]]]]
          (md->body "{:cols [3 1]}\n\n| A | B |\n|---|---|\n| 1 | 2 |\n"))))
 
+(deftest table-cols-auto-from-preceding-edn-line
+  (is (= [[:table {:cols :auto}
+           [:thead [:tr [:th "A"] [:th "B"]]]
+           [:tbody [:tr [:td "1"] [:td "2"]]]]]
+         (md->body "{:cols :auto}\n\n| A | B |\n|---|---|\n| 1 | 2 |\n"))))
+
 (deftest bare-edn-line-not-before-a-table-stays-prose
   ;; A bare map that is not immediately above a table is ordinary content.
   (let [body (md->body "{:cols [3 1]}\n\nJust prose.\n")]

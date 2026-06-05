@@ -288,6 +288,38 @@
                      {:cols cols})))
   (vec (take ncols (concat cols (repeat 1)))))
 
+(def ^:private auto-floor
+  "The narrowest an auto-fit column may get, so a short column keeps a sane
+   minimum and is not crushed by a wide neighbor." 3)
+
+(def ^:private auto-ceil
+  "The widest weight an auto-fit column may reach, so one very long cell
+   cannot squash the others into slivers." 40)
+
+(defn- cell-width
+  "A width proxy for a cell: the length of its longest text line. Only the
+   cell's string content counts toward the column width; markup adds no
+   glyphs of its own."
+  [cell]
+  (let [text (apply str (filter string? (tree-seq vector? seq cell)))]
+    (->> (str/split text #"\n" -1) (map count) (apply max 0))))
+
+(defn- content-weights
+  "Content-fit column weights for `:cols :auto`: each column's weight is its
+   widest cell (by longest text line), clamped to `[auto-floor, auto-ceil]`.
+   Cells are taken by position, so the heuristic ignores spans — a spanned
+   table should set explicit `:cols`. FOP proportional widths sum to the
+   table width, so the table never overflows the page; the clamp only keeps
+   the proportions readable, and a single unbreakable token wider than its
+   column still overflows the cell (use explicit `:cols` for that)."
+  [rows ncols]
+  (->> rows
+       (reduce (fn [acc row]
+                 (reduce (fn [m [i cell]] (update m i (fnil max 0) (cell-width cell)))
+                         acc (map-indexed vector (cells-of row))))
+               (vec (repeat ncols 0)))
+       (mapv (fn [w] (-> w (max auto-floor) (min auto-ceil))))))
+
 (defn- table-block [author children style]
   (let [kids        (flatten-children children)
         find1       (fn [t] (first (filter #(and (vector? %) (= t (first %))) kids)))
@@ -300,7 +332,9 @@
                           :else             [])
         ncols       (apply max 0 (map #(count (cells-of %))
                                       (concat header-rows body-rows)))
-        weights     (column-weights (:cols author) ncols)
+        weights     (if (= :auto (:cols author))
+                      (content-weights (concat header-rows body-rows) ncols)
+                      (column-weights (:cols author) ncols))
         ;; FOP requires a non-empty fo:table-body. A valid header-only table
         ;; (e.g. a GFM table with no data rows) has no body rows, so render
         ;; its header as the body rather than emit an empty body FOP rejects.

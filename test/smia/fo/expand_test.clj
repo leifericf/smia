@@ -218,6 +218,33 @@
           (catch-data #(ex [:table {:cols [3 "wide"]}
                             [:tr [:td "a"] [:td "b"]]]))))))
 
+(defn- col-weights [out]
+  (mapv #(:column-width (second %))
+        (filter #(and (vector? %) (= :fo/table-column (first %))) out)))
+
+(deftest table-cols-auto-fits-columns-to-content
+  (testing "a wider column gets a higher weight than a narrow one"
+    (let [out (ex [:table {:cols :auto}
+                   [:thead [:tr [:th "Name"] [:th "Description"]]]
+                   [:tbody [:tr [:td "x"] [:td "a much longer description here"]]]])
+          ws  (col-weights out)]
+      (is (= 2 (count ws)))
+      (is (< (Long/parseLong (re-find #"\d+" (first ws)))
+             (Long/parseLong (re-find #"\d+" (second ws)))))))
+  (testing "the auto weights are deterministic"
+    (let [t [:table {:cols :auto} [:tr [:td "aa"] [:td "bbbb"]]]]
+      (is (= (col-weights (ex t)) (col-weights (ex t)))))))
+
+(deftest table-cols-auto-clamps-extremes
+  (testing "a tiny cell does not fall below the floor; a giant cell is capped"
+    (let [giant (apply str (repeat 200 "x"))
+          out   (ex [:table {:cols :auto}
+                     [:tr [:td "i"] [:td giant]]])
+          ws    (mapv #(Long/parseLong (re-find #"\d+" %)) (col-weights out))]
+      (is (>= (first ws) 3) "the short column keeps the floor")
+      (is (<= (second ws) 40) "the giant column is capped at the ceiling")
+      (is (= 3 (first ws)) "a one-character cell sits at the floor"))))
+
 (deftest admonition-expands-to-bordered-block-with-label
   (let [out (ex [:admonition {:kind :warning} [:p "careful"]])
         attrs (second out)]
