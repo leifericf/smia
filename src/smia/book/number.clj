@@ -70,17 +70,12 @@
 
 (defn- fmt [format n] ((get formatters format str) n))
 
-(def ^:private kind-words
-  "The English noun each numbered kind composes into a label, e.g.
-   \"Chapter 3\" — the `:en` baseline and the fallback for `kind-word`."
-  {:part "Part" :chapter "Chapter" :appendix "Appendix"
-   :figure "Figure" :table "Table" :listing "Listing" :section "Section"})
-
 (defn- kind-word
   "The localized noun for a numbered `kind` in `language` (the manuscript's
-   `:book/language`, threaded through the accumulator), English as fallback."
+   `:book/language`, threaded through the accumulator). The dictionary's
+   float and structure entries carry the `:en` baseline."
   [language kind]
-  (dictionary/localize language kind (kind-words kind)))
+  (dictionary/localize language kind))
 
 (def ^:private float-id-prefixes
   "The synthesized anchor-id prefix for each float kind, used when the

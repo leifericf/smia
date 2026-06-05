@@ -20,27 +20,13 @@
 (def ^:private kind-order
   [:chapter :appendix :matter :downloads :section :figure :table :listing :term])
 
-(def ^:private kind-labels
-  "The English category labels — the `:en` baseline and the fallback for
-   `kind-label` (the localized lookup keys these under `:cat/<kind>`)."
-  {:chapter  "Chapters"
-   :appendix "Appendices"
-   :matter   "Pages"
-   :downloads "Downloads"
-   :section  "Sections"
-   :figure   "Figures"
-   :table    "Tables"
-   :listing  "Listings"
-   :term     "Index terms"})
-
 (defn kind-label
   "The reader-facing label for an entry kind (also used by the static
-   fallback page), localized to `language` (the book's `:book/language`),
-   English as fallback."
+   fallback page), localized to `language` (the book's `:book/language`).
+   The dictionary's `:cat/<kind>` entries carry the `:en` baseline."
   ([kind] (kind-label kind nil))
   ([kind language]
-   (dictionary/localize language (keyword "cat" (name kind))
-                        (get kind-labels kind (str/capitalize (name kind))))))
+   (dictionary/localize language (keyword "cat" (name kind)))))
 
 ;; --- text extraction -------------------------------------------------------------
 

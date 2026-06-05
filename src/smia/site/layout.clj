@@ -75,7 +75,7 @@
    scrolling part."
   [ctx]
   [:nav {:class "book-sidebar"
-         :aria-label (dictionary/localize (:language ctx) :table-of-contents "Table of contents")}
+         :aria-label (dictionary/localize (:language ctx) :table-of-contents)}
    (into [:div {:class "book-sidebar-inner"}
           [:a {:class "book-sidebar-title" :href ((:href-to ctx) (:home-url ctx))}
            (:book-title ctx)]]
@@ -93,7 +93,7 @@
   [ctx]
   (into [:details {:class "book-mobile-contents"}
          [:summary {:class "book-mobile-summary"}
-          (dictionary/localize (:language ctx) :contents "Contents")]]
+          (dictionary/localize (:language ctx) :contents)]]
         (concat
           (when-let [f (html-assemble/search-form ctx)] [f])
           [(toc-list ctx)])))

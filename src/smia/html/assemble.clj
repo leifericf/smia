@@ -86,12 +86,12 @@
                      dl-spec (cons {:kind  :downloads
                                     :level 0
                                     :href  (:url dl-spec)
-                                    :text  (dictionary/localize language :downloads "Downloads")}))
+                                    :text  (dictionary/localize language :downloads)}))
          contents  (vec (cond-> contents
                           search-sp (concat [{:kind  :search
                                               :level 0
                                               :href  (:url search-sp)
-                                              :text  (dictionary/localize language :search "Search")}])))
+                                              :text  (dictionary/localize language :search)}])))
          table     (links-table items specs (:url home-loc))
          resolver  (links/resolver table)
          base-ctx  {:book-title (:title book)
@@ -267,7 +267,7 @@
     (merge {:slug  "downloads"
             :kind  :downloads
             :id    "downloads"
-            :title (dictionary/localize language :downloads "Downloads")
+            :title (dictionary/localize language :downloads)
             :body  [(into [:html/div {:class "downloads"}] items)]}
            (locate {:kind :downloads} extension))))
 
@@ -297,13 +297,10 @@
     (merge {:slug  "search"
             :kind  :search
             :id    "search"
-            :title (dictionary/localize language :search "Search")
+            :title (dictionary/localize language :search)
             :body  (vec (cons [:html/p {:class "search-fallback-note"}
                                (dictionary/localize
-                                 language :search-fallback-note
-                                 (str "With JavaScript enabled, the search box "
-                                      "suggests matches as you type. Without it, "
-                                      "the book is listed here by category."))]
+                                 language :search-fallback-note)]
                               sections))}
            loc)))
 
@@ -326,14 +323,12 @@
               ;; the island renders client-side, so its strings travel as
               ;; localized data attributes rather than hardcoded English
               :data-no-matches
-              (dictionary/localize (:language ctx) :search-no-matches
-                                   "No matches — press Enter to browse the book by category.")
+              (dictionary/localize (:language ctx) :search-no-matches)
               :data-suggestions-label
-              (dictionary/localize (:language ctx) :search-suggestions
-                                   "Search suggestions")}
+              (dictionary/localize (:language ctx) :search-suggestions)}
        [:input {:type "search" :name "q"
-                :placeholder (dictionary/localize (:language ctx) :search-placeholder "Search…")
-                :aria-label  (dictionary/localize (:language ctx) :search-aria "Search this book")
+                :placeholder (dictionary/localize (:language ctx) :search-placeholder)
+                :aria-label  (dictionary/localize (:language ctx) :search-aria)
                 :autocomplete "off"}]])))
 
 (defn search-script
@@ -381,8 +376,8 @@
               :hidden "hidden"
               :aria-pressed "false"
               :aria-label (dictionary/localize (:language ctx)
-                                               :toggle-color-scheme "Toggle dark mode")}
-     (dictionary/localize (:language ctx) :toggle-color-scheme "Toggle dark mode")]))
+                                               :toggle-color-scheme)}
+     (dictionary/localize (:language ctx) :toggle-color-scheme)]))
 
 (defn reader-script
   "The reader-preferences island's script tag, when the controls are on.
@@ -405,41 +400,41 @@
   [ctx]
   (when (:reader ctx)
     (let [lang   (:language ctx)
-          loc    #(dictionary/localize lang %1 %2)
-          label  (fn [term default] [:span {:class "reader-label"} (loc term default)])
-          step   (fn [attr val term default glyph]
+          loc    #(dictionary/localize lang %)
+          label  (fn [term] [:span {:class "reader-label"} (loc term)])
+          step   (fn [attr val term glyph]
                    [:button {:type "button" attr val
-                             :aria-label (loc term default)} glyph])
+                             :aria-label (loc term)} glyph])
           pair   (fn [& bs] (into [:div {:class "reader-pair"}] bs))
           ;; an on/off control with no text label — the switch shows its state,
           ;; and the row label beside it names what it toggles.
-          switch (fn [attr term default]
+          switch (fn [attr term]
                    [:button (assoc {:type "button" :class "reader-switch"
                                     :aria-pressed "false"
-                                    :aria-label (loc term default)}
+                                    :aria-label (loc term)}
                                    attr "")])]
       (into [:div {:class "reader-controls" :data-reader-controls "" :hidden "hidden"}
              [:button {:type "button" :class "reader-button"
                        :data-reader-toggle "" :aria-expanded "false"
-                       :aria-label (loc :reader-settings "Reader settings")}
+                       :aria-label (loc :reader-settings)}
               "Aa"]]
             [(into [:div {:class "reader-panel" :data-reader-panel "" :hidden "hidden"}]
                    (concat
-                     [(label :reading-width "Width")
-                      (pair (step :data-reader-width "-" :narrower "Narrower" "–")
-                            (step :data-reader-width "+" :wider "Wider" "+"))
-                      (label :text-size "Text size")
-                      (pair (step :data-reader-scale "-" :smaller "Smaller text" "A–")
-                            (step :data-reader-scale "+" :larger "Larger text" "A+"))
-                      (label :contrast "Contrast")
-                      (switch :data-reader-contrast :high-contrast "High contrast")
-                      (label :focus-mode "Focus mode")
-                      (switch :data-focus-toggle :focus-mode "Focus mode")]
+                     [(label :reading-width)
+                      (pair (step :data-reader-width "-" :narrower "–")
+                            (step :data-reader-width "+" :wider "+"))
+                      (label :text-size)
+                      (pair (step :data-reader-scale "-" :smaller "A–")
+                            (step :data-reader-scale "+" :larger "A+"))
+                      (label :contrast)
+                      (switch :data-reader-contrast :high-contrast)
+                      (label :focus-mode)
+                      (switch :data-focus-toggle :focus-mode)]
                      (when (:reader-theme ctx)
-                       [(label :dark-mode "Dark mode")
-                        (switch :data-theme-toggle :toggle-color-scheme "Toggle dark mode")])
+                       [(label :dark-mode)
+                        (switch :data-theme-toggle :toggle-color-scheme)])
                      [[:button {:type "button" :class "reader-reset" :data-reader-reset ""}
-                       (loc :reset-defaults "Reset to defaults")]]))]))))
+                       (loc :reset-defaults)]]))]))))
 
 (defn keys-script
   "The keyboard-shortcuts island's deferred script tag, when the shortcuts
@@ -456,25 +451,25 @@
   [ctx]
   (when (:keyboard ctx)
     (let [lang (:language ctx)
-          loc  #(dictionary/localize lang %1 %2)
+          loc  #(dictionary/localize lang %)
           row  (fn [keys label] (list [:dt {} keys] [:dd {} label]))]
       [:div {:class "kbd-help" :data-kbd-help "" :hidden "hidden"
              :role "dialog" :aria-modal "true"
-             :aria-label (loc :keyboard-shortcuts "Keyboard shortcuts")}
+             :aria-label (loc :keyboard-shortcuts)}
        [:div {:class "kbd-help-panel"}
-        [:h2 {} (loc :keyboard-shortcuts "Keyboard shortcuts")]
+        [:h2 {} (loc :keyboard-shortcuts)]
         (into [:dl {}]
               (concat
                 (row [:span {} [:kbd {} "←"] [:kbd {} "→"]
                       [:kbd {} "h"] [:kbd {} "l"]]
-                     (loc :previous-next-page "Previous / next page"))
-                (row [:kbd {} "/"] (loc :search "Search"))
-                (row [:kbd {} "d"] (loc :dark-mode "Dark mode"))
-                (row [:kbd {} "f"] (loc :focus-mode "Focus mode"))
-                (row [:kbd {} "g"] (loc :contents "Contents"))
-                (row [:kbd {} "?"] (loc :show-this-help "Show this help"))))
+                     (loc :previous-next-page))
+                (row [:kbd {} "/"] (loc :search))
+                (row [:kbd {} "d"] (loc :dark-mode))
+                (row [:kbd {} "f"] (loc :focus-mode))
+                (row [:kbd {} "g"] (loc :contents))
+                (row [:kbd {} "?"] (loc :show-this-help))))
         [:button {:type "button" :class "kbd-help-close" :data-kbd-close ""}
-         (loc :close "Close")]]])))
+         (loc :close)]]])))
 
 (defn reading-progress
   "A thin reading-progress bar pinned to the top of the viewport, when the
@@ -511,7 +506,7 @@
               part (some (fn [e] (when (= :part (:kind e)) e))
                          (reverse (subvec contents 0 here)))]
           (into [:nav {:class "breadcrumb"
-                       :aria-label (dictionary/localize (:language ctx) :breadcrumb "Breadcrumb")}]
+                       :aria-label (dictionary/localize (:language ctx) :breadcrumb)}]
                 (concat
                   (when part
                     [[:span {:class "breadcrumb-part"} (:text part)]
@@ -527,7 +522,7 @@
     (when-let [src (:source-file (:page ctx))]
       [:a {:class "edit-page"
            :href  (str (str/replace base #"/*$" "/") src)}
-       (dictionary/localize (:language ctx) :edit-this-page "Edit this page")])))
+       (dictionary/localize (:language ctx) :edit-this-page)])))
 
 (defn edge-nav
   "Icon-only previous/next chevrons pinned to the page margins. Plain
@@ -542,19 +537,19 @@
           lang    (:language ctx)
           prev    (:prev ctx)
           next    (:next ctx)
-          link    (fn [page klass rel term default glyph]
+          link    (fn [page klass rel term glyph]
                     [:a {:class           (str "edge-link " klass)
                          :rel             rel
                          :href            (href-to (:url page))
-                         :aria-label      (str (dictionary/localize lang term default)
+                         :aria-label      (str (dictionary/localize lang term)
                                                ": " (:title page))}
                      [:span {:aria-hidden "true"} glyph]])]
       (when (or prev next)
         (into [:nav {:class      "edge-nav"
-                     :aria-label (dictionary/localize lang :pagination "Pagination")}]
+                     :aria-label (dictionary/localize lang :pagination)}]
               (concat
-                (when prev [(link prev "edge-prev" "prev" :previous-page "Previous page" "‹")])
-                (when next [(link next "edge-next" "next" :next-page "Next page" "›")])))))))
+                (when prev [(link prev "edge-prev" "prev" :previous-page "‹")])
+                (when next [(link next "edge-next" "next" :next-page "›")])))))))
 
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
@@ -754,8 +749,8 @@
   "The table-of-contents nav. `href-to` relativizes each entry's
    absolute-from-root url against the page being rendered."
   [contents href-to language]
-  [:nav {:class "toc" :aria-label (dictionary/localize language :table-of-contents "Table of contents")}
-   [:h2 {} (dictionary/localize language :contents "Contents")]
+  [:nav {:class "toc" :aria-label (dictionary/localize language :table-of-contents)}
+   [:h2 {} (dictionary/localize language :contents)]
    (into [:ol {:class "toc-list"}]
          (map (fn [{:keys [level text href id]}]
                 [:li (cond-> {:class (str "toc-level-" level)}
@@ -769,7 +764,7 @@
       (into [:nav {:class "page-nav"}]
             (concat
               [[:a {:href (href-to (:home-url ctx))}
-                (dictionary/localize (:language ctx) :contents "Contents")]]
+                (dictionary/localize (:language ctx) :contents)]]
               (when-let [p (:prev ctx)]
                 [[:a {:rel "prev" :href (href-to (:url p))} (:title p)]])
               (when-let [n (:next ctx)]
