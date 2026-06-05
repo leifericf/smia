@@ -56,6 +56,21 @@
                                                 {:x [:attr :y] :y [:attr :x]}))]
       (is (= :smia.book.attrs/circular-attribute (:error/type d))))))
 
+(deftest references-inside-element-attribute-maps-resolve
+  (testing "an [:attr …] in an element's attribute map is substituted"
+    (is (= [:img {:alt "A photo"}]
+           (attrs/substitute-form [:img {:alt [:attr :name]}] {:name "A photo"})))
+    (is (= [:p "X" [:img {:alt "A photo"}]]
+           (attrs/substitute-form [:p [:attr :x] [:img {:alt [:attr :name]}]]
+                                  {:x "X" :name "A photo"}))))
+  (testing "an unknown key in an attribute-map value is a structured error, not an m1p marker"
+    (let [d (catch-data #(attrs/substitute-form [:img {:alt [:attr :typo]}] {}))]
+      (is (= :smia.book.attrs/unknown-attribute (:error/type d)))))
+  (testing "a cycle reached through an attribute-map value still terminates"
+    (let [d (catch-data #(attrs/substitute-form [:img {:alt [:attr :x]}]
+                                                {:x [:attr :y] :y [:attr :x]}))]
+      (is (= :smia.book.attrs/circular-attribute (:error/type d))))))
+
 ;; --- manuscript-wide substitution -------------------------------------------
 
 (defn- manuscript [body]

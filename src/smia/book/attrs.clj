@@ -21,11 +21,17 @@
   (and (vector? n) (= :attr (first n))))
 
 (defn- attr-refs
-  "Every `[:attr …]` node in `form`, for shape and membership checks. Only
-   vectors are branches, so a reference inside an attribute map value (never
-   supported) is not collected."
+  "Every `[:attr …]` node in `form`, for shape and membership checks. Both
+   vectors and maps are branches — so an `[:attr :k]` reference inside an
+   element's attribute map (e.g. `[:img {:alt [:attr :name]}]`) is collected,
+   validated, and substituted the same as one in element-child position. m1p
+   already interpolates map values, so collecting them here keeps validation
+   and the substitution loop in step with what actually gets rewritten."
   [form]
-  (filter attr-node? (tree-seq vector? seq form)))
+  (filter attr-node?
+          (tree-seq (some-fn vector? map?)
+                    (fn [n] (if (map? n) (vals n) (seq n)))
+                    form)))
 
 (defn resolve-context
   "The attribute context for one chapter: `book-context` (built-in facts and
