@@ -171,11 +171,19 @@
           0)
         (catch Throwable t (report-exception t) 1)))))
 
+(defn- report-artifacts
+  "Name each artifact a completed build wrote. A dry-run result is the
+   plan, which carries no `:artifacts` and so prints nothing here."
+  [result]
+  (doseq [{:keys [edition path]} (:artifacts result)]
+    (println "Built" (str (name edition) ":") path)))
+
 (defn- run-build [args]
   (run-subcommand args build-options build-usage
                   (fn [request]
                     (let [result (api/build request)]
-                      (report-warnings (result-warnings result))))))
+                      (report-warnings (result-warnings result))
+                      (report-artifacts result)))))
 
 (defn- run-validate [args]
   (run-subcommand args validate-options validate-usage

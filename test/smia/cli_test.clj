@@ -119,6 +119,16 @@
         (is (re-find #"custom/extension" err))
         (is (re-find #"1 warning" out))))))
 
+(deftest build-reports-written-artifacts
+  (testing "A successful build names each artifact it wrote"
+    (let [root (scaffold-book! "report-artifacts")
+          out-root (str root "/build")
+          {:keys [code out]} (run-captured ["build" root "--edition" "screen"
+                                            "--output-root" out-root])]
+      (is (= 0 code))
+      (is (re-find #"screen" out))
+      (is (re-find #"-screen\.pdf" out)))))
+
 (deftest dry-run-build-prints-warnings
   (testing "Build surfaces manuscript warnings even on a dry run"
     (let [root (scaffold-book! "warn-build")]
