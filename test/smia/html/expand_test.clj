@@ -49,7 +49,15 @@
     (is (= [:td {:style "text-align: right"} "y"]
            (html-expand/expand [:td {:align "right"} "y"] ctx))))
   (testing "a cell without alignment is unchanged"
-    (is (= [:td {} "z"] (html-expand/expand [:td "z"] ctx)))))
+    (is (= [:td {} "z"] (html-expand/expand [:td "z"] ctx))))
+  (testing "an unrecognized alignment is dropped, never spliced into the style"
+    (is (= [:td {} "x"]
+           (html-expand/expand [:td {:align "right; background:url(x)"} "x"] ctx)))
+    (is (= [:td {} "y"]
+           (html-expand/expand [:td {:valign "top; z-index:1"} "y"] ctx)))
+    (is (= [:td {:style "text-align: left"} "z"]
+           (html-expand/expand [:td {:align :left :valign :bogus} "z"] ctx))
+        "a valid align survives even when valign is dropped")))
 
 (deftest nested-table-expands-inside-a-cell
   (let [out (html-expand/expand

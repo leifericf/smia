@@ -113,15 +113,29 @@
   [tag]
   (fn [a c ctx] (into [tag (id-attrs a)] (expand-all c ctx))))
 
+(def ^:private align-values
+  "The CSS `text-align` values a cell `:align` may take. Anything else is
+   dropped rather than spliced into the inline style verbatim — an alignment
+   is a constrained keyword, not a styling hatch."
+  #{"left" "right" "center" "justify"})
+
+(def ^:private valign-values
+  "The CSS `vertical-align` values a cell `:valign` may take."
+  #{"top" "middle" "center" "bottom" "baseline"})
+
 (defn- cell-style
   "An inline `style` for a cell's `:align`/`:valign`, or nil. The
    declarations are emitted in a fixed order so the markup is
    deterministic. Alignment is per-cell content, not theme styling, so it
-   rides an inline style rather than a CSS class."
+   rides an inline style rather than a CSS class. Only the recognized
+   alignment keywords pass through — an unknown value is dropped, so the
+   inline style can never carry arbitrary CSS."
   [a]
-  (let [decls (cond-> []
-                (:align a)  (conj (str "text-align: " (name (:align a))))
-                (:valign a) (conj (str "vertical-align: " (name (:valign a)))))]
+  (let [align  (when-let [v (:align a)] (align-values (name v)))
+        valign (when-let [v (:valign a)] (valign-values (name v)))
+        decls  (cond-> []
+                 align  (conj (str "text-align: " align))
+                 valign (conj (str "vertical-align: " valign)))]
     (when (seq decls) (str/join "; " decls))))
 
 (defn- cell
