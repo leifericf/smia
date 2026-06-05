@@ -11,6 +11,7 @@
    captured verbatim here; reading the EDN and giving meaning to the
    directive is the pure compiler's job."
   (:require
+   [smia.error :as error]
    [clojure.string :as str])
   (:import
    (org.commonmark.parser Parser IncludeSourceSpans)
@@ -178,9 +179,10 @@
                                 :children (kids n))
       InlineFootnote     (assoc base :type :inline-footnote :children (kids n))
       ;; The :::name {edn} fenced container
-      CustomBlock        (let [{:keys [name attrs-string]} (get directive-meta n)]
+      CustomBlock        (let [{:keys [name attrs-string closed]} (get directive-meta n)]
                            (assoc base :type :directive
                                   :name name :attrs-string attrs-string
+                                  :closed (boolean closed)
                                   :children (kids n)))
       HtmlBlock          (assoc base :type :html-block :literal (.getLiteral ^HtmlBlock n))
       HtmlInline         (assoc base :type :html-inline :literal (.getLiteral ^HtmlInline n))
@@ -200,10 +202,33 @@
         (.customBlockParserFactory (directive-factory))
         (.build))))
 
+(defn- first-unclosed-directive
+  "Depth-first (document-order) search for a directive node whose closing
+   fence never appeared — the parser then ran it to the end of the
+   document, swallowing everything after the opener."
+  [node]
+  (if (and (= :directive (:type node)) (not (:closed node)))
+    node
+    (some first-unclosed-directive (:children node))))
+
 (defn parse
   "Parse Markdown `source` into a normalized `:document` AST map.
-   `source-name` is recorded on the document for error context."
+   `source-name` is recorded on the document for error context. A
+   directive still open at end of document is a structured error — it
+   would otherwise silently absorb the rest of the chapter."
   [source source-name]
-  (-> (.parse ^Parser @parser source)
-      node->data
-      (assoc :source-name source-name)))
+  (let [doc (-> (.parse ^Parser @parser source)
+                node->data
+                (assoc :source-name source-name))]
+    (when-let [d (first-unclosed-directive doc)]
+      (throw (error/ex :smia.md.parse/unclosed-directive
+                       (str "The :::" (:name d) " directive"
+                            (when-let [line (:line (:pos d))]
+                              (str " opened at line " line))
+                            " in " source-name " has no closing ::: fence, "
+                            "so it swallows everything after it. Close it "
+                            "with a line containing only :::.")
+                       {:directive   (:name d)
+                        :line        (:line (:pos d))
+                        :source-name source-name})))
+    doc))

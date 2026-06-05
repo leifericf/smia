@@ -1,9 +1,34 @@
 (ns smia.md.parse-test
   (:require
+   [smia.error :as error]
    [smia.md.parse :as parse]
    [clojure.test :refer [deftest is testing]]))
 
 (defn- block-types [doc] (map :type (:children doc)))
+
+(defn- catch-data [f]
+  (try (f) nil
+       (catch Exception e (error/data e))))
+
+(deftest unclosed-directive-is-rejected
+  (testing "a missing closing fence would silently swallow the chapter"
+    (let [d (catch-data
+              #(parse/parse ":::admonition {:kind :note}\n\nbody\n" "d.md"))]
+      (is (= :smia.md.parse/unclosed-directive (:error/type d)))
+      (is (= "admonition" (:directive (:error/context d))))
+      (is (= 1 (:line (:error/context d))))
+      (is (= "d.md" (:source-name (:error/context d))))))
+  (testing "an unclosed outer directive is flagged even when the inner closes"
+    (let [d (catch-data
+              #(parse/parse
+                 ":::example {:title \"t\"}\n:::admonition {:kind :note}\nbody\n:::\n"
+                 "d.md"))]
+      (is (= :smia.md.parse/unclosed-directive (:error/type d)))
+      (is (= "example" (:directive (:error/context d))))))
+  (testing "a closed directive parses as before"
+    (is (= :directive
+           (-> (parse/parse ":::admonition {:kind :note}\nbody\n:::\n" "d.md")
+               :children first :type)))))
 
 (deftest parses-into-a-document-of-blocks
   (let [doc (parse/parse "# H\n\npara\n\n- a\n- b\n" "d.md")]

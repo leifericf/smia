@@ -52,6 +52,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.load/invalid-front-matter`: front-matter fails the chapter-attribute schema, for example a non-keyword `:id`.
 - `:smia.book.load/missing-title`: a Markdown chapter has neither a top-level `# Heading` nor a `:title` in front-matter.
 - `:smia.book.load/markdown-parse-error`: the Markdown chapter could not be parsed.
+- `:smia.md.parse/unclosed-directive`: a `:::` directive has no closing fence, so it would swallow everything after its opening line. The error names the directive and its line.
 - `:smia.book.load/missing-include`: a code block's `:include` file was not found.
 - `:smia.book.load/missing-include-tag`: an include's `:tag` opens nowhere in its file; no line contains the `tag::name` marker.
 - `:smia.book.load/conflicting-include-keys`: an include carries both `:tag` and `:lines`; the two selectors are exclusive.
