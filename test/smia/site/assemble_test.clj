@@ -365,6 +365,32 @@
     (testing "the home page does not"
       (is (not (str/includes? home "class=\"breadcrumb\""))))))
 
+;; --- the keyboard-shortcuts island ------------------------------------------
+
+(deftest keyboard-island-emits-the-help-and-bundle-when-on
+  (let [r    (site/assemble book (assoc tokens :site {:keyboard true}))
+        page (get (:pages r) "ch-one/index.html")
+        css  (get (:pages r) "styles.css")]
+    (testing "the island script is deferred (it only binds handlers)"
+      (is (str/includes? page "defer=\"defer\" src=\"../keys.js\"")))
+    (testing "a hidden help dialog ships for the island to reveal"
+      (is (str/includes? page "data-kbd-help"))
+      (is (str/includes? page "data-kbd-close"))
+      (is (str/includes? page "Keyboard shortcuts")))
+    (testing "the help dialog is styled"
+      (is (str/includes? css ".kbd-help-panel")))
+    (testing "the bundle is named for the emit shell"
+      (is (some #(= {:resource "smia/site/keys.js" :path "keys.js"} %)
+                (:bundled r))))))
+
+(deftest without-the-token-no-keyboard-island
+  (let [r    (site/assemble book tokens)
+        page (get (:pages r) "ch-one/index.html")]
+    (is (not (str/includes? page "keys.js")))
+    (is (not (str/includes? page "data-kbd-help")))
+    (is (not (str/includes? (get (:pages r) "styles.css") ".kbd-help")))
+    (is (not (some #(= "keys.js" (:path %)) (:bundled r))))))
+
 (deftest dark-without-toggle-stays-os-driven-only
   (let [r    (site/assemble book (assoc tokens :site {:dark true}))
         css  (get (:pages r) "styles.css")

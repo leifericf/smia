@@ -219,7 +219,7 @@
    `html[data-theme=…]` overrides the toggle island flips, and the button
    style."
   ([tokens] (compile-css tokens {}))
-  ([tokens {:keys [dark? toggle? reader?]}]
+  ([tokens {:keys [dark? toggle? reader? keyboard?]}]
    (let [{:keys [color type spacing code]} tokens
          ;; the custom-property layer turns on for either site affordance:
          ;; dark mode flips the color variables, the reader controls add
@@ -686,6 +686,34 @@
                                     :transform        "scaleX(0)"
                                     :transform-origin "left"
                                     :background       "var(--link)"}]])
+
+        ;; the opt-in keyboard-shortcuts help dialog. The colors come from the
+        ;; literal-or-variable bindings, so it works whether or not the
+        ;; variable layer (dark/reader) is on.
+        (when keyboard?
+          [[".kbd-help" {:position        "fixed"
+                        :inset           "0"
+                        :z-index         "40"
+                        :display         "flex"
+                        :align-items     "center"
+                        :justify-content "center"
+                        :background      "rgba(0, 0, 0, 0.4)"}]
+           [".kbd-help-panel" {:background    panel
+                              :color         text
+                              :border        (str "1px solid " rule)
+                              :border-radius "12px"
+                              :padding       "1.5em 1.75em"
+                              :max-width     "24em"
+                              :width         "90%"
+                              :box-shadow    "0 8px 32px rgba(0, 0, 0, 0.3)"}]
+           [".kbd-help-panel h2" {:margin-top "0" :font-size "1.1em"}]
+           [".kbd-help-panel dl" {:display               "grid"
+                                 :grid-template-columns "auto 1fr"
+                                 :gap                   "0.5em 1.25em"
+                                 :margin                "0 0 1.25em"}]
+           [".kbd-help-panel dt" {:margin "0"}]
+           [".kbd-help-panel dt kbd" {:margin-right "0.2em"}]
+           [".kbd-help-panel dd" {:margin "0" :color muted}]])
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.

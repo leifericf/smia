@@ -37,6 +37,7 @@
         (concat (when-let [t (html-assemble/theme-script ctx)] [t])
                 (when-let [r (html-assemble/reader-script ctx)] [r])
                 (when-let [s (html-assemble/search-script ctx)] [s])
+                (when-let [k (html-assemble/keys-script ctx)] [k])
                 (html-assemble/mermaid-scripts ctx))))
 
 (defn- current?
@@ -93,7 +94,8 @@
                                     main))]
                      (when-let [e (html-assemble/edit-link ctx)]
                        [[:footer {:class "page-footer"} e]])
-                     (when-let [nav (:nav-hiccup ctx)] [nav])))]]))])
+                     (when-let [nav (:nav-hiccup ctx)] [nav])))]]
+           (when-let [h (html-assemble/keyboard-help ctx)] [h])))])
 
 (def ^:private sidebar-chrome
   "Two-column docs chrome: the sidebar rail is the table of contents; the

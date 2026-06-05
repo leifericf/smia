@@ -137,6 +137,27 @@ With JavaScript disabled the cluster stays hidden and nothing breaks: the defaul
 
 The token also adds a quiet `Part › Chapter` breadcrumb atop each chapter, built from the book's own structure as plain HTML, and a thin reading-progress bar along the top of the window. The breadcrumb is a small signpost in normal reading and the only one once focus mode takes the chrome away; the progress bar tracks how far through the chapter the reader has scrolled, and like the controls it stays hidden without JavaScript.
 
+## Keyboard shortcuts
+
+A fifth `:site` token binds a small set of reading shortcuts:
+
+```edn
+:site {:keyboard true}
+```
+
+The shortcuts act on controls and links the page already carries, so each has a visible equivalent and nothing is keyboard-only:
+
+| Key                  | Action                |
+|----------------------|-----------------------|
+| `←` `→`, `h` `l`, `k` `j` | Previous / next page  |
+| `/`                  | Focus the search box  |
+| `d`                  | Toggle dark mode      |
+| `f`                  | Toggle focus mode     |
+| `g`                  | Go to the contents    |
+| `?`                  | Show the shortcut help |
+
+Page navigation takes the arrow keys and the vim-style letters, so it works the same on a keyboard layout that buries the bracket keys behind a modifier. Pressing `?` opens a help dialog listing the shortcuts; Escape, a click outside, or its close button dismisses it. Keystrokes are ignored while the reader is typing in a field, so the search box and any form inputs behave normally. A small ClojureScript island, compiled to a committed bundle, binds the keys and reveals the dialog. With JavaScript disabled none of it loads, and every action stays reachable by its visible control. The page you are reading online has it on.
+
 ## Mermaid diagrams
 
 A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.

@@ -40,6 +40,10 @@
         :text-size "Text size" :smaller "Smaller text" :larger "Larger text"
         :contrast "Contrast" :high-contrast "High contrast" :color-scheme "Theme"
         :focus-mode "Focus mode" :breadcrumb "Breadcrumb"
+        ;; keyboard shortcuts and the help overlay
+        :keyboard-shortcuts "Keyboard shortcuts"
+        :previous-next-page "Previous / next page" :dark-mode "Dark mode"
+        :show-this-help "Show this help" :close "Close"
         :pagination "Pagination" :previous-page "Previous page" :next-page "Next page"
         :search-placeholder "Search…" :search-aria "Search this book"
         :search-fallback-note

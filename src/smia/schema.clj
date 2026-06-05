@@ -58,8 +58,9 @@
    `:site` group carries site-edition presentation: `:layout` (the named
    page chrome — see `smia.site.layout`), `:search` (the opt-in search
    island), `:dark` (the opt-in dark color scheme, optionally with a
-   toggle), and `:reader` (the opt-in reader-preferences controls for
-   column width, text size, and contrast)."
+   toggle), `:reader` (the opt-in reader-preferences controls for column
+   width, text size, and contrast), and `:keyboard` (opt-in reading
+   shortcuts with a help overlay)."
   [:map
    [:color :map]
    [:type :map]
@@ -79,6 +80,7 @@
                             [:dark {:optional true}
                              [:or :boolean [:map [:toggle {:optional true} :boolean]]]]
                             [:reader {:optional true} :boolean]
+                            [:keyboard {:optional true} :boolean]
                             [:mermaid {:optional true}
                              [:or :boolean [:map [:src {:optional true} :string]]]]]]])
 

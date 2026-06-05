@@ -108,6 +108,7 @@
                     :dark-toggle (boolean (:dark-toggle opts))
                     :reader      (boolean (:reader opts))
                     :reader-theme (boolean (:reader-theme opts))
+                    :keyboard    (boolean (:keyboard opts))
                     :highlight?  (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -433,6 +434,41 @@
                                      :aria-label (loc :toggle-color-scheme "Toggle dark mode")}
                             (loc :toggle-color-scheme "Toggle dark mode")])]))]))))
 
+(defn keys-script
+  "The keyboard-shortcuts island's deferred script tag, when the shortcuts
+   are on. It only binds handlers, so it need not run before paint."
+  [ctx]
+  (when (:keyboard ctx)
+    [:script {:defer "defer" :src ((:href-to ctx) "keys.js")}]))
+
+(defn keyboard-help
+  "The keyboard-shortcuts help dialog, when the shortcuts are on. It ships
+   `hidden`; the island reveals it on `?` and dismisses it on Escape, a
+   click outside, or the close button. Every shortcut it lists also has a
+   visible control, so the dialog is a reference, not a requirement."
+  [ctx]
+  (when (:keyboard ctx)
+    (let [lang (:language ctx)
+          loc  #(dictionary/localize lang %1 %2)
+          row  (fn [keys label] (list [:dt {} keys] [:dd {} label]))]
+      [:div {:class "kbd-help" :data-kbd-help "" :hidden "hidden"
+             :role "dialog" :aria-modal "true"
+             :aria-label (loc :keyboard-shortcuts "Keyboard shortcuts")}
+       [:div {:class "kbd-help-panel"}
+        [:h2 {} (loc :keyboard-shortcuts "Keyboard shortcuts")]
+        (into [:dl {}]
+              (concat
+                (row [:span {} [:kbd {} "←"] [:kbd {} "→"]
+                      [:kbd {} "h"] [:kbd {} "j"] [:kbd {} "k"] [:kbd {} "l"]]
+                     (loc :previous-next-page "Previous / next page"))
+                (row [:kbd {} "/"] (loc :search "Search"))
+                (row [:kbd {} "d"] (loc :dark-mode "Dark mode"))
+                (row [:kbd {} "f"] (loc :focus-mode "Focus mode"))
+                (row [:kbd {} "g"] (loc :contents "Contents"))
+                (row [:kbd {} "?"] (loc :show-this-help "Show this help"))))
+        [:button {:type "button" :class "kbd-help-close" :data-kbd-close ""}
+         (loc :close "Close")]]])))
+
 (defn reading-progress
   "A thin reading-progress bar pinned to the top of the viewport, when the
    reader controls are on. It ships `hidden` and empty; the island reveals
@@ -740,6 +776,7 @@
          (concat (when-let [t (theme-script ctx)] [t])
                  (when-let [r (reader-script ctx)] [r])
                  (when-let [s (search-script ctx)] [s])
+                 (when-let [k (keys-script ctx)] [k])
                  (mermaid-scripts ctx)))
    (into [:body {}]
          (concat
@@ -752,7 +789,8 @@
                                      (when-let [b (breadcrumb ctx)] [b])
                                      main))]
            (when-let [e (edit-link ctx)] [[:footer {:class "page-footer"} e]])
-           (when-let [nav (:nav-hiccup ctx)] [nav])))])
+           (when-let [nav (:nav-hiccup ctx)] [nav])
+           (when-let [h (keyboard-help ctx)] [h])))])
 
 (def default-chrome
   "Minimal standalone chrome: a stylesheet-linked page with contents and
