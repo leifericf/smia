@@ -4,6 +4,7 @@
    [smia.cli :as cli]
    [smia.build.request :as request]
    [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.test :refer [deftest is testing]]))
 
 (def ^:private fixture "test/fixtures/synthetic/valid-book")
@@ -26,15 +27,15 @@
 (defn- scaffold-book!
   "Scaffold a fresh book into a temp directory and return its path."
   [label]
-  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
-                           (str "smia-cli-" label "-" (System/nanoTime)))]
+  (let [dir (io/file (System/getProperty "java.io.tmpdir")
+                     (str "smia-cli-" label "-" (System/nanoTime)))]
     (api/init {:target (.getPath dir)})
     (.getPath dir)))
 
 (defn- add-config-key!
   "Rewrite the book's book.edn with `k` set to `v`."
   [book-root k v]
-  (let [f (java.io.File. (str book-root) "book.edn")]
+  (let [f (io/file (str book-root) "book.edn")]
     (spit f (pr-str (assoc (edn/read-string (slurp f)) k v)))))
 
 (def ^:private args->request #'cli/args->request)
@@ -70,16 +71,16 @@
   (is (= 0 (run-code ["init" "--help"]))))
 
 (deftest init-scaffolds-into-a-fresh-directory
-  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
-                           (str "smia-cli-init-" (System/nanoTime)))]
+  (let [dir (io/file (System/getProperty "java.io.tmpdir")
+                     (str "smia-cli-init-" (System/nanoTime)))]
     (is (= 0 (run-code ["init" (.getPath dir)])))
-    (is (.exists (java.io.File. dir "book.edn")))))
+    (is (.exists (io/file dir "book.edn")))))
 
 (deftest init-into-a-non-empty-directory-fails
-  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
-                           (str "smia-cli-init-full-" (System/nanoTime)))]
+  (let [dir (io/file (System/getProperty "java.io.tmpdir")
+                     (str "smia-cli-init-full-" (System/nanoTime)))]
     (.mkdirs dir)
-    (spit (java.io.File. dir "occupied.txt") "x")
+    (spit (io/file dir "occupied.txt") "x")
     (is (= 1 (run-code ["init" (.getPath dir)])))))
 
 (deftest bad-option-is-a-usage-error
