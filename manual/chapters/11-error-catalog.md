@@ -31,6 +31,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/invalid-attributes`: `:book/attributes` is not a map of keyword to (string, number, or author Hiccup).
 - `:smia.theme.load/missing`: no `theme.edn`.
 - `:smia.theme.load/missing-group`: a required token group is absent.
+- `:smia.theme.compile/unknown-page-size`: `:layout {:page-size …}` names a trim outside the known set (`:a4`, `:letter`, `:digest`). Token validation rejects this at load time as `:smia.theme.load/invalid-tokens`; the compile-time error guards programmatic callers.
 
 ## Authoring
 

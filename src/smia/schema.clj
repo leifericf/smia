@@ -65,7 +65,8 @@
    [:color :map]
    [:type :map]
    [:spacing :map]
-   [:layout :map]
+   ;; the trim names mirror `smia.theme.compile/page-sizes`
+   [:layout [:map [:page-size {:optional true} [:enum :a4 :letter :digest]]]]
    [:dark {:optional true} :map]
    [:fo {:optional true} [:map-of :keyword :map]]
    [:css {:optional true}

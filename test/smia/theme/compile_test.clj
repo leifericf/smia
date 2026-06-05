@@ -31,6 +31,14 @@
     (let [themed (assoc-in tokens [:type :code-size] "8pt")]
       (is (= "8pt" (-> (theme/compile-theme themed :screen) :style :pre :font-size))))))
 
+(deftest unknown-page-size-is-an-error
+  (testing "an unknown trim name must not silently fall back to A4"
+    (let [bad (assoc-in tokens [:layout :page-size] :a5)
+          d   (try (theme/compile-theme bad :screen) nil
+                   (catch Exception e (ex-data e)))]
+      (is (= :smia.theme.compile/unknown-page-size (:error/type d)))
+      (is (= :a5 (:page-size (:error/context d)))))))
+
 (deftest screen-layout-has-one-symmetric-master
   (let [{:keys [masters master-reference]} (theme/compile-theme tokens :screen)
         spm (filter #(= :fo/simple-page-master (first %)) masters)]

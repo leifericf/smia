@@ -30,6 +30,13 @@
     (is (= :smia.theme.load/invalid-tokens (:error/type d)))
     (is (contains? (:errors (:error/context d)) :layout))))
 
+(deftest unknown-page-size-fails
+  (let [d (catch-data
+            #(theme/validate {:color {} :type {} :spacing {}
+                              :layout {:page-size :a5}}
+                             "theme.edn"))]
+    (is (= :smia.theme.load/invalid-tokens (:error/type d)))))
+
 (def ^:private base-groups
   {:color {} :type {} :spacing {} :layout {}})
 

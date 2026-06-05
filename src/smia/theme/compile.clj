@@ -10,6 +10,7 @@
    gutter on the inside edge) selected by a `page-sequence-master`. An
    edition's descriptor names the layout it renders with. No IO."
   (:require
+   [smia.error :as error]
    [smia.fo.expand :as expand]))
 
 (def page-sizes
@@ -91,8 +92,19 @@
                                    :color        muted})
         (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
 
-(defn- page-dims [layout]
-  (get page-sizes (get layout :page-size :a4) (:a4 page-sizes)))
+(defn- page-dims
+  "The trim dimensions for the layout's `:page-size` (default `:a4`).
+   An unknown name is a structured error, not a silent A4 — the schema
+   rejects it at load time; this guards programmatic callers."
+  [layout]
+  (let [size (get layout :page-size :a4)]
+    (or (get page-sizes size)
+        (throw (error/ex :smia.theme.compile/unknown-page-size
+                         (str "Unknown :page-size " (pr-str size)
+                              "; the trim names are "
+                              (pr-str (vec (sort (keys page-sizes)))) ".")
+                         {:page-size size
+                          :known     (vec (sort (keys page-sizes)))})))))
 
 (defn- regions
   "Body, header, and footer regions. `before-name`/`after-name` give the
