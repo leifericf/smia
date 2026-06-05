@@ -171,6 +171,30 @@
   (testing "the variables path stays deterministic"
     (is (= (css/css tokens {:dark? true}) (css/css tokens {:dark? true})))))
 
+(deftest dark-mode-ships-a-readable-default-code-palette
+  (testing "without a :dark {:code} override, the dark block still brightens tokens"
+    (let [out  (css/css tokens {:dark? true})
+          dark (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+      ;; the light defaults (keyword #0033cc, string #008800) are too dark on
+      ;; the code background; the dark block overrides them with bright values
+      (is (str/includes? dark "--tok-keyword: "))
+      (is (str/includes? dark "--tok-string: "))
+      (is (not (str/includes? dark "--tok-keyword: #0033cc")))))
+  (testing "a book :dark {:code} still wins over the dark default"
+    (let [themed (assoc tokens :dark {:code {:keyword "#ffcc66"}})
+          out    (css/css themed {:dark? true})
+          dark   (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+      (is (str/includes? dark "--tok-keyword: #ffcc66;")))))
+
+(deftest dark-mode-keeps-line-numbers-visible
+  (testing "line numbers route through a variable with a brighter dark value"
+    (let [out  (css/css tokens {:dark? true})]
+      (is (str/includes? out "color: var(--line-no)"))
+      (let [dark (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+        (is (str/includes? dark "--line-no: ")))))
+  (testing "the literal path keeps the hardcoded line-number color"
+    (is (str/includes? (css/css tokens) ".line-no {\n  color: #999999;"))))
+
 (deftest the-toggle-adds-explicit-data-theme-overrides
   (testing "without :toggle? no data-theme blocks are emitted"
     (is (not (str/includes? (css/css tokens {:dark? true}) "data-theme"))))

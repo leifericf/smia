@@ -95,7 +95,7 @@ A third `:site` token adds a dark color scheme to the site:
 
 The site stylesheet defines its colors as CSS custom properties, and the build appends an `@media (prefers-color-scheme: dark)` block that redefines them, so the page honors the reader's operating-system setting with no toggle and no JavaScript. Because every color is a variable, the dark scheme flips the whole palette at once — headings, chapter labels, captions, sidebar, and syntax colors included, not just the page background.
 
-A computed dark palette is the default; override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel`, `:panel-2`, `:card` — with a `:dark` token group, and recolor syntax highlighting for the dark scheme under `:dark {:code …}`:
+A computed dark palette is the default, including a brighter syntax-highlight palette and lighter code line numbers so listings stay readable on the dark code background. Override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel`, `:panel-2`, `:card` — with a `:dark` token group, and recolor syntax highlighting for the dark scheme under `:dark {:code …}`:
 
 ```edn
 :site {:dark true}

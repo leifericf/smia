@@ -70,7 +70,16 @@
    "--code-bg" "#2a2a2a"
    "--panel"   "#242424"
    "--panel-2" "#2d2d2d"
-   "--card"    "#333333"})
+   "--card"    "#333333"
+   "--line-no" "#8b949e"})
+
+(def ^:private default-dark-code
+  "A readable dark syntax-highlight palette. The light defaults
+   (`theme.compile/default-code-colors`) are tuned for a light code
+   background and read poorly on the dark one, so dark mode brightens them
+   by default; a book's `:dark {:code …}` overrides any entry."
+  {:keyword "#ff7b72" :string "#a5d6ff" :comment "#8b949e"
+   :number  "#79c0ff" :literal "#d2a8ff"})
 
 (def ^:private dark-author-keys
   "Map a `:dark` token-group key onto the variable it overrides, so a book
@@ -105,7 +114,8 @@
              "--code-bg" (:code-background light)
              "--panel"   (:panel light)
              "--panel-2" (:panel-2 light)
-             "--card"    (:card light)}
+             "--card"    (:card light)
+             "--line-no" (:line-no light)}
             (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
 
 (defn- dark-var-props
@@ -118,7 +128,7 @@
                                  m))
                              {} dark-author-keys)
         dark-tok  (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c]))
-                        (get-in tokens [:dark :code]))]
+                        (merge default-dark-code (get-in tokens [:dark :code])))]
     (vars->props (merge dark-var-defaults overrides dark-tok))))
 
 (defn- dark-media-vars
@@ -177,7 +187,8 @@
                       :code-background (get color :code-background "#f4f4f4")
                       :panel           "#f7f7f7"
                       :panel-2         "#e8e8e8"
-                      :card            "#eeeeee"}
+                      :card            "#eeeeee"
+                      :line-no         "#999999"}
          var-or      (fn [name lit] (if dark? (str "var(" name ")") lit))
          text        (var-or "--ink"     (:text light))
          muted       (var-or "--muted"   (:muted light))
@@ -188,6 +199,7 @@
          panel       (var-or "--panel"   (:panel light))
          panel-2     (var-or "--panel-2" (:panel-2 light))
          card        (var-or "--card"    (:card light))
+         line-no     (var-or "--line-no" (:line-no light))
          paragraph   (get spacing :paragraph "6pt")
          block       (get spacing :block "8pt")
          palette     (merge compile/default-code-colors code)
@@ -227,7 +239,7 @@
                  :overflow-x       "auto"
                  :font-size        "0.85em"
                  :margin           (str "0 0 " block)}]
-         [".line-no" {:color "#999999" :user-select "none"}]
+         [".line-no" {:color line-no :user-select "none"}]
          [".file-bar" {:font-family      mono-family
                        :font-size        "0.75em"
                        :font-weight      "bold"
