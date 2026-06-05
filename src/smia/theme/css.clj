@@ -425,34 +425,27 @@
          [".toc a:hover, .page-nav a:hover, .page-footer a:hover"
           {:text-decoration "underline"}]
 
-         ;; icon-only previous/next chevrons that sit in the reading column's
-         ;; own margins, a visual shortcut beside the labeled bottom nav.
-         ;; They anchor to `main` (which lives inside the content column), so
-         ;; they never land on the sidebar rail; `sticky` keeps them
-         ;; vertically centered as the page scrolls. Tinted from the shared
-         ;; colors, so they track the light and dark schemes.
+         ;; faint previous/next chevrons in the reading column's margins: a
+         ;; bare glyph, no box, kept well clear of the text and nearly
+         ;; invisible until hovered. The labeled bottom nav and the keyboard
+         ;; shortcuts carry the real navigation; these are only a hint. They
+         ;; anchor to `main` (inside the content column), so they never land
+         ;; on the sidebar rail; `sticky` keeps them centered as the page
+         ;; scrolls.
          [".edge-nav" {:position "sticky" :top "50vh" :z-index "15"}]
          [".edge-link" {:position        "absolute"
                         :top             "0"
                         :transform       "translateY(-50%)"
-                        :display         "flex"
-                        :align-items     "center"
-                        :justify-content "center"
-                        :width           "1.7em"
-                        :height          "2.6em"
                         :font-family     head-family
-                        :font-size       "1.5em"
+                        :font-size       "1.6em"
                         :line-height     "1"
                         :text-decoration "none"
                         :color           muted
-                        :background-color panel
-                        :border          (str "1px solid " rule)
-                        :border-radius   "6px"
-                        :opacity         "0.55"
+                        :opacity         "0.3"
                         :transition      "opacity 0.15s, color 0.15s"}]
-         [".edge-link:hover" {:opacity "1" :color text}]
-         [".edge-prev" {:right "100%" :margin-right "0.6em"}]
-         [".edge-next" {:left "100%" :margin-left "0.6em"}]
+         [".edge-link:hover" {:opacity "0.9" :color text}]
+         [".edge-prev" {:right "100%" :margin-right "1.75em"}]
+         [".edge-next" {:left "100%" :margin-left "1.75em"}]
          [".edit-page" {:color muted}]
          ["details.fold > summary" {:cursor "pointer" :font-weight "bold"}]
          [".toc-list" {:list-style "none" :padding-left "0"}]
