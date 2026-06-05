@@ -76,6 +76,22 @@
   (set-item! "smia-contrast" (if (high-contrast?) "high" ""))
   (.setAttribute btn "aria-pressed" (if (high-contrast?) "true" "false")))
 
+;; --- focus mode: shed the chrome, keep the text ------------------------------
+
+(defn- focus-now? []
+  (.hasAttribute (root) "data-focus"))
+
+(defn- apply-focus! [v]
+  (if (identical? v "on")
+    (.setAttribute (root) "data-focus" "")
+    (.removeAttribute (root) "data-focus")))
+
+(defn- toggle-focus! [btn]
+  (let [on (focus-now?)]
+    (apply-focus! (if on "" "on"))
+    (set-item! "smia-focus" (if on "" "on"))
+    (.setAttribute btn "aria-pressed" (if on "false" "true"))))
+
 ;; --- color scheme: the same override the standalone theme island applies -----
 
 (defn- apply-theme! [t]
@@ -135,6 +151,8 @@
   (on-click "[data-reader-scale=\"+\"]" (fn [_] (step-scale! 1)))
   (when-let [c (wire-pressed! "[data-reader-contrast]" high-contrast?)]
     (.addEventListener c "click" (fn [_] (toggle-contrast! c))))
+  (when-let [f (wire-pressed! "[data-focus-toggle]" focus-now?)]
+    (.addEventListener f "click" (fn [_] (toggle-focus! f))))
   (when-let [t (wire-pressed! "[data-theme-toggle]" dark-now?)]
     (.addEventListener t "click" (fn [_] (toggle-theme! t)))))
 
@@ -143,6 +161,7 @@
   (apply-width! (get-item "smia-width"))
   (apply-scale! (get-item "smia-scale"))
   (apply-contrast! (get-item "smia-contrast"))
+  (apply-focus! (get-item "smia-focus"))
   (apply-theme! (get-item "smia-theme"))
   ;; the cluster lives in <body>, so wire it once the document is ready
   (if (identical? "loading" (.-readyState js/document))

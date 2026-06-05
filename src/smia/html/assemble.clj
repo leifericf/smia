@@ -420,7 +420,12 @@
                          [:button {:type "button" :data-reader-contrast ""
                                    :aria-pressed "false"
                                    :aria-label (loc :high-contrast "High contrast")}
-                          (loc :high-contrast "High contrast")])]
+                          (loc :high-contrast "High contrast")])
+                    (row (loc :focus-mode "Focus mode")
+                         [:button {:type "button" :data-focus-toggle ""
+                                   :aria-pressed "false"
+                                   :aria-label (loc :focus-mode "Focus mode")}
+                          (loc :focus-mode "Focus mode")])]
                    (when (:reader-theme ctx)
                      [(row (loc :color-scheme "Theme")
                            [:button {:type "button" :data-theme-toggle ""

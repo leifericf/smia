@@ -316,7 +316,8 @@
       (is (str/includes? page "data-reader-toggle"))
       (is (str/includes? page "data-reader-width=\"+\""))
       (is (str/includes? page "data-reader-scale=\"-\""))
-      (is (str/includes? page "data-reader-contrast")))
+      (is (str/includes? page "data-reader-contrast"))
+      (is (str/includes? page "data-focus-toggle")))
     (testing "with dark mode off the cluster carries no color-scheme control"
       (is (not (str/includes? page "data-theme-toggle"))))
     (testing "the stylesheet carries the reading variables and cluster styling"

@@ -661,7 +661,15 @@
                           :font-family head-family
                           :font-size   "0.8em"
                           :color       "var(--muted)"}]
-           [".breadcrumb-sep" {:margin "0 0.5em"}]])
+           [".breadcrumb-sep" {:margin "0 0.5em"}]
+           ;; focus mode: a reader who turns it on (`data-focus` on the document
+           ;; element) sheds the chrome and keeps the text and its breadcrumb.
+           ;; The control cluster stays — it carries the switch back out.
+           ["html[data-focus] .book-sidebar" {:display "none"}]
+           ["html[data-focus] .page-nav" {:display "none"}]
+           ["html[data-focus] .page-footer" {:display "none"}]
+           ["html[data-focus] .edge-nav" {:display "none"}]
+           ["html[data-focus] .theme-toggle" {:display "none"}]])
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.

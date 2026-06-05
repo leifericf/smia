@@ -319,6 +319,13 @@
       (is (str/includes? out "html[data-theme=\"dark\"][data-contrast=\"high\"]"))
       (is (re-find #"data-theme=\"dark\"\]\[data-contrast=\"high\"\][^}]*--ink: #ffffff" out)))))
 
+(deftest reader-focus-mode-sheds-the-chrome
+  (let [out (css/css tokens {:reader? true})]
+    (testing "data-focus hides the navigation chrome but keeps the text"
+      (is (str/includes? out "html[data-focus] .book-sidebar {"))
+      (is (str/includes? out "html[data-focus] .page-nav {"))
+      (is (str/includes? out "html[data-focus] .edge-nav {")))))
+
 (deftest reader-css-stays-deterministic
   (is (= (css/css tokens {:reader? true :dark? true})
          (css/css tokens {:reader? true :dark? true}))))
