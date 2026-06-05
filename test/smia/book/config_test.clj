@@ -53,6 +53,35 @@
       (is (= :smia.book.config/duplicate-chapter (:error/type d)))
       (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
+(deftest numbering-policy-validated
+  (let [base {:book/slug "x" :book/title "t" :book/chapters ["a.md"]}]
+    (testing "a full valid policy passes"
+      (is (vector? (config/validate
+                     (assoc base :book/numbering
+                            {:parts :roman :chapters :arabic
+                             :appendices :letter :sections false
+                             :start-chapters-on :recto})
+                     "book.edn"))))
+    (testing "an unknown policy key is rejected"
+      (let [d (catch-data
+                #(config/validate
+                   (assoc base :book/numbering {:chapter :arabic})
+                   "book.edn"))]
+        (is (= :smia.book.config/invalid-numbering (:error/type d)))
+        (is (some #{:chapter} (:unknown-keys (:error/context d))))))
+    (testing "an unknown numbering style is rejected"
+      (let [d (catch-data
+                #(config/validate
+                   (assoc base :book/numbering {:chapters :arabik})
+                   "book.edn"))]
+        (is (= :smia.book.config/invalid-numbering (:error/type d)))))
+    (testing "a bad :start-chapters-on value is rejected"
+      (let [d (catch-data
+                #(config/validate
+                   (assoc base :book/numbering {:start-chapters-on :verso})
+                   "book.edn"))]
+        (is (= :smia.book.config/invalid-numbering (:error/type d)))))))
+
 (deftest misspelled-book-key-warns
   (testing "An unrecognized :book/* key is almost certainly a typo"
     (let [ws (config/validate {:book/slug "x" :book/title "t"

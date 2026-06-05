@@ -23,6 +23,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/missing-required-key`: a required `:book/*` key is absent.
 - `:smia.book.config/missing-chapter`: a listed chapter file does not exist.
 - `:smia.book.config/duplicate-chapter`: a chapter is listed more than once.
+- `:smia.book.config/invalid-numbering`: `:book/numbering` uses a key or value outside the policy vocabulary. Keys are `:parts`, `:chapters`, `:appendices`, `:sections`, and `:start-chapters-on`; styles are `:arabic`, `:roman`, `:letter`, or `false`, and `:start-chapters-on` is `:recto` or `:any`.
 - `:smia.book.config/invalid-downloads`: `:book/downloads` is malformed. It must be a map with a string `:base` and a non-empty `:assets` vector of `{:label :file :note? :default?}` maps, with at most one asset marked `:default`.
 - `:smia.book.config/invalid-redirects`: `:book/redirects` is not a map of old URL path (string) to target id (keyword).
 - `:smia.book.config/invalid-site-url`: `:book/site-url` is not an absolute http(s) URL string.

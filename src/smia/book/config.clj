@@ -166,11 +166,45 @@
     (invalid-type! path :book/appendices (:book/appendices config)
                    ":book/appendices must be a vector of strings.")))
 
-(defn- check-numbering [config path]
-  (when (and (contains? config :book/numbering)
-             (not (map? (:book/numbering config))))
-    (invalid-type! path :book/numbering (:book/numbering config)
-                   ":book/numbering must be a map.")))
+(def ^:private numbering-values
+  "Allowed value set per `:book/numbering` slot. The style slots take a
+   formatter name (see `smia.book.number`) or `false` to turn numbering
+   off; `:start-chapters-on` picks the opening page parity."
+  (let [styles #{:arabic :roman :letter false}]
+    {:parts             styles
+     :chapters          styles
+     :appendices        styles
+     :sections          styles
+     :start-chapters-on #{:recto :any}}))
+
+(defn- check-numbering
+  "`:book/numbering` (optional) must be a map whose keys and values come
+   from the policy vocabulary — a misspelled key or style would otherwise
+   merge over the defaults silently and never take effect."
+  [config path]
+  (when (contains? config :book/numbering)
+    (let [numbering (:book/numbering config)]
+      (when-not (map? numbering)
+        (invalid-type! path :book/numbering numbering
+                       ":book/numbering must be a map."))
+      (let [unknown (vec (remove (set (keys numbering-values))
+                                 (keys numbering)))
+            invalid (into {} (filter (fn [[k v]]
+                                       (when-let [allowed (numbering-values k)]
+                                         (not (contains? allowed v))))
+                              numbering))]
+        (when (or (seq unknown) (seq invalid))
+          (throw (error/ex :smia.book.config/invalid-numbering
+                           (str ":book/numbering in " path " has "
+                                (if (seq unknown)
+                                  (str "unknown key(s) " (pr-str unknown))
+                                  (str "invalid value(s) " (pr-str invalid)))
+                                "; keys are " (pr-str (vec (sort-by str (keys numbering-values))))
+                                ", styles are :arabic, :roman, :letter, or false, "
+                                "and :start-chapters-on is :recto or :any.")
+                           {:path path
+                            :unknown-keys unknown
+                            :invalid-values invalid})))))))
 
 (defn- valid-download-asset? [a]
   (and (map? a)
