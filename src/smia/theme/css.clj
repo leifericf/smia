@@ -209,6 +209,13 @@
          line-no     (var-or "--line-no" (:line-no light))
          paragraph   (get spacing :paragraph "6pt")
          block       (get spacing :block "8pt")
+         ;; one fluid reading measure shared by the column and its detached
+         ;; furniture (the bottom nav, the footer), so they stay aligned: a
+         ;; comfortable line length that grows a little on wide screens and
+         ;; never forces a horizontal scroll on a phone. The min sits above a
+         ;; phone's width, so there the cap never binds and the column is full
+         ;; width less its padding; no width media query is needed.
+         measure     "clamp(32em, 90vw, 44em)"
          palette     (merge compile/default-code-colors code)
          tok-color   (fn [kind c] (if dark? (str "var(--tok-" (name kind) ")") c))]
     (vec
@@ -221,16 +228,20 @@
                           :color       text
                           :margin      "0"}
                    dark? (assoc :background-color bg))]
-         ["main" {:max-width "42em"
+         ["main" {:max-width measure
                   :margin    "0 auto"
-                  :padding   "0 1em 4em"
+                  :padding   "0 clamp(1em, 4vw, 2em) 4em"
                   :position  "relative"}]
          ["h1, h2, h3, h4, h5, h6" {:font-family head-family
                                     :color       text
                                     :line-height "1.2"}]
          ["h1" {:font-size (get type :h1-size "20pt")}]
-         ["h2" {:font-size (get type :h2-size "16pt")}]
-         ["h3" {:font-size (get type :h3-size "13pt")}]
+         ["h2" {:font-size   (get type :h2-size "16pt")
+                :margin-top  "1.6em"
+                :margin-bottom "0.5em"}]
+         ["h3" {:font-size   (get type :h3-size "13pt")
+                :margin-top  "1.3em"
+                :margin-bottom "0.4em"}]
          ["p" {:margin (str "0 0 " paragraph)}]
          ["a" {:color link}]
          ;; a visible focus ring for keyboard users, on every interactive
@@ -349,9 +360,9 @@
                        :justify-content "center"
                        :font-size       "0.9em"
                        :margin          "1em auto"
-                       :max-width       "42em"
+                       :max-width       measure
                        :padding         "0 1em"}]
-         [".page-footer" {:max-width "42em"
+         [".page-footer" {:max-width measure
                           :margin    "1em auto 0"
                           :padding   "0 1em"
                           :font-size "0.85em"}]
@@ -519,7 +530,16 @@
 
          ;; paged-media hints (honored when the site is printed)
          [".page-break" {:break-before "page"}]
-         [".keep-together" {:break-inside "avoid"}]]
+         [".keep-together" {:break-inside "avoid"}]
+
+         ;; a reader who asks the system for less motion gets none: every
+         ;; transition and animation collapses to an instant. This is a
+         ;; feature query, not a width breakpoint, so it does not undo the
+         ;; flex-wrap/clamp discipline that keeps the layout free of
+         ;; responsive media queries.
+         ["@media (prefers-reduced-motion: reduce)"
+          ["*, ::before, ::after" {:transition-duration "0.01ms !important"
+                                   :animation-duration  "0.01ms !important"}]]]
 
         ;; syntax-highlight palette, book :code group over the defaults
         (map (fn [[kind color]]

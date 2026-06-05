@@ -59,9 +59,24 @@
     (doseq [s [".book-layout" ".book-sidebar" ".book-sidebar-title"
                ".book-sidebar-list" ".book-sidebar .current" ".book-content"]]
       (is (contains? selectors s) (str s " has a rule")))
-    (testing "the rail uses flex-wrap so no @media query is emitted"
+    (testing "the rail uses flex-wrap, so no width breakpoint is emitted"
+      ;; the layout is fluid (flex-wrap + clamp), never a width media query;
+      ;; feature queries (reduced-motion, the opt-in dark scheme) are allowed.
       (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
-      (is (not (str/includes? (css/css tokens) "@media"))))))
+      (is (not (re-find #"@media \([^)]*width" (css/css tokens)))))))
+
+(deftest reading-measure-is-fluid-and-motion-is-respectful
+  (let [rules (css/compile-css tokens)
+        main  (rule rules "main")
+        out   (css/css tokens)]
+    (testing "the reading column and its furniture size fluidly with clamp()"
+      (is (str/includes? (:max-width main) "clamp("))
+      (is (str/includes? (:padding main) "clamp("))
+      (is (str/includes? (:max-width (rule rules ".page-nav")) "clamp(")))
+    (testing "the page breathes: headings carry vertical rhythm"
+      (is (some? (:margin-top (rule rules "h2")))))
+    (testing "motion yields to a reader who asks for less of it"
+      (is (str/includes? out "@media (prefers-reduced-motion: reduce)")))))
 
 (deftest chrome-links-are-quiet-and-focus-is-visible
   (let [rules (css/compile-css tokens)
