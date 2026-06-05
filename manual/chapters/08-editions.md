@@ -1,5 +1,11 @@
 # Editions
 
+:::overview {:title "What this chapter covers"}
+- How one numbered manuscript feeds every edition
+- What the site and EPUB editions add, and per-edition content
+- The press-ready PDF/X edition
+:::
+
 A build produces **editions**, deliverable forms of the same manuscript. One numbered manuscript feeds them all: numbering, cross-reference resolution, index collection, and figure, table, and listing numbering happen once, before any format-specific rendering. Every edition therefore agrees on what "Figure 3" is.
 
 Mathematical notation follows the same once-before-everything rule: each formula renders to SVG right after numbering, and the identical image is inlined into every edition — embedded in the PDFs' page flow, an inline `<svg>` in the site's HTML and the EPUB's XHTML. No edition needs JavaScript, a math font, or a network fetch to show it. PlantUML diagrams render the same way. The one exception is a Mermaid diagram, which has no pure-JVM renderer and so is drawn in the browser on the site only; the PDF and EPUB editions show its source instead (see [book production](#book-production)).

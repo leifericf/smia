@@ -1,6 +1,14 @@
 # Writing in Markdown
 
+:::overview {:title "What this chapter covers"}
+- Writing a chapter in CommonMark, with its title, id, and front matter
+- The book extensions, from admonitions and figures to math and data tables
+- Document attributes, conditional content, and validated code samples
+:::
+
 Markdown is the prose-first way to write a chapter: text and code samples go down without escaping, and the dialect is CommonMark with a small set of book extensions. A chapter whose filename ends in `.md` compiles to **author Hiccup**, the data vocabulary [the next chapter](#authoring) describes in full, and everything downstream is identical: assembly, expansion, theming, and every edition.
+
+The [CommonMark tutorial](https://commonmark.org/help/tutorial/) introduces the base syntax.
 
 ## Title, id, and front-matter
 

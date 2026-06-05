@@ -1,5 +1,11 @@
 # Commands
 
+:::overview {:title "What this chapter covers"}
+- The everyday commands: `init`, `validate`, `build`, and `preview`
+- Dry runs, exit codes, and how failures are reported
+- The programmatic API for scripts
+:::
+
 Smia has two front-ends over one engine. The **command-line interface**, `clojure -M:run`, is the one for day-to-day work: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `clojure -X smia.api/…`, takes an EDN request map and is meant for scripts and other tools.
 
 ## init

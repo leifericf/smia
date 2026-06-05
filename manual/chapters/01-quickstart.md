@@ -1,5 +1,11 @@
 # Quickstart
 
+:::overview {:title "What this chapter covers"}
+- What you need installed before building
+- A minimal `book.edn`, `theme.edn`, and first chapter
+- Running a build and finding the editions it writes
+:::
+
 Smia builds a manuscript into screen and print PDFs, an EPUB, and a static
 website, all on the JVM. Apache FOP renders the PDFs as a library call, and
 the build never leaves the process.

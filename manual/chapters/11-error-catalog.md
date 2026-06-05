@@ -1,6 +1,12 @@
 {:id :errors}
 # Error Catalog
 
+:::overview {:title "What this chapter covers"}
+- How every failure is structured, with a type, message, and context
+- The error types grouped by stage, from request to rendering
+- What triggers the types you are most likely to hit
+:::
+
 Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`, and `:error/context`. The most useful types, grouped by where they arise:
 
 ## Request

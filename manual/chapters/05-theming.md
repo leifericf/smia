@@ -1,5 +1,11 @@
 # Theming and Editions
 
+:::overview {:title "What this chapter covers"}
+- Styling from design tokens, and the `:fo` and `:css` escape hatches
+- The site layouts and reading aids: search, dark mode, reader controls, and shortcuts
+- Registering fonts for the PDF editions
+:::
+
 Styling comes from design **tokens** rather than stylesheet strings. FOP is not a CSS engine, and Smia does not pretend it is.
 
 ## theme.edn

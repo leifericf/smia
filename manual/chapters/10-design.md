@@ -1,5 +1,11 @@
 # How It Works
 
+:::overview {:title "What this chapter covers"}
+- The build pipeline and its functional core
+- Plain data throughout, with a superset vocabulary per format
+- Determinism, in-process rendering, and computed `.clj` chapters
+:::
+
 Smia is small because it leans on two ideas: everything is plain data, and the only effects live at the edges.
 
 ## The pipeline
@@ -46,9 +52,9 @@ The vocabulary itself is data too. The Markdown front-end compiles each block an
 
 The same idea localizes the apparatus. Every string smia generates — the float and structure labels, the generated section titles, the admonition labels, the site chrome — is looked up by a stable key in a dictionary keyed by `:book/language`, with English as the shipped baseline and the fallback. A language is a map of overrides; the lookup threads through the numbering, assembly, and expansion passes, so one knob localizes the furniture in every edition while the manuscript's content stays exactly as written.
 
-## A superset per format, not a subset
+## A superset per format
 
-Most engines give you a fixed vocabulary plus an escape hatch. Smia inverts that: for each output format the author vocabulary is a superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable; in an HTML edition `:html/*` does the same for HTML. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable.
+For each output format the author vocabulary is a superset of that format's substrate. In a PDF edition any `:fo/*` tag passes straight through, so every XSL-FO construct is reachable; in an HTML edition `:html/*` does the same for HTML. The portable sugar sits on top of that substrate, so an author reaches for a raw tag only when a construct has no sugar yet. The sugar in [the authoring chapter](#authoring) is the portable core that renders in every edition. Reaching for one format's hatch while building another is a structured error at build time, so a portable manuscript stays portable.
 
 :::admonition {:kind :note}
 Sugar nested inside a raw `:fo/*` or `:html/*` element still expands, so the layers compose freely in the same tree.

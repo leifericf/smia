@@ -1,6 +1,6 @@
 # Authoring in Hiccup
 
-:::overview
+:::overview {:title "What this chapter covers"}
 - The three concentric layers: HTML-flavored sugar, book extensions, and raw FO
 - The everyday tags: paragraphs, lists, tables, and **description lists**
 - Where to drop down to raw `:fo/*` when the sugar runs out

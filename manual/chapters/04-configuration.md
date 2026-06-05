@@ -1,5 +1,11 @@
 # Configuring the Book
 
+:::overview {:title "What this chapter covers"}
+- The required keys and the open-map shape of `book.edn`
+- Optional metadata, document attributes, and edition-specific keys
+- Checking a manuscript with `validate` before rendering
+:::
+
 One `book.edn` describes the manuscript. It is an **open map**: required keys are enforced, and any extra keys you add are preserved untouched.
 
 ## Required keys
