@@ -118,6 +118,28 @@
 
 ;; --- assembly ----------------------------------------------------------------
 
+(defn- site-affordances
+  "The site affordance flags out of the theme's `:site` token group, as
+   one map: `:search?`, `:mermaid`/`:mermaid-src`, `:dark?`, `:reader?`,
+   `:keyboard?`, and the two derived dark-toggle decisions —
+   `:standalone?` (the pill button: a toggle without the reader cluster,
+   which carries its own theme control) and `:theme-blocks?` (the
+   explicit-choice CSS blocks, needed for either path)."
+  [tokens]
+  (let [mermaid (get-in tokens [:site :mermaid])
+        dark    (get-in tokens [:site :dark])
+        dark?   (boolean dark)
+        reader? (boolean (get-in tokens [:site :reader]))
+        toggle? (boolean (and (map? dark) (:toggle dark)))]
+    {:search?       (boolean (get-in tokens [:site :search]))
+     :mermaid       mermaid
+     :mermaid-src   (when (map? mermaid) (:src mermaid))
+     :dark?         dark?
+     :reader?       reader?
+     :keyboard?     (boolean (get-in tokens [:site :keyboard]))
+     :standalone?   (and toggle? (not reader?))
+     :theme-blocks? (or toggle? (and reader? dark?))}))
+
 (defn assemble
   "Assemble a numbered `book` and theme `tokens` into
    `{:pages {path → content-string} :resources [{:src} …]}`. The page map
@@ -140,19 +162,8 @@
    demand and the emit shell to copy. The default stays zero JavaScript."
   ([book tokens] (assemble book tokens {}))
   ([book tokens {:keys [downloads redirects site-url edit-url]}]
-   (let [search?     (boolean (get-in tokens [:site :search]))
-         mermaid     (get-in tokens [:site :mermaid])
-         mermaid-src (when (map? mermaid) (:src mermaid))
-         dark        (get-in tokens [:site :dark])
-         dark?       (boolean dark)
-         reader?     (boolean (get-in tokens [:site :reader]))
-         keyboard?   (boolean (get-in tokens [:site :keyboard]))
-         toggle?     (boolean (and (map? dark) (:toggle dark)))
-         ;; the reader cluster carries its own theme control, so the
-         ;; standalone pill button steps aside when the cluster is present;
-         ;; the explicit-choice CSS blocks are needed for either path.
-         standalone? (and toggle? (not reader?))
-         theme-blocks? (or toggle? (and reader? dark?))
+   (let [{:keys [search? mermaid mermaid-src dark? reader? keyboard?
+                 standalone? theme-blocks?]} (site-affordances tokens)
          {:keys [pages resources] :as assembled}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
