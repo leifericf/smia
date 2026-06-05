@@ -26,6 +26,18 @@
   (testing "a trailing delimiter yields a trailing empty field"
     (is (= [["a" ""]] (datatable/rows "a," :csv)))))
 
+(deftest blank-lines-separate-records-without-adding-rows
+  (testing "an interior blank line is not a row"
+    (is (= [["a" "b"] ["c" "d"]] (datatable/rows "a,b\n\nc,d" :csv)))
+    (is (= [["a" "b"] ["c" "d"]] (datatable/rows "a\tb\n\nc\td" :tsv))))
+  (testing "a record with real (if empty) content is kept"
+    (is (= [["" ""]] (datatable/rows "," :csv))
+        "a lone delimiter is two empty fields")
+    (is (= [[""]] (datatable/rows "\"\"" :csv))
+        "a quoted empty field is one empty cell")
+    (is (= [["a"] [""] ["b"]] (datatable/rows "a\n\"\"\nb" :csv))
+        "a quoted empty field line is a one-cell row")))
+
 (deftest csv-tolerates-crlf
   (is (= [["a" "b"] ["1" "2"]]
          (datatable/rows "a,b\r\n1,2\r\n" :csv))))

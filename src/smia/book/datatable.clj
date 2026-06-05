@@ -19,16 +19,17 @@
    is one quote. A trailing newline does not add an empty row. Returns a
    vector of row vectors of strings."
   [text delim]
-  (loop [chars   (seq text)
-         field   (StringBuilder.)
-         row     []
-         rows    []
-         quoted? false]
+  (loop [chars    (seq text)
+         field    (StringBuilder.)
+         row      []
+         rows     []
+         quoted?  false
+         ;; has the current record seen any content (a quote, a delimiter,
+         ;; or a character)? A terminator on an untouched record — a blank
+         ;; line, or the trailing newline — emits no row.
+         touched? false]
     (if (nil? chars)
-      ;; flush the final field/record, unless we are sitting just past a
-      ;; record terminator (nothing buffered) — that trailing newline is
-      ;; not an empty row.
-      (if (or (pos? (.length field)) (seq row))
+      (if touched?
         (conj rows (conj row (str field)))
         rows)
       (let [c    (first chars)
@@ -37,15 +38,17 @@
           quoted?
           (if (= c \")
             (if (= (first more) \")
-              (do (.append field \") (recur (next more) field row rows true))
-              (recur more field row rows false))
-            (do (.append field c) (recur more field row rows true)))
+              (do (.append field \") (recur (next more) field row rows true true))
+              (recur more field row rows false true))
+            (do (.append field c) (recur more field row rows true true)))
 
-          (= c \")     (recur more field row rows true)
-          (= c delim)  (recur more (StringBuilder.) (conj row (str field)) rows false)
-          (= c \newline) (recur more (StringBuilder.) [] (conj rows (conj row (str field))) false)
-          (= c \return)  (recur more field row rows false) ; swallow CR in CRLF
-          :else        (do (.append field c) (recur more field row rows false)))))))
+          (= c \")     (recur more field row rows true true)
+          (= c delim)  (recur more (StringBuilder.) (conj row (str field)) rows false true)
+          (= c \newline) (if touched?
+                           (recur more (StringBuilder.) [] (conj rows (conj row (str field))) false false)
+                           (recur more field row rows false false))
+          (= c \return)  (recur more field row rows false touched?) ; swallow CR in CRLF
+          :else        (do (.append field c) (recur more field row rows false true)))))))
 
 (defn- parse-edn
   "Parse `text` as a sequence of row sequences. Non-string cells stringify
