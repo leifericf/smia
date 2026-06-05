@@ -39,6 +39,23 @@
   (let [d (catch-data #(attrs/substitute-form [:p [:attr "version"]] {:version "1"}))]
     (is (= :smia.book.attrs/invalid-attribute (:error/type d)))))
 
+(deftest attribute-values-may-reference-other-attributes
+  (testing "a value carrying [:attr …] resolves transitively"
+    (is (= [:p "deep"]
+           (attrs/substitute-form [:p [:attr :x]] {:x [:attr :y] :y "deep"})))
+    (is (= [:p [:span "v" "1.0"]]
+           (attrs/substitute-form [:p [:attr :badge]]
+                                  {:badge [:span "v" [:attr :version]]
+                                   :version "1.0"}))))
+  (testing "an unknown reference inside an attribute value is flagged"
+    (let [d (catch-data #(attrs/substitute-form [:p [:attr :x]]
+                                                {:x [:attr :typo]}))]
+      (is (= :smia.book.attrs/unknown-attribute (:error/type d)))))
+  (testing "a reference cycle is a structured error, not a hang"
+    (let [d (catch-data #(attrs/substitute-form [:p [:attr :x]]
+                                                {:x [:attr :y] :y [:attr :x]}))]
+      (is (= :smia.book.attrs/circular-attribute (:error/type d))))))
+
 ;; --- manuscript-wide substitution -------------------------------------------
 
 (defn- manuscript [body]

@@ -56,10 +56,22 @@
                          {:attribute k :known (vec (sort (keys context)))}))))))
 
 (defn substitute-form
-  "Resolve every `[:attr :k]` in one chapter `form` against `context`."
+  "Resolve every `[:attr :k]` in one chapter `form` against `context`.
+   An attribute value may itself carry `[:attr …]` references, so the
+   pass repeats until none remain; a reference cycle is a structured
+   error (a chain can be at most one hop per declared attribute)."
   [form context]
-  (check-refs! form context)
-  (m1p/interpolate form {:dictionaries {:attr (m1p/prepare-dictionary context)}}))
+  (let [opts {:dictionaries {:attr (m1p/prepare-dictionary context)}}]
+    (loop [form form, hops 0]
+      (check-refs! form context)
+      (cond
+        (empty? (attr-refs form)) form
+        (> hops (count context))
+        (throw (error/ex :smia.book.attrs/circular-attribute
+                         (str "Document attributes reference each other in a "
+                              "cycle: " (pr-str (vec (sort (distinct (map second (attr-refs form)))))))
+                         {:attributes (vec (sort (distinct (map second (attr-refs form)))))}))
+        :else (recur (m1p/interpolate form opts) (inc hops))))))
 
 (defn substitute
   "Resolve document attributes across a loaded `manuscript`, in both
