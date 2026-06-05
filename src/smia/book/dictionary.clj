@@ -39,6 +39,7 @@
         :narrower "Narrower" :wider "Wider"
         :text-size "Text size" :smaller "Smaller text" :larger "Larger text"
         :contrast "Contrast" :high-contrast "High contrast" :color-scheme "Theme"
+        :reset-defaults "Reset to defaults"
         :focus-mode "Focus mode" :breadcrumb "Breadcrumb"
         ;; keyboard shortcuts and the help overlay
         :keyboard-shortcuts "Keyboard shortcuts"

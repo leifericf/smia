@@ -396,43 +396,42 @@
    button."
   [ctx]
   (when (:reader ctx)
-    (let [lang  (:language ctx)
-          loc   #(dictionary/localize lang %1 %2)
-          row   (fn [label & controls]
-                  (into [:div {:class "reader-row"}
-                         [:span {:class "reader-label"} label]]
-                        controls))
-          step  (fn [attr val term default glyph]
-                  [:button {:type "button" attr val
-                            :aria-label (loc term default)} glyph])]
+    (let [lang   (:language ctx)
+          loc    #(dictionary/localize lang %1 %2)
+          label  (fn [term default] [:span {:class "reader-label"} (loc term default)])
+          step   (fn [attr val term default glyph]
+                   [:button {:type "button" attr val
+                             :aria-label (loc term default)} glyph])
+          pair   (fn [& bs] (into [:div {:class "reader-pair"}] bs))
+          ;; an on/off control with no text label — the switch shows its state,
+          ;; and the row label beside it names what it toggles.
+          switch (fn [attr term default]
+                   [:button (assoc {:type "button" :class "reader-switch"
+                                    :aria-pressed "false"
+                                    :aria-label (loc term default)}
+                                   attr "")])]
       (into [:div {:class "reader-controls" :data-reader-controls "" :hidden "hidden"}
              [:button {:type "button" :class "reader-button"
                        :data-reader-toggle "" :aria-expanded "false"
                        :aria-label (loc :reader-settings "Reader settings")}
               "Aa"]]
-            [(into [:div {:class "reader-panel" :data-reader-panel "" :hidden "hidden"}
-                    (row (loc :reading-width "Width")
-                         (step :data-reader-width "-" :narrower "Narrower" "–")
-                         (step :data-reader-width "+" :wider "Wider" "+"))
-                    (row (loc :text-size "Text size")
-                         (step :data-reader-scale "-" :smaller "Smaller text" "A–")
-                         (step :data-reader-scale "+" :larger "Larger text" "A+"))
-                    (row (loc :contrast "Contrast")
-                         [:button {:type "button" :data-reader-contrast ""
-                                   :aria-pressed "false"
-                                   :aria-label (loc :high-contrast "High contrast")}
-                          (loc :high-contrast "High contrast")])
-                    (row (loc :focus-mode "Focus mode")
-                         [:button {:type "button" :data-focus-toggle ""
-                                   :aria-pressed "false"
-                                   :aria-label (loc :focus-mode "Focus mode")}
-                          (loc :focus-mode "Focus mode")])]
-                   (when (:reader-theme ctx)
-                     [(row (loc :color-scheme "Theme")
-                           [:button {:type "button" :data-theme-toggle ""
-                                     :aria-pressed "false"
-                                     :aria-label (loc :toggle-color-scheme "Toggle dark mode")}
-                            (loc :toggle-color-scheme "Toggle dark mode")])]))]))))
+            [(into [:div {:class "reader-panel" :data-reader-panel "" :hidden "hidden"}]
+                   (concat
+                     [(label :reading-width "Width")
+                      (pair (step :data-reader-width "-" :narrower "Narrower" "–")
+                            (step :data-reader-width "+" :wider "Wider" "+"))
+                      (label :text-size "Text size")
+                      (pair (step :data-reader-scale "-" :smaller "Smaller text" "A–")
+                            (step :data-reader-scale "+" :larger "Larger text" "A+"))
+                      (label :contrast "Contrast")
+                      (switch :data-reader-contrast :high-contrast "High contrast")
+                      (label :focus-mode "Focus mode")
+                      (switch :data-focus-toggle :focus-mode "Focus mode")]
+                     (when (:reader-theme ctx)
+                       [(label :color-scheme "Theme")
+                        (switch :data-theme-toggle :toggle-color-scheme "Toggle dark mode")])
+                     [[:button {:type "button" :class "reader-reset" :data-reader-reset ""}
+                       (loc :reset-defaults "Reset to defaults")]]))]))))
 
 (defn keys-script
   "The keyboard-shortcuts island's deferred script tag, when the shortcuts

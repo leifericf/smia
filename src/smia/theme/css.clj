@@ -627,34 +627,79 @@
                               :box-shadow    "0 1px 3px rgba(0, 0, 0, 0.08)"
                               :transition    "color 0.15s, background-color 0.15s, border-color 0.15s"}]
            [".reader-button:hover" {:color "var(--ink)" :border-color "var(--muted)"}]
-           [".reader-panel" {:position      "absolute"
-                            :top           "calc(100% + 0.5em)"
-                            :right         "0"
-                            :min-width     "13em"
-                            :padding       "0.75em"
-                            :color         "var(--ink)"
-                            :background    "var(--panel)"
-                            :border        "1px solid var(--rule)"
-                            :border-radius "10px"
-                            :box-shadow    "0 4px 16px rgba(0, 0, 0, 0.15)"}]
-           [".reader-row" {:display         "flex"
-                          :align-items     "center"
-                          :justify-content "space-between"
-                          :gap             "0.75em"
-                          :margin          "0.4em 0"}]
-           [".reader-label" {:color "var(--muted)" :font-size "0.85em"}]
-           [".reader-panel button" {:font          "inherit"
-                                    :cursor        "pointer"
-                                    :min-width     "2.4em"
-                                    :padding       "0.2em 0.5em"
-                                    :color         "var(--ink)"
-                                    :background    "var(--card)"
-                                    :border        "1px solid var(--rule)"
-                                    :border-radius "6px"
-                                    :transition    "border-color 0.15s, background-color 0.15s"}]
-           [".reader-panel button:hover" {:border-color "var(--muted)"}]
-           [".reader-panel button[aria-pressed=\"true\"]"
-            {:color "var(--bg)" :background "var(--link)" :border-color "var(--link)"}]
+           ;; a two-column grid keeps every label and control on one baseline:
+           ;; labels left, controls right, whatever the control's width.
+           [".reader-panel" {:position              "absolute"
+                            :top                   "calc(100% + 0.5em)"
+                            :right                 "0"
+                            :display               "grid"
+                            :grid-template-columns "auto auto"
+                            :align-items           "center"
+                            :column-gap            "1.5em"
+                            :row-gap               "0.7em"
+                            :min-width             "15em"
+                            :padding               "1em 1.1em"
+                            :color                 "var(--ink)"
+                            :background            "var(--panel)"
+                            :border                "1px solid var(--rule)"
+                            :border-radius         "10px"
+                            :box-shadow            "0 4px 16px rgba(0, 0, 0, 0.15)"}]
+           [".reader-label" {:justify-self "start"
+                            :color        "var(--muted)"
+                            :font-size    "0.85em"}]
+           ;; the steppers (width, text size) sit as a tight pair on the right
+           [".reader-pair" {:justify-self "end" :display "inline-flex" :gap "0.4em"}]
+           [".reader-pair button" {:font          "inherit"
+                                   :cursor        "pointer"
+                                   :min-width     "2.6em"
+                                   :padding       "0.25em 0"
+                                   :text-align    "center"
+                                   :color         "var(--ink)"
+                                   :background    "var(--card)"
+                                   :border        "1px solid var(--rule)"
+                                   :border-radius "6px"
+                                   :transition    "border-color 0.15s, background-color 0.15s"}]
+           [".reader-pair button:hover" {:border-color "var(--muted)"}]
+           ;; the on/off controls (contrast, focus, theme) are compact switches:
+           ;; the state shows in the switch, so the row label needs no echo.
+           [".reader-switch" {:justify-self  "end"
+                             :position      "relative"
+                             :width         "2.8em"
+                             :height        "1.5em"
+                             :padding       "0"
+                             :cursor        "pointer"
+                             :background    "var(--card)"
+                             :border        "1px solid var(--rule)"
+                             :border-radius "999px"
+                             :transition    "background-color 0.15s, border-color 0.15s"}]
+           [".reader-switch::after" {:content          "\"\""
+                                    :position         "absolute"
+                                    :top              "50%"
+                                    :left             "0.18em"
+                                    :width            "1.05em"
+                                    :height           "1.05em"
+                                    :border-radius    "50%"
+                                    :background       "var(--muted)"
+                                    :transform        "translateY(-50%)"
+                                    :transition       "transform 0.15s, background-color 0.15s"}]
+           [".reader-switch[aria-pressed=\"true\"]"
+            {:background "var(--link)" :border-color "var(--link)"}]
+           [".reader-switch[aria-pressed=\"true\"]::after"
+            {:background "var(--bg)" :transform "translate(1.3em, -50%)"}]
+           ;; a quiet reset spanning both columns, set off by a hairline
+           [".reader-reset" {:grid-column  "1 / -1"
+                            :margin-top   "0.4em"
+                            :padding      "0.5em 0 0"
+                            :font         "inherit"
+                            :font-size    "0.85em"
+                            :cursor       "pointer"
+                            :color        "var(--muted)"
+                            :background   "none"
+                            :border       "none"
+                            :border-top   "1px solid var(--rule)"
+                            :border-radius "0"
+                            :transition   "color 0.15s"}]
+           [".reader-reset:hover" {:color "var(--ink)"}]
            ;; the orientation breadcrumb atop the reading column: quiet, small,
            ;; and unobtrusive in normal reading, the only signpost in focus mode.
            [".breadcrumb" {:margin      "0 0 1.5em"

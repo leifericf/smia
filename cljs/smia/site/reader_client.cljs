@@ -142,6 +142,24 @@
                 (aset ticking 0 false)))))
         #js {:passive true}))))
 
+;; --- reset: forget every stored choice, fall back to the defaults ------------
+
+(defn- reset-prefs! []
+  (let [st (.-style (root))]
+    (try
+      (let [s (.-localStorage js/window)]
+        (.removeItem s "smia-width")
+        (.removeItem s "smia-scale")
+        (.removeItem s "smia-contrast")
+        (.removeItem s "smia-focus")
+        (.removeItem s "smia-theme"))
+      (catch :default _ nil))
+    (.removeProperty st "--reading-width")
+    (.removeProperty st "--reading-scale")
+    (.removeAttribute (root) "data-contrast")
+    (.removeAttribute (root) "data-focus")
+    (.removeAttribute (root) "data-theme")))
+
 ;; --- wiring ------------------------------------------------------------------
 
 (defn- on-click [sel f]
@@ -181,7 +199,14 @@
   (when-let [f (wire-pressed! "[data-focus-toggle]" focus-now?)]
     (.addEventListener f "click" (fn [_] (toggle-focus! f))))
   (when-let [t (wire-pressed! "[data-theme-toggle]" dark-now?)]
-    (.addEventListener t "click" (fn [_] (toggle-theme! t)))))
+    (.addEventListener t "click" (fn [_] (toggle-theme! t))))
+  (on-click "[data-reader-reset]"
+    (fn [_]
+      (reset-prefs!)
+      ;; the switches now reflect the defaults
+      (wire-pressed! "[data-reader-contrast]" high-contrast?)
+      (wire-pressed! "[data-focus-toggle]" focus-now?)
+      (wire-pressed! "[data-theme-toggle]" dark-now?))))
 
 (defn init []
   ;; pre-paint: reflect every stored choice before the page is drawn

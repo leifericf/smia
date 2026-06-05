@@ -322,7 +322,9 @@
       (is (str/includes? page "data-reader-width=\"+\""))
       (is (str/includes? page "data-reader-scale=\"-\""))
       (is (str/includes? page "data-reader-contrast"))
-      (is (str/includes? page "data-focus-toggle")))
+      (is (str/includes? page "data-focus-toggle"))
+      (is (str/includes? page "reader-switch"))
+      (is (str/includes? page "data-reader-reset")))
     (testing "with dark mode off the cluster carries no color-scheme control"
       (is (not (str/includes? page "data-theme-toggle"))))
     (testing "a hidden reading-progress bar ships for the island to drive"
@@ -330,6 +332,8 @@
     (testing "the stylesheet carries the reading variables and cluster styling"
       (is (str/includes? css "--reading-width"))
       (is (str/includes? css ".reader-controls"))
+      (is (str/includes? css ".reader-switch"))
+      (is (str/includes? css ".reader-reset"))
       (is (str/includes? css ".reading-progress")))
     (testing "the bundle is named for the emit shell"
       (is (some #(= {:resource "smia/site/reader.js" :path "reader.js"} %)
