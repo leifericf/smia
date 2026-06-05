@@ -290,6 +290,39 @@
     (is (= (css/css tokens {:dark? true :toggle? true})
            (css/css tokens {:dark? true :toggle? true})))))
 
+;; --- the reader-preferences layer (site only) ---------------------------------
+
+(deftest reader-preferences-add-width-and-scale-variables
+  (testing "without :reader? the stylesheet has no reading variables"
+    (is (not (str/includes? (css/css tokens {:dark? true}) "--reading-width"))))
+  (let [out   (css/css tokens {:reader? true})
+        rules (css/compile-css tokens {:reader? true})]
+    (testing "a :root defines the reading width and scale defaults"
+      (is (str/includes? out ":root {"))
+      (is (str/includes? out "--reading-width: clamp(32em, 90vw, 44em);"))
+      (is (str/includes? out "--reading-scale: 1;")))
+    (testing "the reading column and its furniture consume the width variable"
+      (is (= "var(--reading-width)" (:max-width (rule rules "main"))))
+      (is (= "var(--reading-width)" (:max-width (rule rules ".page-nav")))))
+    (testing "the base font size scales through the scale variable"
+      (is (str/includes? (:font-size (rule rules "body")) "var(--reading-scale)")))
+    (testing "colors resolve through variables even with dark mode off"
+      (is (str/includes? out "color: var(--ink)")))))
+
+(deftest reader-high-contrast-overrides-the-text-color
+  (testing "a high-contrast override darkens the ink in light mode"
+    (let [out (css/css tokens {:reader? true})]
+      (is (str/includes? out "html[data-contrast=\"high\"] {"))
+      (is (re-find #"data-contrast=\"high\"[^}]*--ink: #000000" out))))
+  (testing "with dark on, a high-contrast variant exists for the dark scheme too"
+    (let [out (css/css tokens {:reader? true :dark? true})]
+      (is (str/includes? out "html[data-theme=\"dark\"][data-contrast=\"high\"]"))
+      (is (re-find #"data-theme=\"dark\"\]\[data-contrast=\"high\"\][^}]*--ink: #ffffff" out)))))
+
+(deftest reader-css-stays-deterministic
+  (is (= (css/css tokens {:reader? true :dark? true})
+         (css/css tokens {:reader? true :dark? true}))))
+
 (deftest the-toggle-button-is-a-clean-pill-control
   (let [rules (css/compile-css tokens {:dark? true :toggle? true})
         btn   (rule rules ".theme-toggle")]

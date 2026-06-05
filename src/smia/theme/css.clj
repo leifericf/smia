@@ -125,6 +125,40 @@
              "--media-filter" "none"}
             (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
 
+(defn- root-vars
+  "The leading `:root` rule: the color custom properties at their light
+   values, and — when the reader controls are on — the reading-preference
+   variables (`--reading-width`, `--reading-scale`) at their defaults, the
+   values the island overrides per reader."
+  [light palette reader? measure]
+  (let [[sel props] (root-light-vars light palette)]
+    [sel (cond-> props
+           reader? (assoc :--reading-width measure
+                          :--reading-scale "1"))]))
+
+(def ^:private contrast-light
+  "The high-contrast override for the light scheme: maximal text contrast
+   and a darker rule, leaving the background white."
+  {:--ink "#000000" :--muted "#2b2b2b" :--rule "#767676"})
+
+(def ^:private contrast-dark
+  "The high-contrast override for the dark scheme: white on black."
+  {:--ink "#ffffff" :--bg "#000000" :--muted "#d0d0d0" :--rule "#909090"})
+
+(defn- contrast-rules
+  "The opt-in high-contrast overrides (`:site {:reader true}`): a reader who
+   chooses high contrast sets `data-contrast=\"high\"` on the document
+   element, and these override the color variables accordingly. The light
+   variant always applies; when dark mode is on, the dark variant covers the
+   OS scheme and both explicit choices, so contrast and theme compose."
+  [dark?]
+  (cond-> [["html[data-contrast=\"high\"]" contrast-light]]
+    dark?
+    (into [["@media (prefers-color-scheme: dark)"
+            ["html[data-contrast=\"high\"]" contrast-dark]]
+           ["html[data-theme=\"dark\"][data-contrast=\"high\"]" contrast-dark]
+           ["html[data-theme=\"light\"][data-contrast=\"high\"]" contrast-light]])))
+
 (defn- dark-var-props
   "The dark palette as a custom-property map: the computed defaults under
    the `:dark` token group, plus any `:dark {:code …}` syntax overrides."
@@ -185,8 +219,13 @@
    `html[data-theme=…]` overrides the toggle island flips, and the button
    style."
   ([tokens] (compile-css tokens {}))
-  ([tokens {:keys [dark? toggle?]}]
+  ([tokens {:keys [dark? toggle? reader?]}]
    (let [{:keys [color type spacing code]} tokens
+         ;; the custom-property layer turns on for either site affordance:
+         ;; dark mode flips the color variables, the reader controls add
+         ;; width/scale variables and a high-contrast override. Both need the
+         ;; colors expressed as `var(--…)` over a leading `:root`.
+         vars?       (or dark? reader?)
          body-family (get type :body-family "serif")
          head-family (get type :heading-family "sans-serif")
          mono-family (get type :mono-family "monospace")
@@ -200,7 +239,8 @@
                       :panel-2         "#e8e8e8"
                       :card            "#eeeeee"
                       :line-no         "#999999"}
-         var-or      (fn [name lit] (if dark? (str "var(" name ")") lit))
+         var-or      (fn [name lit] (if vars? (str "var(" name ")") lit))
+         base-size   (get type :base-size "11pt")
          text        (var-or "--ink"     (:text light))
          muted       (var-or "--muted"   (:muted light))
          rule        (var-or "--rule"    (:rule light))
@@ -220,19 +260,26 @@
          ;; phone's width, so there the cap never binds and the column is full
          ;; width less its padding; no width media query is needed.
          measure     "clamp(32em, 90vw, 44em)"
+         ;; under the reader controls the column width and the document font
+         ;; size are reader-driven variables; otherwise they are the static
+         ;; fluid measure and the base size.
+         col-width   (if reader? "var(--reading-width)" measure)
+         font-size   (if reader?
+                       (str "calc(" base-size " * var(--reading-scale))")
+                       base-size)
          palette     (merge compile/default-code-colors code)
-         tok-color   (fn [kind c] (if dark? (str "var(--tok-" (name kind) ")") c))]
+         tok-color   (fn [kind c] (if vars? (str "var(--tok-" (name kind) ")") c))]
     (vec
       (concat
-        (when dark? [(root-light-vars light palette)])
+        (when vars? [(root-vars light palette reader? measure)])
         [;; reading column and base typography
          ["body" (cond-> {:font-family body-family
-                          :font-size   (get type :base-size "11pt")
+                          :font-size   font-size
                           :line-height (get type :line-height "1.4")
                           :color       text
                           :margin      "0"}
-                   dark? (assoc :background-color bg))]
-         ["main" {:max-width measure
+                   vars? (assoc :background-color bg))]
+         ["main" {:max-width col-width
                   :margin    "0 auto"
                   :padding   "0 clamp(1em, 4vw, 2em) 4em"
                   :position  "relative"}]
@@ -364,9 +411,9 @@
                        :justify-content "center"
                        :font-size       "0.9em"
                        :margin          "1em auto"
-                       :max-width       measure
+                       :max-width       col-width
                        :padding         "0 1em"}]
-         [".page-footer" {:max-width measure
+         [".page-footer" {:max-width col-width
                           :margin    "1em auto 0"
                           :padding   "0 1em"
                           :font-size "0.85em"}]
@@ -560,6 +607,10 @@
         ;; the opt-in toggle: explicit overrides that beat the media query
         ;; both ways, plus the button style. Only reachable under `:dark?`.
         (when toggle? (toggle-rules tokens light palette))
+
+        ;; the opt-in reader controls: high-contrast overrides keyed off
+        ;; `data-contrast="high"`, after the dark blocks so they win.
+        (when reader? (contrast-rules dark?))
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.
