@@ -2,7 +2,6 @@
  :book/title      "The Smia Manual"
  :book/author     "The Smia authors"
  :book/site-url   "https://smia.leifericf.com/manual"
- :book/edit-url   "https://github.com/leifericf/smia/edit/main/manual"
  :book/references "references.edn"
 
  :book/attributes {:tool "Smia"}
