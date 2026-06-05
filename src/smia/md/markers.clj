@@ -22,6 +22,19 @@
                             (.getMessage e))
                        {:source payload})))))
 
+(defn- keyword-payload
+  "Trim `payload` to a single keyword-safe token and intern it, or throw —
+   a blank or whitespace-bearing payload can never name a references or
+   attributes key."
+  [kind payload]
+  (let [t (str/trim payload)]
+    (when (or (str/blank? t) (re-find #"\s" t))
+      (throw (error/ex :smia.md.compile/invalid-raw-escape
+                       (str "The {=" (name kind) "} payload must be a single "
+                            "key token, got: " (pr-str payload))
+                       {:marker kind :source payload})))
+    (keyword t)))
+
 (defn- as-seq
   "Read an EDN payload as a sequence: a vector/list stays as-is, a scalar
    becomes a one-element seq. Used by the chord/path markers."
@@ -39,10 +52,10 @@
    `{=button}`/`{=mark}`/`{=sub}`/`{=sup}` wrap a literal label."
   {:hiccup read-escape-edn
    :fo     read-escape-edn
-   :cite   (fn [payload] [:cite {:key (keyword (str/trim payload))}])
+   :cite   (fn [payload] [:cite {:key (keyword-payload :cite payload)}])
    :index  (fn [payload] [:index {:term payload}])
    :math   (fn [payload] [:math {:notation payload}])
-   :attr   (fn [payload] [:attr (keyword (str/trim payload))])
+   :attr   (fn [payload] [:attr (keyword-payload :attr payload)])
    :kbd    (fn [payload]
              (let [keys (map str (as-seq payload))]
                (if (= 1 (count keys))

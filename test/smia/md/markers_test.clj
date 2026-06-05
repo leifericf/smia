@@ -37,6 +37,16 @@
   (is (= [:attr :version] (markers/marker-form :attr "version")))
   (is (= [:attr :build-date] (markers/marker-form :attr " build-date "))))
 
+(deftest cite-and-attr-payloads-must-be-single-key-tokens
+  (testing "embedded whitespace can never name a key, so it is rejected"
+    (let [d (catch-data #(markers/marker-form :cite "Knuth 1984"))]
+      (is (= :smia.md.compile/invalid-raw-escape (:error/type d))))
+    (let [d (catch-data #(markers/marker-form :attr "page count"))]
+      (is (= :smia.md.compile/invalid-raw-escape (:error/type d)))))
+  (testing "a blank payload is rejected the same way"
+    (let [d (catch-data #(markers/marker-form :cite "  "))]
+      (is (= :smia.md.compile/invalid-raw-escape (:error/type d))))))
+
 (deftest marker-names-are-the-sorted-registry-keys
   (is (= (->> (keys markers/inline-markers) (map name) sort vec)
          markers/marker-names))
