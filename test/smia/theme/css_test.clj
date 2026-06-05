@@ -313,6 +313,32 @@
   (testing "the literal path keeps the hardcoded line-number color"
     (is (str/includes? (css/css tokens) ".line-no {\n  color: #999999;"))))
 
+(deftest dark-mode-restyles-mark-highlights
+  (testing "mark routes through a variable with a dimmer dark value"
+    (let [out  (css/css tokens {:dark? true})
+          dark (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+      (is (str/includes? out "background-color: var(--mark-bg)"))
+      (is (str/includes? out "--mark-bg: #fff3b0;"))
+      (is (str/includes? dark "--mark-bg: "))
+      (is (not (str/includes? dark "--mark-bg: #fff3b0;")))))
+  (testing "the literal path keeps the literal highlight"
+    (is (str/includes? (css/css tokens) "background-color: #fff3b0"))))
+
+(deftest dark-mode-strengthens-elevation-shadows
+  (testing "shadows route through variables with stronger dark values"
+    (let [out  (css/css tokens {:dark? true :toggle? true
+                                :reader? true :keyboard? true})
+          dark (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+      (is (str/includes? out "box-shadow: var(--shadow-button)"))
+      (is (str/includes? out "box-shadow: var(--shadow-popover)"))
+      (is (str/includes? out "box-shadow: var(--shadow-panel)"))
+      (is (str/includes? out "box-shadow: var(--shadow-overlay)"))
+      (is (str/includes? dark "--shadow-button: "))
+      (is (not (str/includes? out "box-shadow: 0")))))
+  (testing "the literal path keeps literal shadows and no variables"
+    (let [out (css/css tokens)]
+      (is (not (str/includes? out "var("))))))
+
 (deftest dark-mode-declares-the-color-scheme
   (testing "dark? declares both schemes so native UI follows the palette"
     (is (str/includes? (css/css tokens {:dark? true})

@@ -78,7 +78,16 @@
    ;; across editions and cannot be re-themed per edition, so the site
    ;; inverts its lightness in CSS while keeping hue (hue-rotate undoes the
    ;; hue flip invert causes), so colored diagrams stay recognizable.
-   "--media-filter" "invert(1) hue-rotate(180deg)"})
+   "--media-filter" "invert(1) hue-rotate(180deg)"
+   ;; the light `mark` yellow glares on the dark page; dim it to an amber
+   ;; the light ink still reads on
+   "--mark-bg" "#5c4d20"
+   ;; black shadows vanish against the dark page, so each elevation
+   ;; deepens to stay visible
+   "--shadow-button"  "0 1px 3px rgba(0, 0, 0, 0.5)"
+   "--shadow-popover" "0 2px 8px rgba(0, 0, 0, 0.55)"
+   "--shadow-panel"   "0 4px 16px rgba(0, 0, 0, 0.55)"
+   "--shadow-overlay" "0 8px 32px rgba(0, 0, 0, 0.75)"})
 
 (def ^:private default-dark-code
   "A readable dark syntax-highlight palette. The light defaults
@@ -123,7 +132,12 @@
              "--panel-2" (:panel-2 light)
              "--card"    (:card light)
              "--line-no" (:line-no light)
-             "--media-filter" "none"}
+             "--media-filter" "none"
+             "--mark-bg" "#fff3b0"
+             "--shadow-button"  "0 1px 3px rgba(0, 0, 0, 0.08)"
+             "--shadow-popover" "0 2px 8px rgba(0, 0, 0, 0.15)"
+             "--shadow-panel"   "0 4px 16px rgba(0, 0, 0, 0.15)"
+             "--shadow-overlay" "0 8px 32px rgba(0, 0, 0, 0.3)"}
             (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
 
 (defn- root-vars
@@ -206,7 +220,7 @@
                        :background    "var(--panel)"
                        :border        "1px solid var(--rule)"
                        :border-radius "999px"
-                       :box-shadow    "0 1px 3px rgba(0, 0, 0, 0.08)"
+                       :box-shadow    "var(--shadow-button)"
                        :transition    "color 0.15s, background-color 0.15s, border-color 0.15s"}]
      [".theme-toggle:hover" {:color "var(--ink)" :border-color "var(--muted)"}]]))
 
@@ -379,7 +393,10 @@
                      :border           (str "1px solid " rule)
                      :border-radius    "3px"
                      :padding          "0 0.4em"}]
-         ["mark" {:background-color "#fff3b0"}]
+         ["mark" (cond-> {:background-color (var-or "--mark-bg" "#fff3b0")}
+                   ;; with color-scheme declared the UA may flip its own
+                   ;; mark text color; pin it to the palette ink
+                   vars? (assoc :color "var(--ink)"))]
          [".epigraph" {:border-left  "none"
                        :margin-left  "24pt"
                        :font-style   "italic"
@@ -583,7 +600,8 @@
                              :z-index    "10"
                              :background bg
                              :border     (str "1px solid " rule)
-                             :box-shadow "0 2px 8px rgba(0, 0, 0, 0.15)"
+                             :box-shadow (var-or "--shadow-popover"
+                                                 "0 2px 8px rgba(0, 0, 0, 0.15)")
                              :max-height "60vh"
                              :overflow-y "auto"
                              :padding    "0.5em"
@@ -670,7 +688,7 @@
                               :background    "var(--panel)"
                               :border        "1px solid var(--rule)"
                               :border-radius "999px"
-                              :box-shadow    "0 1px 3px rgba(0, 0, 0, 0.08)"
+                              :box-shadow    "var(--shadow-button)"
                               :transition    "color 0.15s, background-color 0.15s, border-color 0.15s"}]
            [".reader-button:hover" {:color "var(--ink)" :border-color "var(--muted)"}]
            ;; a two-column grid keeps every label and control on one baseline:
@@ -689,7 +707,7 @@
                             :background            "var(--panel)"
                             :border                "1px solid var(--rule)"
                             :border-radius         "10px"
-                            :box-shadow            "0 4px 16px rgba(0, 0, 0, 0.15)"}]
+                            :box-shadow            "var(--shadow-panel)"}]
            ;; `display: grid` would otherwise beat the browser's
            ;; `[hidden] { display: none }`, pinning the panel open; restore it
            ;; so the toggle can close the panel (the same trap as `.kbd-help`).
@@ -806,7 +824,8 @@
                               :padding       "1.5em 1.75em"
                               :max-width     "24em"
                               :width         "90%"
-                              :box-shadow    "0 8px 32px rgba(0, 0, 0, 0.3)"}]
+                              :box-shadow    (var-or "--shadow-overlay"
+                                                     "0 8px 32px rgba(0, 0, 0, 0.3)")}]
            [".kbd-help-panel h2" {:margin-top "0" :font-size "1.1em"}]
            [".kbd-help-panel dl" {:display               "grid"
                                  :grid-template-columns "auto 1fr"
