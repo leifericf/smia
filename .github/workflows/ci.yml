@@ -11,10 +11,10 @@ jobs:
     name: Tests and dogfood build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -25,7 +25,7 @@ jobs:
           cli: latest
 
       - name: Cache Maven deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2
@@ -63,7 +63,7 @@ jobs:
           test -f build/ci/smia-manual/artifacts.edn
 
       - name: Upload dogfood artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dogfood-manual
           path: build/ci/smia-manual/pdf/
