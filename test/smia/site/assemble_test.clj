@@ -335,6 +335,8 @@
       (is (str/includes? css ".reader-switch"))
       (is (str/includes? css ".reader-reset"))
       (is (str/includes? css ".reading-progress")))
+    (testing "the panel's grid display does not defeat the hidden attribute"
+      (is (str/includes? css ".reader-panel[hidden] {")))
     (testing "the bundle is named for the emit shell"
       (is (some #(= {:resource "smia/site/reader.js" :path "reader.js"} %)
                 (:bundled r))))))

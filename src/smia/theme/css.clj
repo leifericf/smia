@@ -644,6 +644,10 @@
                             :border                "1px solid var(--rule)"
                             :border-radius         "10px"
                             :box-shadow            "0 4px 16px rgba(0, 0, 0, 0.15)"}]
+           ;; `display: grid` would otherwise beat the browser's
+           ;; `[hidden] { display: none }`, pinning the panel open; restore it
+           ;; so the toggle can close the panel (the same trap as `.kbd-help`).
+           [".reader-panel[hidden]" {:display "none"}]
            [".reader-label" {:justify-self "start"
                             :color        "var(--muted)"
                             :font-size    "0.85em"}]
