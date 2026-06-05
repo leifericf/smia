@@ -80,6 +80,7 @@
    (head ctx title)
    (into [:body {}]
          (concat
+           (when-let [p (html-assemble/reading-progress ctx)] [p])
            (when-let [b (html-assemble/theme-toggle ctx)] [b])
            (when-let [c (html-assemble/reader-controls ctx)] [c])
            [[:div {:class "book-layout"}

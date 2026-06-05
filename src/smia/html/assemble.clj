@@ -433,6 +433,18 @@
                                      :aria-label (loc :toggle-color-scheme "Toggle dark mode")}
                             (loc :toggle-color-scheme "Toggle dark mode")])]))]))))
 
+(defn reading-progress
+  "A thin reading-progress bar pinned to the top of the viewport, when the
+   reader controls are on. It ships `hidden` and empty; the island reveals
+   it and drives its width from the scroll position. With no JavaScript it
+   stays hidden, so a reader never sees a bar that cannot move. Decorative,
+   so `aria-hidden`."
+  [ctx]
+  (when (:reader ctx)
+    [:div {:class "reading-progress" :data-reading-progress ""
+           :hidden "hidden" :aria-hidden "true"}
+     [:div {:class "reading-progress-bar"}]]))
+
 (defn breadcrumb
   "A `Part › Chapter` orientation trail atop the reading column, when the
    reader controls are on and the page sits in the contents (not the home
@@ -731,6 +743,7 @@
                  (mermaid-scripts ctx)))
    (into [:body {}]
          (concat
+           (when-let [p (reading-progress ctx)] [p])
            (when-let [b (theme-toggle ctx)] [b])
            (when-let [c (reader-controls ctx)] [c])
            (when-let [f (search-form ctx)] [f])

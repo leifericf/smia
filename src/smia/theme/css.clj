@@ -669,7 +669,23 @@
            ["html[data-focus] .page-nav" {:display "none"}]
            ["html[data-focus] .page-footer" {:display "none"}]
            ["html[data-focus] .edge-nav" {:display "none"}]
-           ["html[data-focus] .theme-toggle" {:display "none"}]])
+           ["html[data-focus] .theme-toggle" {:display "none"}]
+           ;; reading-progress bar: a hairline at the top of the viewport whose
+           ;; inner fill the island scales from the scroll position. Transform
+           ;; only, so the paint stays cheap.
+           [".reading-progress" {:position      "fixed"
+                                :top           "0"
+                                :left          "0"
+                                :right         "0"
+                                :height        "3px"
+                                :z-index       "30"
+                                :background    "transparent"
+                                :pointer-events "none"}]
+           [".reading-progress-bar" {:height           "100%"
+                                    :width            "100%"
+                                    :transform        "scaleX(0)"
+                                    :transform-origin "left"
+                                    :background       "var(--link)"}]])
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.

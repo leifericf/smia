@@ -135,7 +135,7 @@ The stylesheet expresses the reading width and text scale as custom properties (
 
 With JavaScript disabled the cluster stays hidden and nothing breaks: the defaults govern, and the column, text size, and contrast are exactly what every reader gets without the controls. The controls are the only part that uses JavaScript; the preferences are ordinary CSS underneath.
 
-The token also adds a quiet `Part › Chapter` breadcrumb atop each chapter, built from the book's own structure as plain HTML. It is a small signpost in normal reading and the only one once focus mode takes the chrome away.
+The token also adds a quiet `Part › Chapter` breadcrumb atop each chapter, built from the book's own structure as plain HTML, and a thin reading-progress bar along the top of the window. The breadcrumb is a small signpost in normal reading and the only one once focus mode takes the chrome away; the progress bar tracks how far through the chapter the reader has scrolled, and like the controls it stays hidden without JavaScript.
 
 ## Mermaid diagrams
 

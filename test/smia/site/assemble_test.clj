@@ -320,9 +320,12 @@
       (is (str/includes? page "data-focus-toggle")))
     (testing "with dark mode off the cluster carries no color-scheme control"
       (is (not (str/includes? page "data-theme-toggle"))))
+    (testing "a hidden reading-progress bar ships for the island to drive"
+      (is (str/includes? page "data-reading-progress")))
     (testing "the stylesheet carries the reading variables and cluster styling"
       (is (str/includes? css "--reading-width"))
-      (is (str/includes? css ".reader-controls")))
+      (is (str/includes? css ".reader-controls"))
+      (is (str/includes? css ".reading-progress")))
     (testing "the bundle is named for the emit shell"
       (is (some #(= {:resource "smia/site/reader.js" :path "reader.js"} %)
                 (:bundled r))))))

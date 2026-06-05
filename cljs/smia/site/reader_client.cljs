@@ -116,6 +116,32 @@
     (set-item! "smia-theme" next)
     (.setAttribute btn "aria-pressed" (if (dark-now?) "true" "false"))))
 
+;; --- reading progress: scroll position as a thin top bar ---------------------
+
+(defn- update-progress! [bar]
+  (let [doc    (root)
+        top    (.-scrollTop doc)
+        height (- (.-scrollHeight doc) (.-clientHeight doc))
+        frac   (if (> height 0) (/ top height) 0)]
+    ;; host string concat (not `str`) keeps cljs.core out of the bundle
+    (set! (.. bar -style -transform) (.concat (.concat "scaleX(" (.toString frac)) ")"))))
+
+(defn- wire-progress! []
+  (when-let [el (.querySelector js/document "[data-reading-progress]")]
+    (let [bar     (.querySelector el ".reading-progress-bar")
+          ticking #js [false]]
+      (.removeAttribute el "hidden")
+      (update-progress! bar)
+      (.addEventListener js/window "scroll"
+        (fn [_]
+          (when-not (aget ticking 0)
+            (aset ticking 0 true)
+            (.requestAnimationFrame js/window
+              (fn [_]
+                (update-progress! bar)
+                (aset ticking 0 false)))))
+        #js {:passive true}))))
+
 ;; --- wiring ------------------------------------------------------------------
 
 (defn- on-click [sel f]
@@ -145,6 +171,7 @@
   (let [controls (.querySelector js/document "[data-reader-controls]")]
     (when controls (.removeAttribute controls "hidden")))
   (wire-panel!)
+  (wire-progress!)
   (on-click "[data-reader-width=\"-\"]" (fn [_] (step-width! -1)))
   (on-click "[data-reader-width=\"+\"]" (fn [_] (step-width! 1)))
   (on-click "[data-reader-scale=\"-\"]" (fn [_] (step-scale! -1)))
