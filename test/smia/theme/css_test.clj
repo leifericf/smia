@@ -289,3 +289,13 @@
   (testing "the toggle CSS stays deterministic"
     (is (= (css/css tokens {:dark? true :toggle? true})
            (css/css tokens {:dark? true :toggle? true})))))
+
+(deftest the-toggle-button-is-a-clean-pill-control
+  (let [rules (css/compile-css tokens {:dark? true :toggle? true})
+        btn   (rule rules ".theme-toggle")]
+    (testing "a rounded pill that tints from the scheme variables"
+      (is (= "999px" (:border-radius btn)))
+      (is (= "var(--muted)" (:color btn)))
+      (is (str/includes? (:transition btn) "0.15s")))
+    (testing "with a hover state"
+      (is (= "var(--ink)" (:color (rule rules ".theme-toggle:hover")))))))

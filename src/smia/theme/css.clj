@@ -157,17 +157,21 @@
     [["html[data-theme=\"dark\"]" (dark-var-props tokens)]
      ["html[data-theme=\"light\"]" light-props]
      [".theme-toggle" {:position      "fixed"
-                       :top           "0.75em"
-                       :right         "0.75em"
+                       :top           "1em"
+                       :right         "1em"
                        :z-index       "20"
                        :font          "inherit"
                        :font-size     "0.8em"
+                       :line-height   "1"
                        :cursor        "pointer"
-                       :padding       "0.3em 0.6em"
-                       :color         "var(--ink)"
+                       :padding       "0.45em 0.85em"
+                       :color         "var(--muted)"
                        :background    "var(--panel)"
                        :border        "1px solid var(--rule)"
-                       :border-radius "4px"}]]))
+                       :border-radius "999px"
+                       :box-shadow    "0 1px 3px rgba(0, 0, 0, 0.08)"
+                       :transition    "color 0.15s, background-color 0.15s, border-color 0.15s"}]
+     [".theme-toggle:hover" {:color "var(--ink)" :border-color "var(--muted)"}]]))
 
 (defn compile-css
   "Compile validated `tokens` into ordered CSS rules
