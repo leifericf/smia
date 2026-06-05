@@ -48,30 +48,129 @@
         ["blockquote" {:color (:muted d)}]
         [".book-sidebar" {:background-color (:panel d)}]]])))
 
+;; --- the variables-based dark layer (site only) --------------------------------
+;;
+;; The literal stylesheet above is what the EPUB and the default path ship,
+;; byte for byte. The site opts into a second representation of the same
+;; colors: each becomes a CSS custom property, so one `:root` override under
+;; `@media (prefers-color-scheme: dark)` flips the *whole* palette — headings,
+;; labels, captions, tokens, and all — rather than the handful of selectors the
+;; literal block reaches. Custom-property support is uneven on older e-readers,
+;; so this layer never reaches the EPUB.
+
+(def ^:private dark-var-defaults
+  "Computed dark values for the custom properties, keyed by bare variable
+   name. The `:dark` token group overrides any of them through
+   `dark-author-keys`."
+  {"--ink"     "#e6e6e6"
+   "--bg"      "#1a1a1a"
+   "--link"    "#6ea8fe"
+   "--muted"   "#9aa0a6"
+   "--rule"    "#444444"
+   "--code-bg" "#2a2a2a"
+   "--panel"   "#242424"
+   "--panel-2" "#2d2d2d"
+   "--card"    "#333333"})
+
+(def ^:private dark-author-keys
+  "Map a `:dark` token-group key onto the variable it overrides, so a book
+   tunes the dark palette in the same vocabulary as the light one."
+  {:text            "--ink"
+   :background      "--bg"
+   :link            "--link"
+   :muted           "--muted"
+   :rule            "--rule"
+   :code-background "--code-bg"
+   :panel           "--panel"
+   :panel-2         "--panel-2"
+   :card            "--card"})
+
+(defn- vars->props
+  "Turn a `{bare-name → value}` variable map into a property map serialize
+   can render (`{:--ink \"#1c1c1c\"}`)."
+  [m]
+  (into {} (map (fn [[k v]] [(keyword k) v])) m))
+
+(defn- root-light-vars
+  "The `:root` rule defining every custom property at its light value: the
+   color tokens, the panel surfaces, and the syntax palette."
+  [light palette]
+  [":root"
+   (vars->props
+     (merge {"--ink"     (:text light)
+             "--bg"      (:background light)
+             "--link"    (:link light)
+             "--muted"   (:muted light)
+             "--rule"    (:rule light)
+             "--code-bg" (:code-background light)
+             "--panel"   (:panel light)
+             "--panel-2" (:panel-2 light)
+             "--card"    (:card light)}
+            (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
+
+(defn- dark-media-vars
+  "An `@media (prefers-color-scheme: dark)` wrapper whose single `:root`
+   rule overrides the custom properties with the dark palette: the computed
+   defaults under the `:dark` token group, plus any `:dark {:code …}` syntax
+   overrides."
+  [tokens]
+  (let [overrides (reduce-kv (fn [m author-k var-name]
+                               (if-let [v (get (:dark tokens) author-k)]
+                                 (assoc m var-name v)
+                                 m))
+                             {} dark-author-keys)
+        dark-tok  (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c]))
+                        (get-in tokens [:dark :code]))]
+    [["@media (prefers-color-scheme: dark)"
+      [":root" (vars->props (merge dark-var-defaults overrides dark-tok))]]]))
+
 (defn compile-css
   "Compile validated `tokens` into ordered CSS rules
-   `[[selector prop-map] …]`."
-  [tokens]
-  (let [{:keys [color type spacing code]} tokens
-        body-family (get type :body-family "serif")
-        head-family (get type :heading-family "sans-serif")
-        mono-family (get type :mono-family "monospace")
-        text        (get color :text "#1a1a1a")
-        muted       (get color :muted "#666666")
-        rule        (get color :rule "#999999")
-        link        (get color :link "#1a0dab")
-        code-bg     (get color :code-background "#f4f4f4")
-        paragraph   (get spacing :paragraph "6pt")
-        block       (get spacing :block "8pt")
-        palette     (merge compile/default-code-colors code)]
+   `[[selector prop-map] …]`.
+
+   With `{:dark? true}` (the site assembler passes it when the book opts
+   into dark mode) the colors are emitted as `var(--…)` references over a
+   leading `:root` of light values and a dark `@media` override. The default
+   and EPUB path (`:dark?` false) emit the literal stylesheet byte for byte."
+  ([tokens] (compile-css tokens {}))
+  ([tokens {:keys [dark?]}]
+   (let [{:keys [color type spacing code]} tokens
+         body-family (get type :body-family "serif")
+         head-family (get type :heading-family "sans-serif")
+         mono-family (get type :mono-family "monospace")
+         light       {:text            (get color :text "#1a1a1a")
+                      :background      (get color :background "#ffffff")
+                      :muted           (get color :muted "#666666")
+                      :rule            (get color :rule "#999999")
+                      :link            (get color :link "#1a0dab")
+                      :code-background (get color :code-background "#f4f4f4")
+                      :panel           "#f7f7f7"
+                      :panel-2         "#e8e8e8"
+                      :card            "#eeeeee"}
+         var-or      (fn [name lit] (if dark? (str "var(" name ")") lit))
+         text        (var-or "--ink"     (:text light))
+         muted       (var-or "--muted"   (:muted light))
+         rule        (var-or "--rule"    (:rule light))
+         link        (var-or "--link"    (:link light))
+         code-bg     (var-or "--code-bg" (:code-background light))
+         bg          (var-or "--bg"      (:background light))
+         panel       (var-or "--panel"   (:panel light))
+         panel-2     (var-or "--panel-2" (:panel-2 light))
+         card        (var-or "--card"    (:card light))
+         paragraph   (get spacing :paragraph "6pt")
+         block       (get spacing :block "8pt")
+         palette     (merge compile/default-code-colors code)
+         tok-color   (fn [kind c] (if dark? (str "var(--tok-" (name kind) ")") c))]
     (vec
       (concat
+        (when dark? [(root-light-vars light palette)])
         [;; reading column and base typography
-         ["body" {:font-family body-family
-                  :font-size   (get type :base-size "11pt")
-                  :line-height (get type :line-height "1.4")
-                  :color       text
-                  :margin      "0"}]
+         ["body" (cond-> {:font-family body-family
+                          :font-size   (get type :base-size "11pt")
+                          :line-height (get type :line-height "1.4")
+                          :color       text
+                          :margin      "0"}
+                   dark? (assoc :background-color bg))]
          ["main" {:max-width "42em"
                   :margin    "0 auto"
                   :padding   "0 1em 4em"}]
@@ -101,7 +200,7 @@
          [".file-bar" {:font-family      mono-family
                        :font-size        "0.75em"
                        :font-weight      "bold"
-                       :background-color "#e8e8e8"
+                       :background-color panel-2
                        :padding          "3pt 6pt"}]
          [".annotations" {:font-size "0.85em" :margin (str "4pt 0 " block)}]
          [".annotation-mark" {:font-family      "sans-serif"
@@ -119,17 +218,17 @@
                         :font-style   "italic"
                         :color        muted}]
          [".admonition" {:border           (str "0.75pt solid " rule)
-                         :background-color "#f7f7f7"
+                         :background-color panel
                          :padding          "6pt"
                          :margin           (str block " 0")}]
          [".admonition-title" {:font-weight "bold"}]
          [".sidebar" {:border           (str "0.75pt solid " rule)
-                      :background-color "#f7f7f7"
+                      :background-color panel
                       :padding          "6pt"
                       :margin           (str block " 0")}]
          [".sidebar-title" {:font-weight "bold"}]
          [".overview" {:border-left      (str "3pt solid " rule)
-                       :background-color "#f7f7f7"
+                       :background-color panel
                        :padding          "8pt 10pt"
                        :margin           (str block " 0 12pt")}]
          [".overview-title" {:font-weight "bold"}]
@@ -145,12 +244,12 @@
          ;; interface vocabulary: keys, menu paths, buttons, highlight
          ["kbd" {:font-family      mono-family
                  :font-size        "0.85em"
-                 :background-color "#eeeeee"
+                 :background-color card
                  :border           (str "1px solid " rule)
                  :border-radius    "3px"
                  :padding          "0 0.3em"}]
          [".menu-sep" {:color muted}]
-         [".button" {:background-color "#e8e8e8"
+         [".button" {:background-color panel-2
                      :border           (str "1px solid " rule)
                      :border-radius    "3px"
                      :padding          "0 0.4em"}]
@@ -221,7 +320,7 @@
                           :flex-wrap  "wrap"
                           :min-height "100vh"}]
          [".book-sidebar" {:flex             "1 1 14em"
-                           :background-color "#f7f7f7"
+                           :background-color panel
                            :border-right     (str "1px solid " rule)}]
          [".book-sidebar-inner" {:position   "sticky"
                                  :top        "0"
@@ -263,7 +362,7 @@
                              :left       "0"
                              :right      "0"
                              :z-index    "10"
-                             :background (get color :background "#ffffff")
+                             :background bg
                              :border     (str "1px solid " rule)
                              :box-shadow "0 2px 8px rgba(0, 0, 0, 0.15)"
                              :max-height "60vh"
@@ -305,16 +404,18 @@
 
         ;; syntax-highlight palette, book :code group over the defaults
         (map (fn [[kind color]]
-               [(str ".tok-" (name kind)) {:color color}])
+               [(str ".tok-" (name kind)) {:color (tok-color kind color)}])
              (sort-by key palette))
 
-        ;; opt-in dark mode: an `@media (prefers-color-scheme: dark)` block
-        ;; that honors the OS setting with no toggle and no JavaScript. The
-        ;; `:dark` token group overrides the computed dark palette.
-        (dark-rules tokens)
+        ;; opt-in dark mode. The site (`:dark?`) flips every custom property
+        ;; through one `:root` override; the literal path keeps the older
+        ;; `@media` block that recolors the palette-driven selectors directly.
+        (if dark?
+          (dark-media-vars tokens)
+          (dark-rules tokens))
 
         ;; the theme's :css styling hatch, last so user rules win
-        (:css tokens)))))
+        (:css tokens))))))
 
 (defn serialize
   "Serialize `rules` to a CSS string. A rule is `[selector prop-map]`,
@@ -335,6 +436,8 @@
        (str/join "\n")))
 
 (defn css
-  "The stylesheet for `tokens`: compile and serialize in one step."
-  [tokens]
-  (serialize (compile-css tokens)))
+  "The stylesheet for `tokens`: compile and serialize in one step. The
+   site assembler passes `{:dark? true}` to emit the custom-property dark
+   layer; the default and EPUB path keep the literal stylesheet."
+  ([tokens] (serialize (compile-css tokens)))
+  ([tokens opts] (serialize (compile-css tokens opts))))

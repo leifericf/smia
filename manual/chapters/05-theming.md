@@ -93,14 +93,17 @@ A third `:site` token adds a dark color scheme to the site:
 :site {:dark true}
 ```
 
-The build emits an `@media (prefers-color-scheme: dark)` block, so the page honors the reader's operating-system setting with no toggle and no JavaScript. A computed dark palette is the default; override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel` — with a `:dark` token group:
+The site stylesheet defines its colors as CSS custom properties, and the build appends an `@media (prefers-color-scheme: dark)` block that redefines them, so the page honors the reader's operating-system setting with no toggle and no JavaScript. Because every color is a variable, the dark scheme flips the whole palette at once — headings, chapter labels, captions, sidebar, and syntax colors included, not just the page background.
+
+A computed dark palette is the default; override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel`, `:panel-2`, `:card` — with a `:dark` token group, and recolor syntax highlighting for the dark scheme under `:dark {:code …}`:
 
 ```edn
 :site {:dark true}
-:dark {:background "#0d1117" :text "#e6edf3"}
+:dark {:background "#0d1117" :text "#e6edf3"
+       :code {:keyword "#ff7b72" :string "#a5d6ff"}}
 ```
 
-A book that does not opt in emits exactly the same stylesheet as before.
+The custom-property layer is the site's alone; the EPUB keeps a literal stylesheet, since e-readers do their own theming and older ones support custom properties unevenly. A book that does not opt in emits exactly the same stylesheet as before.
 
 ## Mermaid diagrams
 

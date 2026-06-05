@@ -122,3 +122,51 @@
   (testing "dark CSS stays deterministic"
     (let [themed (assoc tokens :site {:dark true})]
       (is (= (css/css themed) (css/css themed))))))
+
+;; --- the variables-based dark layer (site only) --------------------------------
+
+(deftest the-default-path-emits-no-css-variables
+  (testing "the literal stylesheet carries no custom properties"
+    (let [out (css/css tokens)]
+      (is (not (str/includes? out "var(")))
+      (is (not (str/includes? out ":root")))))
+  (testing "compile-css with {:dark? false} equals the no-opts arity byte for byte"
+    (is (= (css/css tokens) (css/serialize (css/compile-css tokens {:dark? false}))))
+    (let [themed (assoc tokens :site {:dark true})]
+      (is (= (css/css themed)
+             (css/serialize (css/compile-css themed {:dark? false})))
+          "the EPUB path keeps today's literal dark block")))
+  (testing "css/css with {:dark? false} matches the literal default"
+    (is (= (css/css tokens) (css/css tokens {:dark? false})))))
+
+(deftest dark-variables-flip-the-whole-palette
+  (let [out (css/css tokens {:dark? true})]
+    (testing "a leading :root carries the light values"
+      (is (str/includes? out ":root {"))
+      (is (str/includes? out "--ink: #1c1c1c;"))
+      (is (str/includes? out "--link: #2a52be;"))
+      (is (str/includes? out "--tok-keyword: #0033cc;")))
+    (testing "every styled color resolves through a variable"
+      (is (str/includes? out "color: var(--ink)"))
+      (is (str/includes? out "color: var(--link)"))
+      (is (str/includes? out "color: var(--tok-keyword)")))
+    (testing "the media block overrides the root variables, headings included"
+      (is (str/includes? out "@media (prefers-color-scheme: dark)"))
+      (is (str/includes? out "--ink: #e6e6e6;"))
+      (is (str/includes? out "--bg: #1a1a1a;")))
+    (testing "the body gains a variable-driven background"
+      (is (str/includes? out "background-color: var(--bg)")))))
+
+(deftest dark-variable-overrides-come-from-the-dark-token-group
+  (testing ":dark keys override the computed dark variables"
+    (let [themed (assoc tokens :dark {:background "#000000" :text "#fafafa"})
+          out    (css/css themed {:dark? true})]
+      (is (str/includes? out "--bg: #000000;"))
+      (is (str/includes? out "--ink: #fafafa;"))))
+  (testing ":dark {:code …} overrides syntax variables in the dark block"
+    (let [themed (assoc tokens :dark {:code {:keyword "#ffcc66"}})
+          out    (css/css themed {:dark? true})
+          dark   (subs out (str/index-of out "@media (prefers-color-scheme: dark)"))]
+      (is (str/includes? dark "--tok-keyword: #ffcc66;"))))
+  (testing "the variables path stays deterministic"
+    (is (= (css/css tokens {:dark? true}) (css/css tokens {:dark? true})))))

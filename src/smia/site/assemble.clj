@@ -152,8 +152,9 @@
                   mermaid   (assoc :mermaid true :mermaid-src mermaid-src)
                   edit-url  (assoc :edit-url edit-url)
                   downloads (assoc :downloads downloads)))
+         dark?    (boolean (get-in tokens [:site :dark]))
          site-url (some-> site-url (str/replace #"/*$" "/"))
-         page-map (into {"styles.css" (css/css tokens)}
+         page-map (into {"styles.css" (css/css tokens {:dark? dark?})}
                         (map (fn [{:keys [file hiccup]}]
                                [file (html-serialize/serialize
                                        hiccup {:doctype? true})])
