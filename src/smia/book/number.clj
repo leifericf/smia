@@ -63,7 +63,14 @@
         (>= n v)                   (recur (- n v) ps (str acc s))
         :else                      (recur n more acc)))))
 
-(defn- ->letter [n] (str (char (+ (int \A) (dec n)))))
+(defn- ->letter
+  "Bijective base-26 lettering: 1 -> A … 26 -> Z, then 27 -> AA, 28 -> AB."
+  [n]
+  (loop [n n, acc ""]
+    (if (pos? n)
+      (recur (quot (dec n) 26)
+             (str (char (+ (int \A) (mod (dec n) 26))) acc))
+      acc)))
 
 (def ^:private formatters
   {:arabic str :roman ->roman :letter ->letter})

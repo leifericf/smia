@@ -49,6 +49,17 @@
            (get reg "gloss")))
     (is (= "Appendix B" (:label (get reg "refs"))))))
 
+(deftest appendix-lettering-continues-past-z-with-double-letters
+  (let [apps (for [i (range 28)]
+               {:kind :appendix
+                :content [:chapter {:id (keyword (str "app" i))
+                                    :title (str "App " i)}]})
+        out  (assign {:sections (vec apps)})
+        reg  (:registry out)]
+    (is (= "Appendix Z" (:label (get reg "app25"))))
+    (is (= "Appendix AA" (:label (get reg "app26"))))
+    (is (= "Appendix AB" (:label (get reg "app27"))))))
+
 (deftest childless-xref-is-rewritten-to-the-composed-label
   (let [out (assign {:sections [(chapter-section :intro "Introduction"
                                                  [:p "See " [:xref {:to :config}] "."])
