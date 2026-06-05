@@ -428,6 +428,36 @@
                                      :aria-label (loc :toggle-color-scheme "Toggle dark mode")}
                             (loc :toggle-color-scheme "Toggle dark mode")])]))]))))
 
+(defn breadcrumb
+  "A `Part › Chapter` orientation trail atop the reading column, when the
+   reader controls are on and the page sits in the contents (not the home
+   page). Pure HTML built from the already-assembled `:contents`: the
+   page's own entry, preceded by the nearest part divider above it. Most
+   valuable in focus mode, where the sidebar is hidden, but a quiet aid in
+   any layout. Nil when the page has no contents entry."
+  [ctx]
+  (when (and (:reader ctx) (not= :home (:kind (:page ctx))))
+    (let [page-url (:url (:page ctx))
+          contents (vec (:contents ctx))
+          here     (first (keep-indexed
+                            (fn [i e]
+                              (when (and (:href e)
+                                         (not= :part (:kind e))
+                                         (= (first (str/split (:href e) #"#")) page-url))
+                                i))
+                            contents))]
+      (when here
+        (let [chap (nth contents here)
+              part (some (fn [e] (when (= :part (:kind e)) e))
+                         (reverse (subvec contents 0 here)))]
+          (into [:nav {:class "breadcrumb"
+                       :aria-label (dictionary/localize (:language ctx) :breadcrumb "Breadcrumb")}]
+                (concat
+                  (when part
+                    [[:span {:class "breadcrumb-part"} (:text part)]
+                     [:span {:class "breadcrumb-sep" :aria-hidden "true"} "›"]])
+                  [[:span {:class "breadcrumb-page"} (:text chap)]])))))))
+
 (defn edit-link
   "An \"Edit this page\" link, when the book set `:book/edit-url` and the
    current page has a known source file. The href is the base URL joined to
@@ -700,7 +730,9 @@
            (when-let [c (reader-controls ctx)] [c])
            (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
-           [(into [:main {}] (concat (when-let [e (edge-nav ctx)] [e]) main))]
+           [(into [:main {}] (concat (when-let [e (edge-nav ctx)] [e])
+                                     (when-let [b (breadcrumb ctx)] [b])
+                                     main))]
            (when-let [e (edit-link ctx)] [[:footer {:class "page-footer"} e]])
            (when-let [nav (:nav-hiccup ctx)] [nav])))])
 

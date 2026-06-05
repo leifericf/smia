@@ -83,6 +83,19 @@
     (testing "a chapter link carries no part-heading class"
       (is (not (re-find #"part-heading[^>]*href=" one))))))
 
+(deftest reader-renders-a-part-and-chapter-breadcrumb
+  (let [pages (:pages (site/assemble parted
+                                     {:color {} :type {} :code {} :spacing {}
+                                      :layout {} :site {:layout :sidebar :reader true}}))
+        one   (->> (vals pages)
+                   (filter #(str/includes? % "class=\"breadcrumb\""))
+                   first)]
+    (testing "the trail names the part above the chapter"
+      (is (some? one))
+      (is (str/includes? one "breadcrumb-part"))
+      (is (str/includes? one "First Part"))
+      (is (str/includes? one "breadcrumb-page")))))
+
 (deftest sidebar-layout-marks-the-current-page
   (let [pages (assemble-with :sidebar)]
     (testing "chapter one marks its own entry current, not chapter two's"

@@ -39,6 +39,7 @@
         :narrower "Narrower" :wider "Wider"
         :text-size "Text size" :smaller "Smaller text" :larger "Larger text"
         :contrast "Contrast" :high-contrast "High contrast" :color-scheme "Theme"
+        :breadcrumb "Breadcrumb"
         :pagination "Pagination" :previous-page "Previous page" :next-page "Next page"
         :search-placeholder "Search…" :search-aria "Search this book"
         :search-fallback-note

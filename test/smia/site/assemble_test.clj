@@ -343,8 +343,18 @@
         page (get (:pages r) "ch-one/index.html")]
     (is (not (str/includes? page "reader.js")))
     (is (not (str/includes? page "data-reader-controls")))
+    (is (not (str/includes? page "class=\"breadcrumb\"")))
     (is (not (str/includes? (get (:pages r) "styles.css") "--reading-width")))
     (is (not (some #(= "reader.js" (:path %)) (:bundled r))))))
+
+(deftest reader-renders-an-orientation-breadcrumb
+  (let [r    (site/assemble book (assoc tokens :site {:reader true}))
+        page (get (:pages r) "ch-one/index.html")
+        home (get (:pages r) "index.html")]
+    (testing "a content page gets a breadcrumb"
+      (is (str/includes? page "class=\"breadcrumb\"")))
+    (testing "the home page does not"
+      (is (not (str/includes? home "class=\"breadcrumb\""))))))
 
 (deftest dark-without-toggle-stays-os-driven-only
   (let [r    (site/assemble book (assoc tokens :site {:dark true}))

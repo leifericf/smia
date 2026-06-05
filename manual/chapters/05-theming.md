@@ -135,6 +135,8 @@ The stylesheet expresses the reading width and text scale as custom properties (
 
 With JavaScript disabled the cluster stays hidden and nothing breaks: the defaults govern, and the column, text size, and contrast are exactly what every reader gets without the controls. The controls are the only part that uses JavaScript; the preferences are ordinary CSS underneath.
 
+The token also adds a quiet `Part › Chapter` breadcrumb atop each chapter, built from the book's own structure as plain HTML. It is a small signpost in normal reading and the only one once the chrome is out of the way.
+
 ## Mermaid diagrams
 
 A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.

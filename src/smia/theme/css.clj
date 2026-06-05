@@ -654,7 +654,14 @@
                                     :transition    "border-color 0.15s, background-color 0.15s"}]
            [".reader-panel button:hover" {:border-color "var(--muted)"}]
            [".reader-panel button[aria-pressed=\"true\"]"
-            {:color "var(--bg)" :background "var(--link)" :border-color "var(--link)"}]])
+            {:color "var(--bg)" :background "var(--link)" :border-color "var(--link)"}]
+           ;; the orientation breadcrumb atop the reading column: quiet, small,
+           ;; and unobtrusive in normal reading, the only signpost in focus mode.
+           [".breadcrumb" {:margin      "0 0 1.5em"
+                          :font-family head-family
+                          :font-size   "0.8em"
+                          :color       "var(--muted)"}]
+           [".breadcrumb-sep" {:margin "0 0.5em"}]])
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.
