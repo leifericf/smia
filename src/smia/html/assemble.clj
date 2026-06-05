@@ -460,11 +460,21 @@
        (remove nil?)
        (str/join " ")))
 
+(defn- collation-key
+  "Case- and accent-insensitive sort key for reader-facing apparatus.
+   Locale-independent (reproducible output); the original string breaks
+   ties so terms that fold alike still order deterministically."
+  [^String s]
+  [(-> (java.text.Normalizer/normalize s java.text.Normalizer$Form/NFD)
+       (str/replace #"\p{M}" "")
+       (.toLowerCase java.util.Locale/ROOT))
+   s])
+
 (defn- bibliography-body
   "A sorted bibliography; each entry's `ref-<key>` id is the citation
    link target."
   [references]
-  (vec (for [[key entry] (sort-by (fn [[k e]] [(or (:author e) (name k))
+  (vec (for [[key entry] (sort-by (fn [[k e]] [(collation-key (or (:author e) (name k)))
                                                (str (:year e))])
                                   references)]
          [:p {:id (str "ref-" (name key)) :class "bibliography-entry"}
@@ -474,7 +484,7 @@
   "An alphabetical index; each term links its occurrences in order (the
    HTML rendering of FO's page-number citations)."
   [index resolve]
-  (vec (for [[term ids] (sort-by key index)]
+  (vec (for [[term ids] (sort-by (comp collation-key key) index)]
          (into [:p {:class "index-entry"} term " "]
                (interpose ", "
                           (map-indexed

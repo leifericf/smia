@@ -247,3 +247,16 @@
     (is (nil? (chrome/edit-link {:page {:source-file "x.md"}}))))
   (testing "a page with no source file (generated matter) gets no link"
     (is (nil? (chrome/edit-link {:edit-url "https://e.com" :page {}})))))
+
+(deftest index-and-bibliography-collate-case-insensitively
+  (let [idx   (#'html-assemble/index-body
+                {"banana" ["i1"] "Apple" ["i2"] "Zebra" ["i3"] "árbol" ["i4"]}
+                (fn [id] (str "#" id)))
+        terms (mapv #(nth % 2) idx)
+        bib   (#'html-assemble/bibliography-body
+                {:s {:author "Smith" :year 2020}
+                 :a {:author "Alpha" :year 2019}
+                 :b {:author "brown" :year 2021}})
+        texts (mapv #(nth % 2) bib)]
+    (is (= ["Apple" "árbol" "banana" "Zebra"] terms))
+    (is (= ["Alpha. 2019." "brown. 2021." "Smith. 2020."] texts))))

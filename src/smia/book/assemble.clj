@@ -411,11 +411,22 @@
        (remove nil?)
        (str/join " ")))
 
+(defn- collation-key
+  "Case- and accent-insensitive sort key for reader-facing apparatus.
+   Locale-independent (reproducible output); the original string breaks
+   ties so terms that fold alike still order deterministically."
+  [^String s]
+  [(-> (java.text.Normalizer/normalize s java.text.Normalizer$Form/NFD)
+       (str/replace #"\p{M}" "")
+       (.toLowerCase java.util.Locale/ROOT))
+   s])
+
 (defn- bibliography-blocks
   "A sorted, hanging-indent bibliography; each entry's `:id` is `ref-<key>`,
    the citation target."
   [references]
-  (for [[key entry] (sort-by (fn [[k e]] [(or (:author e) (name k)) (str (:year e))])
+  (for [[key entry] (sort-by (fn [[k e]] [(collation-key (or (:author e) (name k)))
+                                          (str (:year e))])
                              references)]
     [:fo/block {:id (str "ref-" (name key)) :space-after "6pt"
                 :start-indent "12pt" :text-indent "-12pt"}
@@ -424,7 +435,7 @@
 (defn- index-blocks
   "An alphabetical index; each term lists page citations to its marks."
   [index]
-  (for [[term ids] (sort-by key index)]
+  (for [[term ids] (sort-by (comp collation-key key) index)]
     (into [:fo/block {:text-align-last "justify" :space-after "2pt"} term
            [:fo/leader {:leader-pattern "dots" :leader-length.minimum "12pt"
                         :leader-length.optimum "12pt" :leader-length.maximum "100%"}]]

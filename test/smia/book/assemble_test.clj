@@ -341,3 +341,18 @@
         ids    (set (keep #(:id (second %)) blocks))]
     (is (contains? ids "bibliography"))
     (is (some #(= "Bibliography" (last %)) blocks))))
+
+(deftest index-collates-case-and-accent-insensitively
+  (let [blocks (vec (#'assemble/index-blocks
+                      {"banana" ["i1"] "Apple" ["i2"]
+                       "Zebra" ["i3"] "árbol" ["i4"]}))
+        terms  (mapv #(nth % 2) blocks)]
+    (is (= ["Apple" "árbol" "banana" "Zebra"] terms))))
+
+(deftest bibliography-collates-authors-case-insensitively
+  (let [blocks (vec (#'assemble/bibliography-blocks
+                      {:s {:author "Smith" :year 2020}
+                       :a {:author "Alpha" :year 2019}
+                       :b {:author "brown" :year 2021}}))
+        texts  (mapv #(nth % 2) blocks)]
+    (is (= ["Alpha. 2019." "brown. 2021." "Smith. 2020."] texts))))
