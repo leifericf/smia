@@ -231,6 +231,11 @@
     (is (some? r))
     (is (pos? (count (slurp r))))))
 
+(deftest shipped-reader-bundle-is-on-the-classpath
+  (let [r (clojure.java.io/resource "smia/site/reader.js")]
+    (is (some? r))
+    (is (pos? (count (slurp r))))))
+
 ;; --- the mermaid island -----------------------------------------------------
 
 (def ^:private mermaid-manuscript

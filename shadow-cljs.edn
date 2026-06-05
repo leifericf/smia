@@ -15,4 +15,8 @@
           :theme   {:target     :browser
                     :output-dir "build/cljs"
                     :asset-path "."
-                    :modules    {:theme {:init-fn smia.site.theme-client/init}}}}}
+                    :modules    {:theme {:init-fn smia.site.theme-client/init}}}
+          :reader  {:target     :browser
+                    :output-dir "build/cljs"
+                    :asset-path "."
+                    :modules    {:reader {:init-fn smia.site.reader-client/init}}}}}
