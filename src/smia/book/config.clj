@@ -341,10 +341,10 @@
    `book/*` namespace (preserved verbatim — the open map) and, more
    urgently, `book/*` keys it does not recognize (likely misspellings)."
   [config]
-  (let [{book-ns true, other-ns false} (group-by #(= "book" (namespace %))
-                                                 (keys config))
+  (let [{kws true, non-kws false} (group-by keyword? (keys config))
+        {book-ns true, other-ns false} (group-by #(= "book" (namespace %)) kws)
         misspelled (vec (remove known-book-keys book-ns))
-        unknown    (vec other-ns)]
+        unknown    (vec (concat other-ns non-kws))]
     (cond-> []
       (seq misspelled)
       (conj {:warning/type :smia.book.config/unknown-key

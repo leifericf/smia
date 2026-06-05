@@ -66,6 +66,15 @@
         (is (vector? (config/validate (assoc base :book/slug slug) "book.edn"))
             (str "slug " (pr-str slug) " must be accepted"))))))
 
+(deftest non-keyword-keys-warn-instead-of-crashing
+  (let [warnings (config/validate {:book/slug "x" :book/title "t"
+                                   :book/chapters ["a.md"]
+                                   "stray" 1}
+                                  "book.edn")]
+    (is (vector? warnings))
+    (is (some #(some #{"stray"} (:warning/keys %)) warnings)
+        "the non-keyword key is named in a preserved-but-uninterpreted warning")))
+
 (deftest numbering-policy-validated
   (let [base {:book/slug "x" :book/title "t" :book/chapters ["a.md"]}]
     (testing "a full valid policy passes"
