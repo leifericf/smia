@@ -399,23 +399,49 @@
          [".book-layout" {:display    "flex"
                           :flex-wrap  "wrap"
                           :min-height "100vh"}]
-         [".book-sidebar" {:flex             "1 1 14em"
+         [".book-sidebar" {:flex             "1 1 15em"
                            :background-color panel
                            :border-right     (str "1px solid " rule)}]
          [".book-sidebar-inner" {:position   "sticky"
                                  :top        "0"
                                  :max-height "100vh"
                                  :overflow-y "auto"
-                                 :padding    "2em 1.5em"
+                                 :padding    "2.5em 1.5em"
                                  :font-size  "0.9em"}]
-         [".book-sidebar-title" {:font-family  head-family
-                                 :font-weight  "bold"
-                                 :display      "block"
-                                 :margin-bottom "0.75em"}]
-         [".book-sidebar-list" {:list-style "none" :padding-left "0"}]
-         [".book-sidebar-list .toc-level-1" {:padding-left "1em"}]
-         [".book-sidebar-list .toc-level-2" {:padding-left "2em"}]
-         [".book-sidebar .current" {:font-weight "bold"}]
+         [".book-sidebar-title" {:font-family   head-family
+                                 :font-weight   "700"
+                                 :font-size     "1.05em"
+                                 :line-height   "1.3"
+                                 :text-decoration "none"
+                                 :color         text
+                                 :display       "block"
+                                 :margin-bottom "1.5em"}]
+         [".book-sidebar-list" {:list-style "none" :padding-left "0" :margin "0"}]
+         [".book-sidebar-list li" {:margin "0.1em 0"}]
+         [".book-sidebar-list .toc-level-1" {:padding-left "0.75em"}]
+         [".book-sidebar-list .toc-level-2" {:padding-left "1.75em"}]
+         ;; rail links are quiet text, not the browser-blue underline: muted
+         ;; until hovered or current, with a soft hover plate and a cheap
+         ;; color/background transition.
+         [".book-sidebar a" {:display         "block"
+                             :color           muted
+                             :text-decoration "none"
+                             :padding         "0.25em 0.6em"
+                             :border-radius   "6px"
+                             :transition      "color 0.15s, background-color 0.15s"}]
+         [".book-sidebar a:hover" {:color text :background-color card}]
+         ;; part dividers (the no-link entries) read as small uppercase
+         ;; section labels grouping the chapters beneath them.
+         [".book-sidebar .part-heading" {:margin         "1.6em 0 0.4em"
+                                         :font-family    head-family
+                                         :font-size      "0.72em"
+                                         :font-weight    "700"
+                                         :letter-spacing "0.07em"
+                                         :text-transform "uppercase"
+                                         :color          muted}]
+         [".book-sidebar .current" {:color            link
+                                    :font-weight      "700"
+                                    :background-color card}]
          [".book-content" {:flex      "999 1 28em"
                            :min-width "0"
                            :padding   "2em 2em 0"}]

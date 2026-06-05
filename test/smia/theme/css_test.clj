@@ -63,6 +63,25 @@
       (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
       (is (not (str/includes? (css/css tokens) "@media"))))))
 
+(deftest sidebar-rail-gets-a-quiet-modern-treatment
+  (let [rules     (css/compile-css tokens)
+        selectors (set (map first rules))]
+    (testing "rail links read as quiet text, not underlined browser-blue"
+      (let [a (rule rules ".book-sidebar a")]
+        (is (= "none" (:text-decoration a)))
+        (is (= "block" (:display a)))
+        (is (some? (:border-radius a)))
+        (is (str/includes? (:transition a) "0.15s")))
+      (is (contains? selectors ".book-sidebar a:hover")))
+    (testing "part dividers read as small uppercase group labels"
+      (let [p (rule rules ".book-sidebar .part-heading")]
+        (is (= "uppercase" (:text-transform p)))
+        (is (= "sans-serif" (:font-family p)))))
+    (testing "the current page is accented, not merely bold"
+      (let [cur (rule rules ".book-sidebar .current")]
+        (is (= "#2a52be" (:color cur)))
+        (is (= "700" (:font-weight cur)))))))
+
 (deftest edge-chevron-buttons-anchor-to-the-reading-column
   (let [rules (css/compile-css tokens)]
     (testing "the nav follows the scroll, vertically centered"

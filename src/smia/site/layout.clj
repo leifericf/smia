@@ -46,8 +46,9 @@
   (boolean (and href
                 (= (first (str/split href #"#")) current-url))))
 
-(defn- toc-entry [{:keys [level text href id]} current-url href-to]
-  [:li (cond-> {:class (str "toc-level-" level)}
+(defn- toc-entry [{:keys [level text href id kind]} current-url href-to]
+  [:li (cond-> {:class (str "toc-level-" level
+                           (when (= :part kind) " part-heading"))}
          id (assoc :id id))
    (cond
      (nil? href)                 text

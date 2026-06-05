@@ -24,7 +24,9 @@ bibliography. Document attributes let a version or product name live in one
 place and resolve everywhere, and conditional `:::when` blocks include content
 for some editions and not others. An interface vocabulary names keys, menus, and
 controls, and worked-example and disclosure blocks group richer content. The
-generated apparatus localizes to the book's language. The site edition adds
+generated apparatus localizes to the book's language. The site edition offers a
+selectable sidebar layout whose table-of-contents rail groups the chapters under
+part labels and marks the current page. It adds
 opt-in dark mode that follows the reader's system setting with no JavaScript,
 an optional toggle for an explicit choice, and per-page "Edit this page" links.
 LaTeX math and PlantUML

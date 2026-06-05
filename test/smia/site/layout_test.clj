@@ -61,6 +61,28 @@
         (is (str/includes? (get pages page) ">One<"))
         (is (str/includes? (get pages page) ">Two<"))))))
 
+(def ^:private parted
+  (:manuscript
+    (number/assign
+      {:title "The Book" :author "An Author"
+       :numbering structure/default-numbering
+       :sections
+       [{:kind :part :index 1 :title "First Part"}
+        {:kind :chapter :part 1
+         :content [:chapter {:id :ch-one :title "One"}]}]})))
+
+(deftest sidebar-marks-part-dividers-as-headings
+  (let [pages (:pages (site/assemble parted
+                                     {:color {} :type {} :code {} :spacing {}
+                                      :layout {} :site {:layout :sidebar}}))
+        one   (->> (vals pages)
+                   (filter #(str/includes? % "class=\"book-sidebar\""))
+                   first)]
+    (testing "a part divider carries the part-heading class the rail styles"
+      (is (re-find #"toc-level-0 part-heading" one)))
+    (testing "a chapter link carries no part-heading class"
+      (is (not (re-find #"part-heading[^>]*href=" one))))))
+
 (deftest sidebar-layout-marks-the-current-page
   (let [pages (assemble-with :sidebar)]
     (testing "chapter one marks its own entry current, not chapter two's"

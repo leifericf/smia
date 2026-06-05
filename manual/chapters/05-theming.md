@@ -68,7 +68,7 @@ The `:site` edition can present its pages in more than one **layout**. A layout 
 Two layouts ship today:
 
 - `:plain`, the default: one centered reading column with a contents link and prev/next navigation at the foot of each page. A book that sets no `:site` group gets it.
-- `:sidebar`: a two-column layout with a table-of-contents rail beside the reading column, the current page marked. The page you are reading online uses it. Because the rail already lists every page, the home page is a plain title card rather than a second copy of the contents.
+- `:sidebar`: a two-column layout with a table-of-contents rail beside the reading column, the current page marked. The page you are reading online uses it. The rail styles its entries as quiet text rather than underlined links, groups the chapters under small part labels, and accents the current page. Because the rail already lists every page, the home page is a plain title card rather than a second copy of the contents.
 
 Both layouts are pure HTML and CSS with no JavaScript, and both render the same manuscript: switching is a one-line change to `theme.edn`, and nothing in the chapters moves. On a narrow screen the sidebar stacks above the reading column.
 
