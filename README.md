@@ -7,106 +7,39 @@ is Norwegian for a smithy.
 
 Smia is written in Clojure and renders PDFs with
 [Apache FOP](https://xmlgraphics.apache.org/fop/). A JDK and the Clojure CLI are
-the only prerequisites. Everything else arrives as a Maven dependency, and the
+the only prerequisites; everything else arrives as a Maven dependency, and the
 whole build runs inside one JVM process.
 
 **[Read the manual online](https://smia.leifericf.com)**. Smia builds and
-publishes its own manual; download any edition from the site's Downloads page
-or from the repository's
-[Releases](https://github.com/leifericf/smia/releases/latest).
+publishes its own manual. It walks from the quickstart to a finished, published
+book, covers every feature on the way, and its design chapter explains how Smia
+works inside. Download any edition from the site's Downloads page or from the
+repository's [Releases](https://github.com/leifericf/smia/releases/latest).
 
-A book is a `book.edn` file, its chapter sources, and a `theme.edn`. From that,
-Smia produces parts and numbered chapters, appendices, named front and back
-matter, captioned figures and code listings, cross-references that read
-"Figure 1" rather than a bare page number, typographic punctuation, syntax
-highlighting for dozens of languages, running heads, an index, and a
-bibliography. Document attributes let a version or product name live in one
-place and resolve everywhere, and conditional `:::when` blocks include content
-for some editions and not others. An interface vocabulary names keys, menus, and
-controls, and worked-example and disclosure blocks group richer content. The
-generated apparatus localizes to the book's language. The site edition offers a
-selectable sidebar layout whose table-of-contents rail groups the chapters under
-part labels and marks the current page. It adds
-opt-in dark mode that follows the reader's system setting with no JavaScript,
-an optional toggle for an explicit choice, opt-in reader controls for column
-width, text size, and contrast, opt-in keyboard shortcuts with a help overlay,
-and per-page "Edit this page" links.
-LaTeX math and PlantUML
-diagrams render at build time into self-contained SVG, identical in every
-edition, with no JavaScript and no math font needed at read time. Mermaid
-diagrams are an opt-in, site-only exception, rendered in the browser and shown
-as source in print.
-
-## Building a book
-
-Start a new book with `clojure -M:run init my-book`: it scaffolds a minimal,
-buildable manuscript — `book.edn`, `theme.edn`, and a first chapter — into a
-fresh directory. To build the manual that ships with this repository:
+## Quick start
 
 ```bash
-clojure -M:run:math:diagrams build manual
+clojure -M:run init my-book      # scaffold a minimal, buildable book
+clojure -M:run build my-book     # write the screen and print PDFs
+clojure -M:run preview my-book   # rebuild on every save
 ```
 
-The `:math` and `:diagrams` aliases pull the optional math and diagram
-renderers; the manual uses live math and a live diagram. A book using neither
-builds with `clojure -M:run build` alone.
+A book is a `book.edn`, its chapter sources, and a `theme.edn`. Output lands
+under `build/<slug>/`, and the repeatable `--edition` flag selects the site,
+the EPUB, and the press-ready PDF/X beyond the default PDFs.
 
-With no `--edition` option, Smia writes the screen and print PDFs under
-`build/smia-manual/pdf/`, next to an `artifacts.edn` manifest. Use
-`clojure -M:run validate manual` to check a manuscript without rendering it,
-and `clojure -M:run build --help` for the full option list. Scripts can call
-the same engine through the `-X` map API:
-`clojure -X smia.api/build :book-root '"manual"'`.
+Optional capabilities sit behind deps aliases composed with the command:
+`:math` and `:diagrams` for the build-time SVG renderers, `:cljs` for the
+site's opt-in script islands. The manual that ships in this repository uses
+all three:
 
-While you write, `clojure -M:run:math:diagrams preview manual` rebuilds the
-screen edition on every save (preview renders the book, so it needs the same
-renderer aliases as build). The JVM stays warm between rebuilds, so a save
-takes about 150 ms. A save that fails to build prints the error and the watcher
-keeps running; stop it with Ctrl-C. Previewing the site edition
-(`preview manual --edition site` with the same aliases) also serves it at
-`http://localhost:8000/`, because the site's directory URLs need a web server
-to browse.
+```bash
+clojure -M:run:cljs:math:diagrams build manual --edition site
+```
 
-## Editions
-
-One manuscript builds into several deliverable forms, selected with the
-repeatable `--edition` flag:
-
-- `screen`: a PDF with symmetric margins for on-screen reading (default).
-- `print`: a PDF with mirrored recto/verso margins and a binding gutter
-  (default).
-- `print-x`: the print layout as PDF/X-4 for press submission, with embedded
-  fonts, an ICC output intent, and no link annotations. Requires a
-  `:book/print-x` map in `book.edn` naming the fonts and profile.
-- `site`: a static HTML site under `build/<slug>/site/`, one page per chapter,
-  styled by the same `theme.edn`. The output contains no JavaScript by default
-  and needs nothing but a static file host; an opt-in search box is added as
-  progressive enhancement, and every page works with JavaScript disabled.
-- `epub`: an EPUB3 package at `build/<slug>/epub/<slug>.epub`, validated with
-  epubcheck. The same pages as the site, packaged for e-readers.
-
-Numbering and cross-reference resolution run once, before any format-specific
-rendering. Every edition therefore agrees on the book's structure.
-
-## Build output
-
-Smia writes every edition under one gitignored directory, `build/<slug>/`;
-`--output-root` overrides it. Rebuilds overwrite in place. The site edition
-also removes pages whose chapters no longer exist, while files you add
-yourself, such as a `CNAME`, are kept. Pass `--clean` to delete `build/<slug>/`
-before building; it does nothing under `--dry-run`.
-
-`--licensee "Name <email>"` stamps a "Licensed to" line in the footer of every
-PDF page, for distributing personalized copies. It affects the PDF editions
-only and is not part of the manuscript.
-
-## Documentation
-
-The manual lives under `manual/`. Build it with the command above and read the
-PDFs in `build/smia-manual/pdf/`, or read it
-[online](https://smia.leifericf.com). It walks from the quickstart to a
-finished, published book, and its design chapter explains how Smia works
-inside.
+See `clojure -M:run build --help` for the full option list, or
+[the commands chapter](https://smia.leifericf.com/manual/part-2/commands/)
+for the whole command set.
 
 ## License
 
