@@ -53,6 +53,25 @@
       (is (= :smia.book.config/duplicate-chapter (:error/type d)))
       (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
+(deftest misspelled-book-key-warns
+  (testing "An unrecognized :book/* key is almost certainly a typo"
+    (let [ws (config/validate {:book/slug "x" :book/title "t"
+                               :book/chapters ["a.md"]
+                               :book/runing-heads {:verso {:before :chapter}}}
+                              "book.edn")]
+      (is (some #(and (= :smia.book.config/unknown-key (:warning/type %))
+                      (some #{:book/runing-heads} (:warning/keys %)))
+                ws)))))
+
+(deftest recognized-book-keys-do-not-warn
+  (testing "Every interpreted :book/* key passes silently"
+    (let [ws (config/validate {:book/slug "x" :book/title "t"
+                               :book/chapters ["a.md"]
+                               :book/author "A" :book/language "en"
+                               :book/numbering {:chapters :arabic}}
+                              "book.edn")]
+      (is (not-any? #(= :smia.book.config/unknown-key (:warning/type %)) ws)))))
+
 (deftest valid-downloads-passes
   (is (vector? (config/validate
                  {:book/slug "x" :book/title "t" :book/chapters ["a.md"]

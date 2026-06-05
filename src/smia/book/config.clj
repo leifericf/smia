@@ -275,17 +275,35 @@
                             "keyword -> (string | number | author Hiccup).")
                        {:path path :value attrs})))))
 
+(def ^:private known-book-keys
+  "Every `:book/*` key smia interprets. A `:book/*` key outside this set
+   is almost certainly a typo, so it earns a warning — unlike keys in
+   other namespaces, which are presumed deliberate extensions."
+  #{:book/accessibility :book/appendices :book/attributes :book/author
+    :book/back-matter :book/chapters :book/downloads :book/edit-url
+    :book/front-matter :book/identifier :book/language :book/numbering
+    :book/parts :book/print-x :book/redirects :book/references
+    :book/running-heads :book/site-url :book/slug :book/title})
+
 (defn- unknown-key-warnings
-  "Warn about top-level keys outside the `book/*` namespace. They are
-   preserved verbatim (open map) but not interpreted by smia."
+  "Warn about top-level keys smia does not interpret: keys outside the
+   `book/*` namespace (preserved verbatim — the open map) and, more
+   urgently, `book/*` keys it does not recognize (likely misspellings)."
   [config]
-  (let [unknown (->> (keys config)
-                     (remove #(= "book" (namespace %)))
-                     vec)]
-    (when (seq unknown)
-      [{:warning/type :smia.book.config/unknown-key
-        :warning/keys unknown
-        :warning/note "Preserved but not interpreted by smia."}])))
+  (let [{book-ns true, other-ns false} (group-by #(= "book" (namespace %))
+                                                 (keys config))
+        misspelled (vec (remove known-book-keys book-ns))
+        unknown    (vec other-ns)]
+    (cond-> []
+      (seq misspelled)
+      (conj {:warning/type :smia.book.config/unknown-key
+             :warning/keys misspelled
+             :warning/note (str "Not a key smia recognizes — possibly "
+                                "misspelled.")})
+      (seq unknown)
+      (conj {:warning/type :smia.book.config/unknown-key
+             :warning/keys unknown
+             :warning/note "Preserved but not interpreted by smia."}))))
 
 (defn- compute-warnings
   "Return the warning vector for `config` as a pure value."
