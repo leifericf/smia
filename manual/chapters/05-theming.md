@@ -91,7 +91,7 @@ A second `:site` token turns on reader search:
 
 With it, every page carries a search box. As the reader types, a small script suggests matches grouped by what they are — chapters, sections, figures, tables, listings, index terms — straight from the book's own apparatus. The index is a static `search-index.json` the build writes beside the pages; nothing runs on a server, and the index is as deterministic as every other artifact.
 
-The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The default remains off — a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
+The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The script is a ClojureScript island the build compiles on demand, on the JVM behind the optional `:cljs` alias ([the commands chapter](#commands)) — no JavaScript toolchain is involved. The default remains off — a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
 
 ## Dark mode
 
@@ -123,7 +123,7 @@ The default follows the operating system. To add a button that lets the reader o
 :site {:dark {:toggle true}}
 ```
 
-This adds a small ClojureScript island, compiled to a committed bundle and shipped on the page. It records the reader's choice in the browser's `localStorage` and reflects it on the page, so an explicit choice overrides the system setting and survives across pages and visits. The script loads ahead of first paint, so a stored choice applies with no flash of the wrong scheme. The page is still hosted as plain static files — nothing runs on a server.
+This adds a small ClojureScript island, compiled on demand and shipped on the page. It records the reader's choice in the browser's `localStorage` and reflects it on the page, so an explicit choice overrides the system setting and survives across pages and visits. The script loads ahead of first paint, so a stored choice applies with no flash of the wrong scheme. The page is still hosted as plain static files — nothing runs on a server.
 
 With JavaScript disabled the button stays hidden and nothing breaks: the operating-system setting still governs through the media query, exactly as `:dark true` alone behaves. The toggle is the only part of dark mode that uses JavaScript; the color scheme itself never needs it. Palette overrides under the `:dark` token group apply to both the system scheme and the explicit choice.
 
@@ -137,7 +137,7 @@ A fourth `:site` token gives the reader a small cluster of preference controls:
 
 It adds a compact control to the page corner that opens a panel of reading preferences: the column width, the text size, a high-contrast variant, and a focus mode that hides the chrome to leave only the text. When dark mode is also on, the panel folds in a color-scheme control too, so a book that sets both `:dark true` and `:reader true` gets one cluster rather than a separate dark-mode button. The page you are reading online has it on.
 
-The stylesheet expresses the reading width and text scale as custom properties (`--reading-width`, `--reading-scale`) and the high-contrast variant as a `data-contrast` attribute, all with the same defaults the page already uses, so a reader who changes nothing sees no difference. A small ClojureScript island, compiled to a committed bundle, reads each choice from `localStorage`, reflects it on the page ahead of first paint, and records it across pages and visits. A reset control at the foot of the panel forgets every stored choice and returns the page to its defaults. As with the dark toggle, the page is still plain static files.
+The stylesheet expresses the reading width and text scale as custom properties (`--reading-width`, `--reading-scale`) and the high-contrast variant as a `data-contrast` attribute, all with the same defaults the page already uses, so a reader who changes nothing sees no difference. A small ClojureScript island, compiled on demand, reads each choice from `localStorage`, reflects it on the page ahead of first paint, and records it across pages and visits. A reset control at the foot of the panel forgets every stored choice and returns the page to its defaults. As with the dark toggle, the page is still plain static files.
 
 With JavaScript disabled the cluster stays hidden and nothing breaks: the defaults govern, and the column, text size, and contrast are exactly what every reader gets without the controls. The controls are the only part that uses JavaScript; the preferences are ordinary CSS underneath.
 
@@ -162,11 +162,11 @@ The shortcuts act on controls and links the page already carries, so each has a 
 | `g`                  | Go to the contents    |
 | `?`                  | Show the shortcut help |
 
-Page navigation takes the arrow keys and the vim-style letters, so it works the same on a keyboard layout that buries the bracket keys behind a modifier. Pressing `?` opens a help dialog listing the shortcuts; Escape, a click outside, or its close button dismisses it. Keystrokes are ignored while the reader is typing in a field, so the search box and any form inputs behave normally. A small ClojureScript island, compiled to a committed bundle, binds the keys and reveals the dialog. With JavaScript disabled none of it loads, and every action stays reachable by its visible control. The page you are reading online has it on.
+Page navigation takes the arrow keys and the vim-style letters, so it works the same on a keyboard layout that buries the bracket keys behind a modifier. Pressing `?` opens a help dialog listing the shortcuts; Escape, a click outside, or its close button dismisses it. Keystrokes are ignored while the reader is typing in a field, so the search box and any form inputs behave normally. A small ClojureScript island, compiled on demand, binds the keys and reveals the dialog. With JavaScript disabled none of it loads, and every action stays reachable by its visible control. The page you are reading online has it on.
 
 ## Mermaid diagrams
 
-A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.
+A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small island script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.
 
 ## Fonts
 

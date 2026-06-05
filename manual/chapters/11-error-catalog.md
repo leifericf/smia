@@ -68,6 +68,11 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.diagram/renderer-unavailable`: the manuscript carries a `[:diagram]` but the renderer's optional dependency is not on the classpath. Compose the `:diagrams` alias with the command: `clojure -M:run:diagrams build`.
 - `:smia.diagram/render-failed`: a diagram's source could not be rendered; the error names the offending source.
 
+## Site islands
+
+- `:smia.site.islands/compiler-unavailable`: the theme enables a site island but the ClojureScript compiler is not on the classpath. Compose the `:cljs` alias with the command: `clojure -M:run:cljs build`.
+- `:smia.site.islands/missing-source`: an island's ClojureScript source is missing from the classpath. This is a packaging bug in Smia, not an authoring error.
+
 ## Code validation
 
 - `:smia.eval/validation-failed`: one or more `{:test true}` blocks failed; the context lists each failure.

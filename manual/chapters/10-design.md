@@ -78,7 +78,7 @@ XSL-FO has no CSS cascade: every block carries its own properties. Styling is th
 
 ## No JavaScript required
 
-The site edition treats JavaScript the way print treats it: the reading experience cannot depend on it. A default build ships none at all. The one scripted feature, the opt-in search island, is progressive enhancement over a plain form — with the script blocked, slow, or disabled, the same form still works against a static fallback page. The script itself is built once, when Smia is developed, and ships inside Smia as a finished file: building a book runs no JavaScript toolchain, and a book's build stays a single JVM process.
+The site edition treats JavaScript the way print treats it: the reading experience cannot depend on it. A default build ships none at all. Every scripted feature is an opt-in island layered as progressive enhancement over a page that already works: search over a plain form with a static fallback, the dark toggle and reader preferences over a stylesheet that already follows the system setting, keyboard shortcuts over visible controls. Each island is ClojureScript, and the build compiles its bundle on demand the first site build that needs it. The compiler is an ordinary Maven dependency behind the optional `:cljs` alias, so nothing compiled is committed, building a book runs no Node and no JavaScript toolchain, and the build stays a single JVM process.
 
 ## Chapters are programs
 

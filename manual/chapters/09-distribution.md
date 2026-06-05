@@ -93,7 +93,7 @@ The build step is the same `build` command you run locally; the workflow has no
 private knowledge of the book:
 
 ```bash
-clojure -M:run:math:diagrams build manual \
+clojure -M:run:cljs:math:diagrams build manual \
   --edition screen --edition print --edition print-x \
   --edition epub --edition site \
   --output-root build/release

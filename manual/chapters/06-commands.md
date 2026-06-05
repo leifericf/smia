@@ -38,7 +38,7 @@ Build the requested editions. With no `--edition`, both PDF editions build:
 clojure -M:run build my-book --edition screen --edition print
 ```
 
-A book that uses math or diagrams composes the optional renderer aliases with the command — this manual builds with `clojure -M:run:math:diagrams build manual`. A build that needs a renderer it cannot load fails with a structured error naming the alias.
+A book that uses math, diagrams, or the site's script islands composes the optional aliases with the command — this manual builds with `clojure -M:run:cljs:math:diagrams build manual`. A build that needs a dependency it cannot load fails with a structured error naming the alias.
 
 PDF output is written under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, and `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `clojure -M:run build --help` for the full option list.
 
@@ -70,7 +70,7 @@ Preview renders only the **screen** edition by default. Rendering dominates the 
 Previewing the **site** edition also starts a small static file server, because the site's directory URLs (see [the editions chapter](#editions)) resolve through a web server, not from the file system:
 
 ```
-clojure -M:run:math:diagrams preview manual --edition site
+clojure -M:run:cljs:math:diagrams preview manual --edition site
 ```
 
 This rebuilds on every save and serves the site at `http://localhost:8000/`: edit, save, refresh the browser. The server reads from disk, so a rebuild needs no restart. Choose another port with `--port`. The server is part of the JDK, adds no dependency, and runs only for the site edition. Live reload would need JavaScript in the page, so you refresh by hand.
