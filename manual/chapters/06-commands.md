@@ -111,4 +111,4 @@ Tools that assemble the request themselves call `smia.api/build` and `smia.api/v
 clojure -X smia.api/build :book-root '"manual"' :editions '[:screen :print]'
 ```
 
-The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:build` and `:validate` aliases carry the function, so `clojure -X:build` works as well. `smia.api/init` is the scaffold: `clojure -X smia.api/init :target '"my-book"'`.
+The keys mirror the CLI options: `:book-root` (default `.`), `:editions`, `:config-path`, `:output-root`, `:dry-run`, `:validate-code`, `:clean`, and `:licensee`. The `:init`, `:build`, and `:validate` aliases carry the function, so `clojure -X:build` works as well. `smia.api/init` is the scaffold: `clojure -X:init :target '"my-book"'`.
