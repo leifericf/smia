@@ -379,6 +379,8 @@
       (is (str/includes? page "Keyboard shortcuts")))
     (testing "the help dialog is styled"
       (is (str/includes? css ".kbd-help-panel")))
+    (testing "the hidden attribute still hides it despite the flex display"
+      (is (str/includes? css ".kbd-help[hidden] {")))
     (testing "the bundle is named for the emit shell"
       (is (some #(= {:resource "smia/site/keys.js" :path "keys.js"} %)
                 (:bundled r))))))

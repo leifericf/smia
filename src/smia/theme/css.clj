@@ -698,6 +698,11 @@
                         :align-items     "center"
                         :justify-content "center"
                         :background      "rgba(0, 0, 0, 0.4)"}]
+           ;; the class sets `display: flex`, which would otherwise beat the
+           ;; browser's `[hidden] { display: none }` (equal specificity, author
+           ;; origin wins) and pin the dialog open. Restore the attribute's
+           ;; effect so the island can hide it.
+           [".kbd-help[hidden]" {:display "none"}]
            [".kbd-help-panel" {:background    panel
                               :color         text
                               :border        (str "1px solid " rule)
