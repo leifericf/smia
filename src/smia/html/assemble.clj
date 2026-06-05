@@ -459,7 +459,7 @@
         (into [:dl {}]
               (concat
                 (row [:span {} [:kbd {} "←"] [:kbd {} "→"]
-                      [:kbd {} "h"] [:kbd {} "j"] [:kbd {} "k"] [:kbd {} "l"]]
+                      [:kbd {} "h"] [:kbd {} "l"]]
                      (loc :previous-next-page "Previous / next page"))
                 (row [:kbd {} "/"] (loc :search "Search"))
                 (row [:kbd {} "d"] (loc :dark-mode "Dark mode"))

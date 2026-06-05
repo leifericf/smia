@@ -59,12 +59,13 @@
         (cond
           (identical? k "?") (do (.preventDefault e) (toggle-help!))
           (identical? k "/") (do (.preventDefault e) (focus-search!))
-          ;; arrows, plus the vim/reader letters (h/k left, l/j right). The
+          ;; arrows, plus the vim/reader left-right letters: h is left, l is
+          ;; right (j/k are up/down, so they stay out of page navigation). The
           ;; bracket keys are avoided: they need AltGr on Nordic, German, and
           ;; French layouts. d/f/g stay clear for the actions below.
-          (or (identical? k "ArrowLeft") (identical? k "h") (identical? k "k"))
+          (or (identical? k "ArrowLeft") (identical? k "h"))
           (go "a[rel=\"prev\"]")
-          (or (identical? k "ArrowRight") (identical? k "l") (identical? k "j"))
+          (or (identical? k "ArrowRight") (identical? k "l"))
           (go "a[rel=\"next\"]")
           (identical? k "d") (go "[data-theme-toggle]")
           (identical? k "f") (go "[data-focus-toggle]")

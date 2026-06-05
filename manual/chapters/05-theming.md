@@ -149,7 +149,7 @@ The shortcuts act on controls and links the page already carries, so each has a 
 
 | Key                  | Action                |
 |----------------------|-----------------------|
-| `←` `→`, `h` `l`, `k` `j` | Previous / next page  |
+| `←` `→`, `h` `l`     | Previous / next page  |
 | `/`                  | Focus the search box  |
 | `d`                  | Toggle dark mode      |
 | `f`                  | Toggle focus mode     |
