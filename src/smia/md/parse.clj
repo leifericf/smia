@@ -43,6 +43,26 @@
    entries are reclaimed with their nodes and never collide across parses."
   (java.util.Collections/synchronizedMap (java.util.WeakHashMap.)))
 
+(defn- innermost-open-directive
+  "The nearest enclosing directive block at or above `node` whose closing
+   fence has not appeared yet, or nil. A closing fence belongs to the
+   innermost open directive, so an outer parser leaves it alone."
+  [^Node node]
+  (loop [n node]
+    (when n
+      (let [m (get directive-meta n)]
+        (if (and m (not (:closed m)))
+          n
+          (recur (.getParent n)))))))
+
+(defn- verbatim-leaf?
+  "True when `node` is a leaf block that owns its lines verbatim — a
+   `:::` line inside one is content, not a closing fence."
+  [node]
+  (or (instance? FencedCodeBlock node)
+      (instance? IndentedCodeBlock node)
+      (instance? HtmlBlock node)))
+
 (defn- directive-block-parser [block]
   (let [finished (volatile! false)]
     (proxy [AbstractBlockParser] []
@@ -53,9 +73,17 @@
         (if @finished
           (BlockContinue/none)
           (let [content (.toString (.getContent (.getLine state)))
-                idx     (.getNextNonSpaceIndex state)]
-            (if (closing-fence? (subs content idx))
+                idx     (.getNextNonSpaceIndex state)
+                active  (.getBlock (.getActiveBlockParser state))]
+            (if (and (closing-fence? (subs content idx))
+                     (< (.getIndent state) 4)
+                     ;; a fence inside an open code/HTML leaf is content
+                     (not (verbatim-leaf? active))
+                     ;; and it closes the innermost open directive only
+                     (identical? block (innermost-open-directive active)))
               (do (vreset! finished true)
+                  (.put directive-meta block
+                        (assoc (get directive-meta block) :closed true))
                   ;; consume the whole closing fence line so it is not
                   ;; re-parsed as a stray ":::" paragraph
                   (BlockContinue/atIndex (count content)))

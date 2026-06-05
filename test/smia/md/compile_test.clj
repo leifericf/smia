@@ -250,6 +250,24 @@
     (is (= :admonition (first adm)))
     (is (some #(and (vector? %) (= :pre (first %))) (tree-seq vector? seq adm)))))
 
+(deftest directives-nest-with-innermost-fence-attribution
+  (testing "each ::: closes the innermost open directive, not the outer"
+    (is (= [[:example {:title "t"}
+             [:admonition {:kind :note} [:p "body"]]
+             [:p "after"]]]
+           (md->body (str ":::example {:title \"t\"}\n"
+                          ":::admonition {:kind :note}\nbody\n:::\n"
+                          "after\n:::\n"))))))
+
+(deftest closing-fence-inside-a-code-fence-is-content
+  (testing "a ::: line in an embedded code fence never closes the directive"
+    (is (= [[:admonition {:kind :note}
+             [:pre {} ":::\nstill code"]
+             [:p "after"]]]
+           (md->body (str ":::admonition {:kind :note}\n"
+                          "```\n:::\nstill code\n```\n"
+                          "after\n:::\n"))))))
+
 (deftest unknown-directive-is-an-error
   (let [d (catch-data #(md->body ":::flummox {:x 1}\nhi\n:::\n"))]
     (is (= :smia.md.compile/unknown-directive (:error/type d)))))
