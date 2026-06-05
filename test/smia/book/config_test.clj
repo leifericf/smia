@@ -53,6 +53,19 @@
       (is (= :smia.book.config/duplicate-chapter (:error/type d)))
       (is (= ["a.adoc"] (:duplicates (:error/context d)))))))
 
+(deftest slug-must-name-a-single-directory
+  (let [base {:book/title "t" :book/chapters ["a.md"]}]
+    (testing "a slug that could traverse out of the output root is rejected"
+      (doseq [slug [".." "." "../../x" "a/b" "a\\b" ""]]
+        (let [d (catch-data #(config/validate (assoc base :book/slug slug)
+                                              "book.edn"))]
+          (is (= :smia.book.config/invalid-slug (:error/type d))
+              (str "slug " (pr-str slug) " must be rejected")))))
+    (testing "ordinary slugs pass"
+      (doseq [slug ["tiny-book" "my.book" "Bok_2"]]
+        (is (vector? (config/validate (assoc base :book/slug slug) "book.edn"))
+            (str "slug " (pr-str slug) " must be accepted"))))))
+
 (deftest numbering-policy-validated
   (let [base {:book/slug "x" :book/title "t" :book/chapters ["a.md"]}]
     (testing "a full valid policy passes"

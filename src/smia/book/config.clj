@@ -20,7 +20,7 @@
    [:book/title string? ":book/title must be a string."]])
 
 (declare read-edn check-required-keys non-empty-string-seq? invalid-type!
-         check-types check-body-present check-unambiguous-body check-chapters
+         check-types check-slug check-body-present check-unambiguous-body check-chapters
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-no-duplicate-files check-files-exist
          valid-download-asset? check-downloads check-redirects check-site-url
@@ -37,6 +37,7 @@
                      {:path path :value config})))
   (check-required-keys config path)
   (check-types config path)
+  (check-slug config path)
   (check-body-present config path)
   (check-unambiguous-body config path)
   (check-chapters config path)
@@ -107,6 +108,22 @@
   (doseq [[k pred msg] type-checks
           :when (not (pred (get config k)))]
     (invalid-type! path k (get config k) msg)))
+
+(defn- check-slug
+  "`:book/slug` names the book's output directory (and its URLs), so it
+   must be a single path segment: not blank, no path separators, and not
+   a dot-only name — a traversing slug would aim the build output (and
+   `--clean`'s deletion) outside the output root."
+  [config path]
+  (let [slug (:book/slug config)]
+    (when (or (str/blank? slug)
+              (contains? #{"." ".."} slug)
+              (re-find #"[/\\]" slug))
+      (throw (error/ex :smia.book.config/invalid-slug
+                       (str ":book/slug " (pr-str slug) " in " path
+                            " must be a single directory name: not blank, "
+                            "no path separators, and not \".\" or \"..\".")
+                       {:path path :slug slug})))))
 
 (defn- check-body-present [config path]
   (when-not (or (contains? config :book/chapters)
