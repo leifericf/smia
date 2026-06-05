@@ -8,11 +8,11 @@
    `smia.html.expand` emits. Rules are data — `[[selector prop-map] …]`
    — and `serialize` writes them with properties sorted by name, so equal
    tokens produce byte-identical stylesheets (the same determinism
-   discipline as `fo.attrs`). The `:layout` token group is paged-output
+   discipline as `smia.attrs`). The `:layout` token group is paged-output
    geometry and plays no part here; the reading column is the stylesheet's
    own layout. No IO."
   (:require
-   [smia.fo.attrs :as attrs]
+   [smia.attrs :as attrs]
    [smia.theme.compile :as compile]
    [clojure.string :as str]))
 
@@ -917,7 +917,7 @@
 (defn serialize
   "Serialize `rules` to a CSS string. A rule is `[selector prop-map]`,
    or `[at-rule rule …]` — an `@media`-style wrapper holding plain rules
-   one level deep. Properties are sorted by name (via `fo.attrs/pairs`)
+   one level deep. Properties are sorted by name (via `attrs/pairs`)
    so equal rule data serializes to identical bytes; rule order is the
    vector's order."
   [rules]

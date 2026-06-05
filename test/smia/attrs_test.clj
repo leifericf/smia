@@ -1,6 +1,6 @@
-(ns smia.fo.attrs-test
+(ns smia.attrs-test
   (:require
-   [smia.fo.attrs :as attrs]
+   [smia.attrs :as attrs]
    [clojure.test :refer [deftest is testing]]))
 
 (deftest attr-name-handles-plain-dotted-and-namespaced

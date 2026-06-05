@@ -1,13 +1,13 @@
-(ns smia.fo.attrs
-  "Pure helpers for turning Hiccup attribute maps into XSL-FO attribute
-   name/value pairs.
+(ns smia.attrs
+  "Pure helpers for turning Hiccup attribute maps into attribute
+   name/value pairs, shared by the FO, HTML, and CSS serializers.
 
-   FO property names are written as plain keywords, including the dotted
+   Property names are written as plain keywords, including the dotted
    compound names FO uses (`:keep-together.within-page`); those pass
    through verbatim. Namespaced keywords render as `ns:name`. Values are
    stringified: keywords become their name, numbers and ratios stringify,
    strings pass through. Pairs are emitted in a deterministic (sorted)
-   order so serialized FO is reproducible."
+   order so every serialized format is reproducible."
   (:require
    [clojure.string :as str]))
 

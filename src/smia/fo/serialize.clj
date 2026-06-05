@@ -8,10 +8,10 @@
    is deliberately no pretty-printing: inserting whitespace would corrupt
    `white-space=\"pre\"` content such as code blocks, and would also make
    output less reproducible. Attribute order is sorted (via
-   `smia.fo.attrs`) so identical trees serialize to identical bytes."
+   `smia.attrs`) so identical trees serialize to identical bytes."
   (:require
    [smia.error :as error]
-   [smia.fo.attrs :as attrs]
+   [smia.attrs :as attrs]
    [smia.hiccup :as hiccup]
    [clojure.string :as str]))
 

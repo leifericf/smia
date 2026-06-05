@@ -9,12 +9,12 @@
    documents are XHTML). Non-void empty elements are always written as
    `<tag></tag>` — browsers mis-parse a self-closed `<div/>`. Text and
    attribute values are escaped; attribute order is sorted (via
-   `smia.fo.attrs`) so identical trees serialize to identical bytes.
+   `smia.attrs`) so identical trees serialize to identical bytes.
    There is deliberately no pretty-printing: inserting whitespace would
    corrupt `<pre>` content and make output less reproducible."
   (:require
    [smia.error :as error]
-   [smia.fo.attrs :as attrs]
+   [smia.attrs :as attrs]
    [smia.hiccup :as hiccup]
    [clojure.string :as str]))
 

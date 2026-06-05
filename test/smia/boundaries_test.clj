@@ -51,7 +51,8 @@
   "Source files that are pure cores: transforms with no IO, no FOP, and no
    shelling out, so they are exercisable on in-memory data alone."
   ["src/smia/build/plan.clj"
-   "src/smia/fo/attrs.clj"
+   "src/smia/attrs.clj"
+   "src/smia/hiccup.clj"
    "src/smia/fo/serialize.clj"
    "src/smia/fo/expand.clj"
    "src/smia/fo/schema.clj"
