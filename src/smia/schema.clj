@@ -33,20 +33,45 @@
    [:role :keyword]
    [:file {:optional true} :string]])
 
+(def DownloadAsset
+  "One downloadable asset on the site's Downloads page."
+  [:map
+   [:label :string]
+   [:file :string]
+   [:note {:optional true} :string]
+   [:default {:optional true} :boolean]])
+
 (def Manuscript
   "Parsed and validated `book.edn`. Open map: unrecognized keys are
    preserved and surfaced as warnings elsewhere, not rejected here. The
    body is a flat `:book/chapters` list or a `:book/parts` grouping; the
-   either/or requirement and cross-key checks live in `smia.book.config`."
+   either/or requirement and cross-key checks (URL shapes, numbering
+   vocabulary, at most one default download) live in `smia.book.config`."
   [:map
    [:book/slug :string]
    [:book/title :string]
+   [:book/author {:optional true} :string]
+   [:book/language {:optional true} :string]
+   [:book/identifier {:optional true} :string]
    [:book/chapters {:optional true} NonEmptyStrings]
    [:book/parts {:optional true} [:and [:sequential Part] non-empty]]
    [:book/front-matter {:optional true} [:sequential MatterSection]]
    [:book/back-matter {:optional true} [:sequential MatterSection]]
    [:book/appendices {:optional true} [:sequential :string]]
-   [:book/numbering {:optional true} :map]])
+   [:book/numbering {:optional true} :map]
+   [:book/running-heads {:optional true} :map]
+   [:book/references {:optional true} :string]
+   [:book/attributes {:optional true}
+    [:map-of :keyword [:or :string number? vector?]]]
+   [:book/print-x {:optional true} :map]
+   [:book/accessibility {:optional true} :map]
+   [:book/downloads {:optional true}
+    [:map
+     [:base :string]
+     [:assets [:and [:sequential DownloadAsset] non-empty]]]]
+   [:book/redirects {:optional true} [:map-of :string :keyword]]
+   [:book/site-url {:optional true} :string]
+   [:book/edit-url {:optional true} :string]])
 
 (def Tokens
   "Parsed and validated `theme.edn` (the book root's theme file). Beyond

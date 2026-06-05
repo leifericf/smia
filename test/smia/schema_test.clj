@@ -32,6 +32,38 @@
   (is (some? (schema/explain schema/Manuscript {:book/title "t"}))
       "humanized explanation is returned for a bad value"))
 
+(def ^:private minimal-manuscript
+  {:book/slug "s" :book/title "t" :book/chapters ["a.md"]})
+
+(deftest manuscript-schema-states-the-whole-contract
+  (testing "the dogfood manual's book.edn conforms"
+    (let [{:keys [config]} (config/load-config {:book-root "manual"
+                                                :config-path "book.edn"})]
+      (is (nil? (schema/explain schema/Manuscript config)))))
+  (testing "every interpreted optional key is typed, not merely tolerated"
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/author 42))))
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/language :en)))
+        "language is an IETF tag string")
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/site-url 42))))
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/redirects
+                                   {:old "new"})))
+        "redirects map old path strings to id keywords")
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/downloads
+                                   {:base "u"})))
+        "downloads need their assets")
+    (is (not (schema/valid? schema/Manuscript
+                            (assoc minimal-manuscript :book/attributes
+                                   {:k :keyword-value})))
+        "attribute values are strings, numbers, or author Hiccup"))
+  (testing "unrecognized keys still pass (the open map is the contract)"
+    (is (schema/valid? schema/Manuscript
+                       (assoc minimal-manuscript :custom/extension true)))))
+
 (deftest check-throws-structured-error
   (let [d (catch-data
             #(schema/check schema/Manuscript {:book/title "t"}
