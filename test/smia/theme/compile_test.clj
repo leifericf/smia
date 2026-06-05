@@ -24,6 +24,13 @@
     (testing "paragraph spacing is token-driven"
       (is (= "8pt" (-> style :p :space-after))))))
 
+(deftest code-size-token-sizes-block-code
+  (testing "the default block-code size is preserved when no token is set"
+    (is (= "9.5pt" (-> (theme/compile-theme tokens :screen) :style :pre :font-size))))
+  (testing ":type {:code-size} sets the block-code font size"
+    (let [themed (assoc-in tokens [:type :code-size] "8pt")]
+      (is (= "8pt" (-> (theme/compile-theme themed :screen) :style :pre :font-size))))))
+
 (deftest screen-layout-has-one-symmetric-master
   (let [{:keys [masters master-reference]} (theme/compile-theme tokens :screen)
         spm (filter #(= :fo/simple-page-master (first %)) masters)]

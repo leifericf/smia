@@ -15,6 +15,7 @@
            :h1-size        "22pt"
            :h2-size        "16pt"
            :h3-size        "13pt"
+           :code-size      "8pt"
            :highlight      true}
  :code    {:keyword "#0033cc"
            :string  "#008800"

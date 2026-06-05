@@ -83,7 +83,8 @@
         (update :pre merge {:font-family   mono-family
                             :background-color code-bg
                             :border-left   (str "3pt solid " link)
-                            :padding-left  "8pt"})
+                            :padding-left  "8pt"
+                            :font-size     (get type :code-size "9.5pt")})
         (update :blockquote merge {:border-left  (str "3pt solid " rule)
                                    :padding-left "10pt"
                                    :start-indent "0pt"
