@@ -34,6 +34,11 @@
         :contents "Contents" :table-of-contents "Table of contents"
         :downloads "Downloads" :search "Search" :edit-this-page "Edit this page"
         :toggle-color-scheme "Toggle dark mode"
+        ;; reader-preferences control cluster
+        :reader-settings "Reader settings" :reading-width "Width"
+        :narrower "Narrower" :wider "Wider"
+        :text-size "Text size" :smaller "Smaller text" :larger "Larger text"
+        :contrast "Contrast" :high-contrast "High contrast" :color-scheme "Theme"
         :pagination "Pagination" :previous-page "Previous page" :next-page "Next page"
         :search-placeholder "Search…" :search-aria "Search this book"
         :search-fallback-note

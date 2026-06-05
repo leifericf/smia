@@ -25,12 +25,15 @@
  :spacing {:paragraph "6pt"
            :block     "8pt"}
  ;; The online manual dogfoods the sidebar site layout (a sticky table of
- ;; contents beside the reading column) and the opt-in search island.
- ;; Switch to :plain for the minimal one-column style; drop :search for a
- ;; zero-JavaScript site. The same manuscript builds either way.
+ ;; contents beside the reading column), the opt-in search island, dark
+ ;; mode, and the reader-preferences controls (width, text size, contrast,
+ ;; and the color-scheme toggle the cluster folds in). Switch to :plain for
+ ;; the minimal one-column style; drop :search or :reader for less
+ ;; JavaScript. The same manuscript builds either way.
  :site    {:layout :sidebar
            :search true
-           :dark   {:toggle true}}
+           :dark   true
+           :reader true}
  :layout  {:page-size      :digest
            :margin-top     "24mm"
            :margin-bottom  "24mm"

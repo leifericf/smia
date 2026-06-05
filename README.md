@@ -28,7 +28,8 @@ generated apparatus localizes to the book's language. The site edition offers a
 selectable sidebar layout whose table-of-contents rail groups the chapters under
 part labels and marks the current page. It adds
 opt-in dark mode that follows the reader's system setting with no JavaScript,
-an optional toggle for an explicit choice, and per-page "Edit this page" links.
+an optional toggle for an explicit choice, opt-in reader controls for column
+width, text size, and contrast, and per-page "Edit this page" links.
 LaTeX math and PlantUML
 diagrams render at build time into self-contained SVG, identical in every
 edition, with no JavaScript and no math font needed at read time. Mermaid

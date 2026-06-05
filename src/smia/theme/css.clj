@@ -609,8 +609,52 @@
         (when toggle? (toggle-rules tokens light palette))
 
         ;; the opt-in reader controls: high-contrast overrides keyed off
-        ;; `data-contrast="high"`, after the dark blocks so they win.
+        ;; `data-contrast="high"`, after the dark blocks so they win, and the
+        ;; control-cluster styling. Both tint from the scheme variables.
         (when reader? (contrast-rules dark?))
+        (when reader?
+          [[".reader-controls" {:position "fixed" :top "1em" :right "1em"
+                                :z-index "20"}]
+           [".reader-button" {:font          "inherit"
+                              :font-size     "0.8em"
+                              :line-height   "1"
+                              :cursor        "pointer"
+                              :padding       "0.45em 0.85em"
+                              :color         "var(--muted)"
+                              :background    "var(--panel)"
+                              :border        "1px solid var(--rule)"
+                              :border-radius "999px"
+                              :box-shadow    "0 1px 3px rgba(0, 0, 0, 0.08)"
+                              :transition    "color 0.15s, background-color 0.15s, border-color 0.15s"}]
+           [".reader-button:hover" {:color "var(--ink)" :border-color "var(--muted)"}]
+           [".reader-panel" {:position      "absolute"
+                            :top           "calc(100% + 0.5em)"
+                            :right         "0"
+                            :min-width     "13em"
+                            :padding       "0.75em"
+                            :color         "var(--ink)"
+                            :background    "var(--panel)"
+                            :border        "1px solid var(--rule)"
+                            :border-radius "10px"
+                            :box-shadow    "0 4px 16px rgba(0, 0, 0, 0.15)"}]
+           [".reader-row" {:display         "flex"
+                          :align-items     "center"
+                          :justify-content "space-between"
+                          :gap             "0.75em"
+                          :margin          "0.4em 0"}]
+           [".reader-label" {:color "var(--muted)" :font-size "0.85em"}]
+           [".reader-panel button" {:font          "inherit"
+                                    :cursor        "pointer"
+                                    :min-width     "2.4em"
+                                    :padding       "0.2em 0.5em"
+                                    :color         "var(--ink)"
+                                    :background    "var(--card)"
+                                    :border        "1px solid var(--rule)"
+                                    :border-radius "6px"
+                                    :transition    "border-color 0.15s, background-color 0.15s"}]
+           [".reader-panel button:hover" {:border-color "var(--muted)"}]
+           [".reader-panel button[aria-pressed=\"true\"]"
+            {:color "var(--bg)" :background "var(--link)" :border-color "var(--link)"}]])
 
         ;; build-time SVG (diagrams, math) inverts its lightness in the dark
         ;; scheme so dark strokes show; `--media-filter` is `none` in light.

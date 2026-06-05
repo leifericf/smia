@@ -145,19 +145,28 @@
          mermaid-src (when (map? mermaid) (:src mermaid))
          dark        (get-in tokens [:site :dark])
          dark?       (boolean dark)
+         reader?     (boolean (get-in tokens [:site :reader]))
          toggle?     (boolean (and (map? dark) (:toggle dark)))
+         ;; the reader cluster carries its own theme control, so the
+         ;; standalone pill button steps aside when the cluster is present;
+         ;; the explicit-choice CSS blocks are needed for either path.
+         standalone? (and toggle? (not reader?))
+         theme-blocks? (or toggle? (and reader? dark?))
          {:keys [pages resources] :as assembled}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
                          :chrome     (layout/chrome-for tokens)
                          :location   html-assemble/nested-location}
-                  search?   (assoc :search true)
-                  mermaid   (assoc :mermaid true :mermaid-src mermaid-src)
-                  toggle?   (assoc :dark-toggle true)
-                  edit-url  (assoc :edit-url edit-url)
-                  downloads (assoc :downloads downloads)))
+                  search?     (assoc :search true)
+                  mermaid     (assoc :mermaid true :mermaid-src mermaid-src)
+                  standalone? (assoc :dark-toggle true)
+                  reader?     (assoc :reader true :reader-theme (and reader? dark?))
+                  edit-url    (assoc :edit-url edit-url)
+                  downloads   (assoc :downloads downloads)))
          site-url (some-> site-url (str/replace #"/*$" "/"))
-         page-map (into {"styles.css" (css/css tokens {:dark? dark? :toggle? toggle?})}
+         page-map (into {"styles.css" (css/css tokens {:dark?   dark?
+                                                       :toggle? theme-blocks?
+                                                       :reader? reader?})}
                         (map (fn [{:keys [file hiccup]}]
                                [file (html-serialize/serialize
                                        hiccup {:doctype? true})])
@@ -177,6 +186,7 @@
      {:pages     page-map
       :resources resources
       :bundled   (cond-> []
-                   search? (conj {:resource "smia/site/search.js" :path "search.js"})
-                   mermaid (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"})
-                   toggle? (conj {:resource "smia/site/theme.js" :path "theme.js"}))})))
+                   search?     (conj {:resource "smia/site/search.js" :path "search.js"})
+                   mermaid     (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"})
+                   standalone? (conj {:resource "smia/site/theme.js" :path "theme.js"})
+                   reader?     (conj {:resource "smia/site/reader.js" :path "reader.js"}))})))

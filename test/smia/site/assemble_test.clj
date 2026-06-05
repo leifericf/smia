@@ -302,6 +302,50 @@
       (is (some #(= {:resource "smia/site/theme.js" :path "theme.js"} %)
                 (:bundled toggle-result))))))
 
+;; --- the reader-preferences island ------------------------------------------
+
+(deftest reader-island-emits-the-cluster-script-and-bundle-when-on
+  (let [r    (site/assemble book (assoc tokens :site {:reader true}))
+        page (get (:pages r) "ch-one/index.html")
+        css  (get (:pages r) "styles.css")]
+    (testing "the island script is loaded, not deferred, so it runs before paint"
+      (is (str/includes? page "<script src=\"../reader.js\">"))
+      (is (not (str/includes? page "defer=\"defer\" src=\"../reader.js\""))))
+    (testing "the control cluster is rendered, inert until the script wires it"
+      (is (str/includes? page "data-reader-controls"))
+      (is (str/includes? page "data-reader-toggle"))
+      (is (str/includes? page "data-reader-width=\"+\""))
+      (is (str/includes? page "data-reader-scale=\"-\""))
+      (is (str/includes? page "data-reader-contrast")))
+    (testing "with dark mode off the cluster carries no color-scheme control"
+      (is (not (str/includes? page "data-theme-toggle"))))
+    (testing "the stylesheet carries the reading variables and cluster styling"
+      (is (str/includes? css "--reading-width"))
+      (is (str/includes? css ".reader-controls")))
+    (testing "the bundle is named for the emit shell"
+      (is (some #(= {:resource "smia/site/reader.js" :path "reader.js"} %)
+                (:bundled r))))))
+
+(deftest reader-with-dark-folds-the-theme-control-into-the-cluster
+  (let [r    (site/assemble book (assoc tokens :site {:reader true :dark true}))
+        page (get (:pages r) "ch-one/index.html")
+        css  (get (:pages r) "styles.css")]
+    (testing "the cluster gains a color-scheme control"
+      (is (str/includes? page "data-theme-toggle")))
+    (testing "the explicit data-theme blocks back that control"
+      (is (str/includes? css "html[data-theme=\"dark\"]")))
+    (testing "the standalone toggle bundle is not shipped; the reader bundle is"
+      (is (not (some #(= "theme.js" (:path %)) (:bundled r))))
+      (is (some #(= "reader.js" (:path %)) (:bundled r))))))
+
+(deftest without-the-token-no-reader-island
+  (let [r    (site/assemble book tokens)
+        page (get (:pages r) "ch-one/index.html")]
+    (is (not (str/includes? page "reader.js")))
+    (is (not (str/includes? page "data-reader-controls")))
+    (is (not (str/includes? (get (:pages r) "styles.css") "--reading-width")))
+    (is (not (some #(= "reader.js" (:path %)) (:bundled r))))))
+
 (deftest dark-without-toggle-stays-os-driven-only
   (let [r    (site/assemble book (assoc tokens :site {:dark true}))
         css  (get (:pages r) "styles.css")

@@ -56,8 +56,10 @@
    appended after the generated stylesheet rules; a rule may also be an
    `[at-rule rule …]` wrapper such as a media query). The optional
    `:site` group carries site-edition presentation: `:layout` (the named
-   page chrome — see `smia.site.layout`) and `:search` (the opt-in
-   search island)."
+   page chrome — see `smia.site.layout`), `:search` (the opt-in search
+   island), `:dark` (the opt-in dark color scheme, optionally with a
+   toggle), and `:reader` (the opt-in reader-preferences controls for
+   column width, text size, and contrast)."
   [:map
    [:color :map]
    [:type :map]
@@ -76,6 +78,7 @@
                             [:search {:optional true} :boolean]
                             [:dark {:optional true}
                              [:or :boolean [:map [:toggle {:optional true} :boolean]]]]
+                            [:reader {:optional true} :boolean]
                             [:mermaid {:optional true}
                              [:or :boolean [:map [:src {:optional true} :string]]]]]]])
 

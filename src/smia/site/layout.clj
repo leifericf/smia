@@ -35,6 +35,7 @@
          [:title {} (page-title ctx title)]
          [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
         (concat (when-let [t (html-assemble/theme-script ctx)] [t])
+                (when-let [r (html-assemble/reader-script ctx)] [r])
                 (when-let [s (html-assemble/search-script ctx)] [s])
                 (html-assemble/mermaid-scripts ctx))))
 
@@ -80,6 +81,7 @@
    (into [:body {}]
          (concat
            (when-let [b (html-assemble/theme-toggle ctx)] [b])
+           (when-let [c (html-assemble/reader-controls ctx)] [c])
            [[:div {:class "book-layout"}
              (sidebar-toc ctx)
              (into [:div {:class "book-content"}]

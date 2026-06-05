@@ -121,6 +121,20 @@ This adds a small ClojureScript island, compiled to a committed bundle and shipp
 
 With JavaScript disabled the button stays hidden and nothing breaks: the operating-system setting still governs through the media query, exactly as `:dark true` alone behaves. The toggle is the only part of dark mode that uses JavaScript; the color scheme itself never needs it. Palette overrides under the `:dark` token group apply to both the system scheme and the explicit choice.
 
+## Reader controls
+
+A fourth `:site` token gives the reader a small cluster of preference controls:
+
+```edn
+:site {:reader true}
+```
+
+It adds a compact control to the page corner that opens a panel of reading preferences: the column width, the text size, and a high-contrast variant. When dark mode is also on, the panel folds in a color-scheme control too, so a book that sets both `:dark true` and `:reader true` gets one cluster rather than a separate dark-mode button. The page you are reading online has it on.
+
+The stylesheet expresses the reading width and text scale as custom properties (`--reading-width`, `--reading-scale`) and the high-contrast variant as a `data-contrast` attribute, all with the same defaults the page already uses, so a reader who changes nothing sees no difference. A small ClojureScript island, compiled to a committed bundle, reads each choice from `localStorage`, reflects it on the page ahead of first paint, and records it across pages and visits. As with the dark toggle, the page is still plain static files.
+
+With JavaScript disabled the cluster stays hidden and nothing breaks: the defaults govern, and the column, text size, and contrast are exactly what every reader gets without the controls. The controls are the only part that uses JavaScript; the preferences are ordinary CSS underneath.
+
 ## Mermaid diagrams
 
 A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.

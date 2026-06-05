@@ -106,6 +106,8 @@
                     :mermaid     (boolean (:mermaid opts))
                     :mermaid-src (:mermaid-src opts)
                     :dark-toggle (boolean (:dark-toggle opts))
+                    :reader      (boolean (:reader opts))
+                    :reader-theme (boolean (:reader-theme opts))
                     :highlight?  (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -373,6 +375,59 @@
                                                :toggle-color-scheme "Toggle dark mode")}
      (dictionary/localize (:language ctx) :toggle-color-scheme "Toggle dark mode")]))
 
+(defn reader-script
+  "The reader-preferences island's script tag, when the controls are on.
+   Like the dark-toggle script it is NOT deferred: it runs in `<head>`
+   before first paint so stored width/scale/contrast/scheme choices apply
+   with no flash. With JavaScript off the script never runs, the controls
+   stay hidden, and the stylesheet defaults govern."
+  [ctx]
+  (when (:reader ctx)
+    [:script {:src ((:href-to ctx) "reader.js")}]))
+
+(defn reader-controls
+  "The reader-preferences control cluster, when the controls are on. It
+   ships `hidden` and inert; the island unhides and wires it, so a
+   no-JavaScript reader never sees a dead control. A compact button reveals
+   a small panel of width, text-size, contrast, and — when dark mode is on
+   — color-scheme controls. The theme control reuses the dark toggle's
+   `data-theme-toggle` marker, so the cluster supersedes the standalone
+   button."
+  [ctx]
+  (when (:reader ctx)
+    (let [lang  (:language ctx)
+          loc   #(dictionary/localize lang %1 %2)
+          row   (fn [label & controls]
+                  (into [:div {:class "reader-row"}
+                         [:span {:class "reader-label"} label]]
+                        controls))
+          step  (fn [attr val term default glyph]
+                  [:button {:type "button" attr val
+                            :aria-label (loc term default)} glyph])]
+      (into [:div {:class "reader-controls" :data-reader-controls "" :hidden "hidden"}
+             [:button {:type "button" :class "reader-button"
+                       :data-reader-toggle "" :aria-expanded "false"
+                       :aria-label (loc :reader-settings "Reader settings")}
+              "Aa"]]
+            [(into [:div {:class "reader-panel" :data-reader-panel "" :hidden "hidden"}
+                    (row (loc :reading-width "Width")
+                         (step :data-reader-width "-" :narrower "Narrower" "–")
+                         (step :data-reader-width "+" :wider "Wider" "+"))
+                    (row (loc :text-size "Text size")
+                         (step :data-reader-scale "-" :smaller "Smaller text" "A–")
+                         (step :data-reader-scale "+" :larger "Larger text" "A+"))
+                    (row (loc :contrast "Contrast")
+                         [:button {:type "button" :data-reader-contrast ""
+                                   :aria-pressed "false"
+                                   :aria-label (loc :high-contrast "High contrast")}
+                          (loc :high-contrast "High contrast")])]
+                   (when (:reader-theme ctx)
+                     [(row (loc :color-scheme "Theme")
+                           [:button {:type "button" :data-theme-toggle ""
+                                     :aria-pressed "false"
+                                     :aria-label (loc :toggle-color-scheme "Toggle dark mode")}
+                            (loc :toggle-color-scheme "Toggle dark mode")])]))]))))
+
 (defn edit-link
   "An \"Edit this page\" link, when the book set `:book/edit-url` and the
    current page has a known source file. The href is the base URL joined to
@@ -636,11 +691,13 @@
                        (str title " — " (:book-title ctx)))]
           [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
          (concat (when-let [t (theme-script ctx)] [t])
+                 (when-let [r (reader-script ctx)] [r])
                  (when-let [s (search-script ctx)] [s])
                  (mermaid-scripts ctx)))
    (into [:body {}]
          (concat
            (when-let [b (theme-toggle ctx)] [b])
+           (when-let [c (reader-controls ctx)] [c])
            (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
            [(into [:main {}] (concat (when-let [e (edge-nav ctx)] [e]) main))]
