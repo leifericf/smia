@@ -1,8 +1,9 @@
-(ns smia.site.islands.compile
+(ns smia.cljs.compile
   "The island compiler (shell): shadow-cljs release builds, in-process.
 
-   Sits behind the optional `:cljs` deps alias — this namespace must
-   only be loaded through `smia.site.islands`' `requiring-resolve`. The
+   Sits behind the optional `:cljs` deps alias (this namespace must
+   only be loaded through `smia.site.islands`' `requiring-resolve`, the
+   same pattern as `smia.math.render` behind `:math`). The
    compiler is a JVM library; no Node, npm, or shadow-cljs.edn is
    involved. A transient shadow server is started when none is running
    and stopped again afterwards, with its cache kept inside the bundle

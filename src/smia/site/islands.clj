@@ -85,7 +85,7 @@
                           island-keys)]
       (when (seq missing)
         (let [release! (or (try (requiring-resolve
-                                  'smia.site.islands.compile/release!)
+                                  'smia.cljs.compile/release!)
                                 (catch Throwable _ nil))
                            (throw (unavailable {:islands (vec island-keys)})))]
           (release! (map #(assoc (islands %) :island %) missing) dir)))
