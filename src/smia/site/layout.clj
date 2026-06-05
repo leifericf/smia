@@ -11,7 +11,8 @@
      site behaves exactly as before this registry existed.
    - `:sidebar` is a two-column \"docs\" layout — a sticky table-of-contents
      rail beside the reading column — built from pure HTML and CSS, with
-     no JavaScript.
+     no JavaScript. On a narrow screen the rail folds into a closed
+     `<details>` contents disclosure at the top of the page.
 
    Adding a layout is one registry entry; an unknown layout is a
    structured error. No IO."
@@ -57,24 +58,45 @@
      (current? href current-url) [:a {:class "current" :href (href-to href)} text]
      :else                       [:a {:href (href-to href)} text])])
 
-(defn- sidebar-toc
-  "The navigation rail: the book title linking home, then every contents
-   entry, with the entry for the current page marked `current`. The outer
-   `nav` stretches to the layout's full height (it carries the rail's
-   background); the inner wrapper is the sticky, scrolling part. Hrefs
-   are relativized against the page being rendered."
+(defn- toc-list
+  "The contents `<ol>` shared by the rail and the narrow-screen fold:
+   every contents entry, with the entry for the current page marked
+   `current`. Hrefs are relativized against the page being rendered."
   [ctx]
   (let [current-url (:url (:page ctx))
         href-to     (:href-to ctx)]
-    [:nav {:class "book-sidebar"
-           :aria-label (dictionary/localize (:language ctx) :table-of-contents "Table of contents")}
-     (into [:div {:class "book-sidebar-inner"}
-            [:a {:class "book-sidebar-title" :href (href-to (:home-url ctx))}
-             (:book-title ctx)]]
-           (concat
-             (when-let [f (html-assemble/search-form ctx)] [f])
-             [(into [:ol {:class "book-sidebar-list"}]
-                    (map #(toc-entry % current-url href-to) (:contents ctx)))]))]))
+    (into [:ol {:class "book-sidebar-list"}]
+          (map #(toc-entry % current-url href-to) (:contents ctx)))))
+
+(defn- sidebar-toc
+  "The navigation rail: the book title linking home, then the contents
+   list. The outer `nav` stretches to the layout's full height (it
+   carries the rail's background); the inner wrapper is the sticky,
+   scrolling part."
+  [ctx]
+  [:nav {:class "book-sidebar"
+         :aria-label (dictionary/localize (:language ctx) :table-of-contents "Table of contents")}
+   (into [:div {:class "book-sidebar-inner"}
+          [:a {:class "book-sidebar-title" :href ((:href-to ctx) (:home-url ctx))}
+           (:book-title ctx)]]
+         (concat
+           (when-let [f (html-assemble/search-form ctx)] [f])
+           [(toc-list ctx)]))])
+
+(defn- mobile-contents
+  "The narrow-screen contents fold: a closed, native `<details>`
+   disclosure holding the same search form and contents list as the
+   rail (the markup is duplicated by design — the stylesheet shows
+   exactly one of the two). No JavaScript: the disclosure is the
+   browser's own, and the search island, when on, mounts on every
+   `data-island` form it finds."
+  [ctx]
+  (into [:details {:class "book-mobile-contents"}
+         [:summary {:class "book-mobile-summary"}
+          (dictionary/localize (:language ctx) :contents "Contents")]]
+        (concat
+          (when-let [f (html-assemble/search-form ctx)] [f])
+          [(toc-list ctx)])))
 
 (defn- sidebar-page-wrap [ctx title main]
   [:html
@@ -85,6 +107,7 @@
            (when-let [b (html-assemble/theme-toggle ctx)] [b])
            (when-let [c (html-assemble/reader-controls ctx)] [c])
            [[:div {:class "book-layout"}
+             (mobile-contents ctx)
              (sidebar-toc ctx)
              (into [:div {:class "book-content"}]
                    (concat

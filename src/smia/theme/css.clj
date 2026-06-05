@@ -46,7 +46,8 @@
         ["kbd, .button" {:background-color (:panel d) :border-color (:rule d)}]
         ["th, td" {:border-color (:rule d)}]
         ["blockquote" {:color (:muted d)}]
-        [".book-sidebar" {:background-color (:panel d)}]]])))
+        [".book-sidebar" {:background-color (:panel d)}]
+        [".book-mobile-contents" {:background-color (:panel d)}]]])))
 
 ;; --- the variables-based dark layer (site only) --------------------------------
 ;;
@@ -476,9 +477,9 @@
          ;; the :sidebar site layout — a full-height tinted TOC rail beside
          ;; a centered reading column. The rail stretches to the layout's
          ;; height (its background reaches the bottom edge) while the inner
-         ;; wrapper stays sticky; `flex-wrap` stacks the two on a narrow
-         ;; viewport, so no @media query is needed (the emitter stays flat
-         ;; and deterministic).
+         ;; wrapper stays sticky. Below the stylesheet's one width
+         ;; breakpoint (the media block further down) the rail yields to
+         ;; the `.book-mobile-contents` disclosure.
          [".book-layout" {:display    "flex"
                           :flex-wrap  "wrap"
                           :min-height "100vh"}]
@@ -529,6 +530,29 @@
                            :min-width "0"
                            :padding   "2em 2em 0"}]
          [".book-content main" {:margin "0 auto"}]
+
+         ;; the narrow-screen contents fold: a compact, closed disclosure
+         ;; that replaces the rail below the width breakpoint. Hidden by
+         ;; default; the media block below shows it. Styled like the rail
+         ;; (same panel/rule bindings, so dark and contrast flow through),
+         ;; sticky so the contents stay one tap away while reading.
+         [".book-mobile-contents" {:display          "none"
+                                   :position         "sticky"
+                                   :top              "0"
+                                   :z-index          "15"
+                                   :background-color panel
+                                   :border-bottom    (str "1px solid " rule)}]
+         [".book-mobile-summary" {:cursor      "pointer"
+                                  :padding     "0.8em 1em"
+                                  :font-family head-family
+                                  :font-weight "700"
+                                  :font-size   "0.9em"
+                                  :color       text}]
+         [".book-mobile-contents[open] .book-mobile-summary"
+          {:border-bottom (str "1px solid " rule)}]
+         [".book-mobile-contents .book-sidebar-list"
+          {:padding "0.5em 1em 1em"}]
+         [".book-mobile-contents form.search" {:margin "0.5em 1em"}]
 
          ;; the site-only downloads page
          [".downloads" {:margin (str block " 0")}]
@@ -592,13 +616,21 @@
          [".keep-together" {:break-inside "avoid"}]
 
          ;; a reader who asks the system for less motion gets none: every
-         ;; transition and animation collapses to an instant. This is a
-         ;; feature query, not a width breakpoint, so it does not undo the
-         ;; flex-wrap/clamp discipline that keeps the layout free of
-         ;; responsive media queries.
+         ;; transition and animation collapses to an instant.
          ["@media (prefers-reduced-motion: reduce)"
           ["*, ::before, ::after" {:transition-duration "0.01ms !important"
-                                   :animation-duration  "0.01ms !important"}]]]
+                                   :animation-duration  "0.01ms !important"}]]
+
+         ;; the stylesheet's one width breakpoint. Everything else stays
+         ;; fluid (flex-wrap + clamp), but below the point where the rail
+         ;; and the reading column stop fitting side by side, the rail
+         ;; folds into the contents disclosure and the margin chevrons
+         ;; (which would overflow a phone's viewport) yield to the labeled
+         ;; bottom prev/next.
+         ["@media (max-width: 48em)"
+          [".book-sidebar" {:display "none"}]
+          [".book-mobile-contents" {:display "block" :flex "1 1 100%"}]
+          [".edge-nav" {:display "none"}]]]
 
         ;; syntax-highlight palette, book :code group over the defaults
         (map (fn [[kind color]]
@@ -723,6 +755,7 @@
            ;; element) sheds the chrome and keeps the text and its breadcrumb.
            ;; The control cluster stays — it carries the switch back out.
            ["html[data-focus] .book-sidebar" {:display "none"}]
+           ["html[data-focus] .book-mobile-contents" {:display "none"}]
            ["html[data-focus] .page-nav" {:display "none"}]
            ["html[data-focus] .page-footer" {:display "none"}]
            ["html[data-focus] .edge-nav" {:display "none"}]

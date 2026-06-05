@@ -107,6 +107,29 @@
   (let [pages (assemble-with nil)]
     (is (not (str/includes? (get pages "ch-one/index.html") "book-sidebar")))))
 
+(deftest sidebar-pages-carry-a-closed-mobile-contents-disclosure
+  (let [page (get (assemble-with :sidebar) "ch-one/index.html")]
+    (testing "a native details disclosure with a localized Contents summary"
+      (is (str/includes? page "class=\"book-mobile-contents\""))
+      (is (re-find #"book-mobile-summary\">Contents<" page)))
+    (testing "closed by default, so the content stays on top"
+      (is (not (re-find #"<details[^>]*open" page))))
+    (testing "the contents list is duplicated: rail and fold each mark the current page"
+      (is (= 2 (count (re-seq #"class=\"book-sidebar-list\"" page))))
+      (is (= 2 (count (re-seq #"class=\"current\"[^>]*href=\"\.\./ch-one/\"" page)))))))
+
+(deftest mobile-contents-duplicates-the-search-form-when-search-is-on
+  (let [pages (:pages (site/assemble book {:color {} :type {} :code {}
+                                           :spacing {} :layout {}
+                                           :site {:layout :sidebar :search true}}))
+        page  (get pages "ch-one/index.html")]
+    (is (= 2 (count (re-seq #"data-island=\"smia-search\"" page))))))
+
+(deftest plain-layout-emits-no-mobile-contents
+  (let [pages (assemble-with nil)]
+    (is (not (str/includes? (get pages "ch-one/index.html")
+                            "book-mobile-contents")))))
+
 (deftest sidebar-home-page-is-a-title-card-without-the-duplicate-toc
   (let [home (get (assemble-with :sidebar) "index.html")]
     (testing "the landing keeps the title and author"

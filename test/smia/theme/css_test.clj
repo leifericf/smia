@@ -59,11 +59,43 @@
     (doseq [s [".book-layout" ".book-sidebar" ".book-sidebar-title"
                ".book-sidebar-list" ".book-sidebar .current" ".book-content"]]
       (is (contains? selectors s) (str s " has a rule")))
-    (testing "the rail uses flex-wrap, so no width breakpoint is emitted"
-      ;; the layout is fluid (flex-wrap + clamp), never a width media query;
-      ;; feature queries (reduced-motion, the opt-in dark scheme) are allowed.
+    (testing "the layout is fluid with one conscious width breakpoint"
+      ;; flex-wrap + clamp keep the layout fluid; the single width media
+      ;; query is the narrow-screen contents fold. Feature queries
+      ;; (reduced-motion, the opt-in dark scheme) remain unrestricted.
       (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
-      (is (not (re-find #"@media \([^)]*width" (css/css tokens)))))))
+      (is (= 1 (count (re-seq #"@media \([^)]*width" (css/css tokens)))))
+      (is (str/includes? (css/css tokens) "@media (max-width: 48em)")))))
+
+(deftest sidebar-folds-into-a-contents-disclosure-on-narrow-screens
+  (let [rules (css/compile-css tokens)
+        out   (css/css tokens)]
+    (testing "the mobile bar is a sticky panel-tinted strip, hidden by default"
+      (let [bar (rule rules ".book-mobile-contents")]
+        (is (= "none" (:display bar)))
+        (is (= "sticky" (:position bar)))
+        (is (= "#f7f7f7" (:background-color bar)))))
+    (testing "the summary reads as a compact heading-family control"
+      (let [s (rule rules ".book-mobile-summary")]
+        (is (= "pointer" (:cursor s)))
+        (is (= "sans-serif" (:font-family s)))
+        (is (= "700" (:font-weight s)))))
+    (testing "below the breakpoint the disclosure replaces the rail and chevrons"
+      (let [media (subs out (str/index-of out "@media (max-width: 48em)"))]
+        (is (str/includes? media ".book-sidebar {\n  display: none;"))
+        (is (str/includes? media ".book-mobile-contents {"))
+        (is (str/includes? media "display: block;"))
+        (is (str/includes? media ".edge-nav {\n  display: none;"))))))
+
+(deftest mobile-contents-bar-follows-the-palette-and-focus-mode
+  (testing "with the variable layer on, the bar tints from the panel variable"
+    (let [rules (css/compile-css tokens {:dark? true})]
+      (is (= "var(--panel)"
+             (:background-color (rule rules ".book-mobile-contents"))))))
+  (testing "focus mode hides the mobile bar with the rest of the chrome"
+    (let [out (css/css tokens {:reader? true})]
+      (is (str/includes? out
+                         "html[data-focus] .book-mobile-contents {\n  display: none;")))))
 
 (deftest reading-measure-is-fluid-and-motion-is-respectful
   (let [rules (css/compile-css tokens)
