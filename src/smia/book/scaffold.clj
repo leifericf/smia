@@ -45,7 +45,12 @@
   (str "{:color   {:text \"#1c1c1c\" :link \"#2a52be\"}\n"
        " :type    {:body-family \"serif\" :base-size \"11pt\"}\n"
        " :spacing {:paragraph \"6pt\"}\n"
-       " :layout  {:page-size :digest}}\n"))
+       " :layout  {:page-size :digest}\n"
+       "\n"
+       " ;; The site edition's opt-in features live under :site, e.g.:\n"
+       " ;; :site {:layout :sidebar :search true :dark {:toggle true}\n"
+       " ;;        :reader true :keyboard true}\n"
+       " }\n"))
 
 (defn- introduction-md [title]
   (str "# Introduction\n"

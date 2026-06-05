@@ -37,6 +37,14 @@
   (let [tokens (edn/read-string (get (scaffold/files "x") "theme.edn"))]
     (is (every? #(map? (get tokens %)) [:color :type :spacing :layout]))))
 
+(deftest theme-template-hints-at-the-site-features
+  (testing "the opt-in :site group is discoverable from a fresh scaffold"
+    (let [theme (get (scaffold/files "x") "theme.edn")]
+      (is (re-find #"(?m)^\s*;;.*:site \{" theme)
+          "a comment shows the :site tokens without enabling them")
+      (is (nil? (:site (edn/read-string theme)))
+          "the hint stays a comment; the scaffold itself enables nothing"))))
+
 (deftest chapter-template-has-a-title
   (is (re-find #"^# " (get (scaffold/files "x") "chapters/01-introduction.md"))))
 
