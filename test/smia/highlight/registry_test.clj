@@ -101,3 +101,16 @@
         (is (= code (rebuild toks)) (str lang " stays lossless on a long literal"))
         (is (contains? (set (map :kind toks)) :string)
             (str lang " classifies the long literal as a string"))))))
+
+(deftest long-escape-heavy-string-literals-do-not-overflow-the-stack
+  (testing "a long literal made entirely of escape pairs tokenizes linearly"
+    (doseq [[lang code] [[:java       (str "\"" (apply str (repeat 20000 "\\a")) "\"")]
+                         [:clojure    (str "\"" (apply str (repeat 20000 "\\a")) "\"")]
+                         [:javascript (str "`"  (apply str (repeat 20000 "\\a")) "`")]
+                         [:python     (str "'"  (apply str (repeat 20000 "\\a")) "'")]
+                         [:bash       (str "\"" (apply str (repeat 20000 "\\a")) "\"")]
+                         [:sql        (str "'"  (apply str (repeat 20000 "''")) "'")]]]
+      (let [toks (hl/tokenize lang code)]
+        (is (= code (rebuild toks)) (str lang " stays lossless on an escape-heavy literal"))
+        (is (contains? (set (map :kind toks)) :string)
+            (str lang " classifies the escape-heavy literal as a string"))))))

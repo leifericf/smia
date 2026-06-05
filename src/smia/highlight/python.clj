@@ -16,8 +16,8 @@
   [[#"#[^\n]*"                                      :comment]
    [#"(?:[rRbBuUfF]{1,2})?\"\"\"[\s\S]*?\"\"\""     :string]
    [#"(?:[rRbBuUfF]{1,2})?'''[\s\S]*?'''"           :string]
-   [#"(?:[rRbBuUfF]{1,2})?\"[^\"\\\n]*(?:\\.[^\"\\\n]*)*\"" :string]
-   [#"(?:[rRbBuUfF]{1,2})?'[^'\\\n]*(?:\\.[^'\\\n]*)*'"     :string]
+   [#"(?:[rRbBuUfF]{1,2})?\"[^\"\\\n]*+(?:\\.[^\"\\\n]*+)*+\"" :string]
+   [#"(?:[rRbBuUfF]{1,2})?'[^'\\\n]*+(?:\\.[^'\\\n]*+)*+'"     :string]
    [#"\d[\d_]*\.?\d*(?:[eE][+-]?\d+)?[jJ]?"         :number]
    [#"[A-Za-z_][A-Za-z0-9_]*"                       (lexer/keyword-classifier keywords)]])
 

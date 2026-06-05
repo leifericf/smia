@@ -20,8 +20,8 @@
 (def ^:private rules
   [[#"--[^\n]*"             :comment]
    [#"/\*[\s\S]*?\*/"       :comment]
-   [#"'[^']*(?:''[^']*)*'"       :string]
-   [#"\"[^\"]*(?:\"\"[^\"]*)*\"" :text]
+   [#"'[^']*+(?:''[^']*+)*+'"       :string]
+   [#"\"[^\"]*+(?:\"\"[^\"]*+)*+\"" :text]
    [#"\d+(?:\.\d+)?"        :number]
    [#"[A-Za-z_][A-Za-z0-9_]*"
     (fn [s] (if (contains? keywords (str/upper-case s)) :keyword :text))]])

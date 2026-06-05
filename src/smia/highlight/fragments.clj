@@ -9,8 +9,12 @@
    scanner.
 
    The string fragments use the unrolled-loop form (`chars* (esc chars*)*`,
-   never `(esc|char)*`) so a long literal tokenizes linearly and cannot
-   overflow the stack. Everything here is pure and Smia-type-free, so the
+   never `(esc|char)*`) with possessive quantifiers: the unrolling keeps
+   the match linear, and possessiveness keeps the JDK engine iterative (a
+   greedy group loop recurses one stack frame per escape pair, so a long
+   escape-heavy literal would overflow the stack). The char classes are
+   disjoint from the escape branch, so possessive matching never changes
+   what is matched. Everything here is pure and Smia-type-free, so the
    lexer could later be extracted as a standalone library."
   (:require
    [smia.highlight.lexer :as lexer]))
@@ -28,9 +32,9 @@
 
 ;; --- string fragments (unrolled, overflow-safe) -----------------------------
 
-(def dq-string       ["\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\"" :string])
-(def sq-string       ["'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'"     :string])
-(def backtick-string ["`[^`\\\\]*(?:\\\\.[^`\\\\]*)*`"     :string])
+(def dq-string       ["\"[^\"\\\\]*+(?:\\\\.[^\"\\\\]*+)*+\"" :string])
+(def sq-string       ["'[^'\\\\]*+(?:\\\\.[^'\\\\]*+)*+'"     :string])
+(def backtick-string ["`[^`\\\\]*+(?:\\\\.[^`\\\\]*+)*+`"     :string])
 (def sq-no-escape    ["'[^']*'"                            :string])
 
 ;; --- number fragments -------------------------------------------------------
