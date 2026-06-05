@@ -39,6 +39,57 @@
 
 ;; --- assembly ----------------------------------------------------------------
 
+(defn- assert-unique-pages!
+  "Throw a structured error when two sections assemble to the same page
+   file."
+  [home-file specs]
+  (let [dupes (->> (cons home-file (map :file specs))
+                   frequencies
+                   (keep (fn [[f n]] (when (< 1 n) f))))]
+    (when (seq dupes)
+      (throw (error/ex :smia.html.assemble/duplicate-page
+                       (str "Two sections assemble to the same "
+                            "page: " (str/join ", " dupes))
+                       {:files (vec dupes)})))))
+
+(defn- contents-with-synthetics
+  "The ordered contents entries over the walk `items`, with the
+   synthesized downloads page leading and the search fallback page
+   trailing (each when present)."
+  [items dl-spec search-sp language]
+  (let [entries (cond->> (contents-entries items)
+                  dl-spec (cons {:kind  :downloads
+                                 :level 0
+                                 :href  (:url dl-spec)
+                                 :text  (dictionary/localize language :downloads)}))]
+    (vec (cond-> entries
+           search-sp (concat [{:kind  :search
+                               :level 0
+                               :href  (:url search-sp)
+                               :text  (dictionary/localize language :search)}])))))
+
+(defn- base-context
+  "The page-independent part of the chrome `ctx`: the book identity, the
+   contents, the home/search locations, and the option-driven affordance
+   flags. `build-page` extends it per page."
+  [book opts contents home-loc search-sp]
+  {:book-title (:title book)
+   :author     (:author book)
+   :contents   contents
+   :home-loc   home-loc
+   :home-url   (:url home-loc)
+   :search?    (boolean search-sp)
+   :search-url (:url search-sp)
+   :language    (:language book)
+   :edit-url    (:edit-url opts)
+   :mermaid     (boolean (:mermaid opts))
+   :mermaid-src (:mermaid-src opts)
+   :dark-toggle (boolean (:dark-toggle opts))
+   :reader      (boolean (:reader opts))
+   :reader-theme (boolean (:reader-theme opts))
+   :keyboard    (boolean (:keyboard opts))
+   :highlight?  (boolean (:highlight? opts))})
+
 (defn assemble
   "Assemble a numbered `book` (the manuscript value out of
    `book.number/assign`) into the HTML page set. Options:
@@ -75,42 +126,11 @@
          search-sp (when (:search opts)
                      (search-fallback-spec specs extension locate language))
          specs     (cond-> specs search-sp (conj search-sp))
-         _         (let [dupes (->> (cons (:file home-loc) (map :file specs))
-                                    frequencies
-                                    (keep (fn [[f n]] (when (< 1 n) f))))]
-                     (when (seq dupes)
-                       (throw (error/ex :smia.html.assemble/duplicate-page
-                                        (str "Two sections assemble to the same "
-                                             "page: " (str/join ", " dupes))
-                                        {:files (vec dupes)}))))
-         contents  (cond->> (contents-entries items)
-                     dl-spec (cons {:kind  :downloads
-                                    :level 0
-                                    :href  (:url dl-spec)
-                                    :text  (dictionary/localize language :downloads)}))
-         contents  (vec (cond-> contents
-                          search-sp (concat [{:kind  :search
-                                              :level 0
-                                              :href  (:url search-sp)
-                                              :text  (dictionary/localize language :search)}])))
+         _         (assert-unique-pages! (:file home-loc) specs)
+         contents  (contents-with-synthetics items dl-spec search-sp language)
          table     (links-table items specs (:url home-loc))
          resolver  (links/resolver table)
-         base-ctx  {:book-title (:title book)
-                    :author     (:author book)
-                    :contents   contents
-                    :home-loc   home-loc
-                    :home-url   (:url home-loc)
-                    :search?    (boolean search-sp)
-                    :search-url (:url search-sp)
-                    :language    language
-                    :edit-url    (:edit-url opts)
-                    :mermaid     (boolean (:mermaid opts))
-                    :mermaid-src (:mermaid-src opts)
-                    :dark-toggle (boolean (:dark-toggle opts))
-                    :reader      (boolean (:reader opts))
-                    :reader-theme (boolean (:reader-theme opts))
-                    :keyboard    (boolean (:keyboard opts))
-                    :highlight?  (boolean (:highlight? opts))}]
+         base-ctx  (base-context book opts contents home-loc search-sp)]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
                          (fn [i spec]
