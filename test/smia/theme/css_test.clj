@@ -63,6 +63,18 @@
       (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
       (is (not (str/includes? (css/css tokens) "@media"))))))
 
+(deftest edge-chevron-buttons-anchor-to-the-reading-column
+  (let [rules (css/compile-css tokens)]
+    (testing "the nav follows the scroll, vertically centered"
+      (is (= "sticky" (:position (rule rules ".edge-nav"))))
+      (is (= "50vh" (:top (rule rules ".edge-nav")))))
+    (testing "the links sit outside main's left and right edges"
+      (is (= "absolute" (:position (rule rules ".edge-link"))))
+      (is (= "100%" (:right (rule rules ".edge-prev"))))
+      (is (= "100%" (:left (rule rules ".edge-next")))))
+    (testing "main is the positioning context, so they track its margins"
+      (is (= "relative" (:position (rule rules "main")))))))
+
 (deftest print-break-rules-cover-the-page-furniture
   (let [rules (css/compile-css tokens)]
     (is (= "page" (:break-before (rule rules ".page-break"))))

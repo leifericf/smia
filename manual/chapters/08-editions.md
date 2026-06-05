@@ -37,6 +37,7 @@ Paged furniture is rendered for a medium with no pages:
 - Footnotes have no page foot to sit on, so each chapter's notes collect at the chapter's end, linked both ways between the marker and the note.
 - The bibliography, the index, and the lists of figures, tables, and listings emit links where the PDF prints page numbers.
 - Code listings keep their file bars, syntax highlighting, captions, and annotations.
+- Each chapter links to the previous and next in document order, both as a labeled row beneath the reading column and as icon-only chevrons pinned to the page margins.
 
 The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:spacing` map onto generated CSS rules, while `:layout`, the page geometry, applies to the PDF editions only; the site supplies its own reading-column layout. The site's page framing is selectable through the `:site {:layout …}` token, either a plain column or a sidebar layout, covered in [the theming chapter](#theming). The generated stylesheet is deterministic: the same theme always produces byte-identical CSS.
 

@@ -83,7 +83,9 @@
              (sidebar-toc ctx)
              (into [:div {:class "book-content"}]
                    (concat
-                     [(into [:main {}] main)]
+                     [(into [:main {}]
+                            (concat (when-let [e (html-assemble/edge-nav ctx)] [e])
+                                    main))]
                      (when-let [e (html-assemble/edit-link ctx)]
                        [[:footer {:class "page-footer"} e]])
                      (when-let [nav (:nav-hiccup ctx)] [nav])))]]))])

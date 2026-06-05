@@ -75,6 +75,22 @@
 (deftest theme-highlighting-reaches-the-code
   (is (str/includes? (get pages "ch-one/index.html") "tok-keyword")))
 
+(deftest edge-chevrons-supplement-the-bottom-nav
+  (testing "a middle page gets both chevrons, icon-only with descriptive labels"
+    (let [page (get pages "ch-two/index.html")]
+      (is (str/includes? page "class=\"edge-nav\""))
+      (is (str/includes? page "edge-prev"))
+      (is (str/includes? page "edge-next"))
+      (is (str/includes? page "aria-label=\"Previous page: One\""))
+      (is (str/includes? page "aria-label=\"Next page: ")))
+    (testing "the glyphs themselves are hidden from assistive tech"
+      (is (str/includes? (get pages "ch-two/index.html") "aria-hidden=\"true\""))))
+  (testing "the first page has no previous chevron, the last no next"
+    (is (not (str/includes? (get pages "ch-one/index.html") "edge-prev")))
+    (is (not (str/includes? (get pages "bibliography/index.html") "edge-next"))))
+  (testing "the home page carries no edge chevrons"
+    (is (not (str/includes? (get pages "index.html") "edge-nav")))))
+
 (deftest stylesheet-is-generated-from-the-tokens
   (let [css (get pages "styles.css")]
     (is (str/includes? css "body {"))

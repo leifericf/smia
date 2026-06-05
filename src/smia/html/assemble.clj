@@ -384,6 +384,33 @@
            :href  (str (str/replace base #"/*$" "/") src)}
        (dictionary/localize (:language ctx) :edit-this-page "Edit this page")])))
 
+(defn edge-nav
+  "Icon-only previous/next chevrons pinned to the page margins. Plain
+   links (no JavaScript): each carries `rel` and a descriptive
+   `aria-label` (\"Previous page: <title>\"), so the visual glyph stays
+   bare while assistive tech gets the destination. Nil on the home page or
+   when the page chains nowhere; the bottom `page-nav` carries the labeled,
+   in-flow navigation that this supplements."
+  [ctx]
+  (when-not (= :home (:kind (:page ctx)))
+    (let [href-to (:href-to ctx)
+          lang    (:language ctx)
+          prev    (:prev ctx)
+          next    (:next ctx)
+          link    (fn [page klass rel term default glyph]
+                    [:a {:class           (str "edge-link " klass)
+                         :rel             rel
+                         :href            (href-to (:url page))
+                         :aria-label      (str (dictionary/localize lang term default)
+                                               ": " (:title page))}
+                     [:span {:aria-hidden "true"} glyph]])]
+      (when (or prev next)
+        (into [:nav {:class      "edge-nav"
+                     :aria-label (dictionary/localize lang :pagination "Pagination")}]
+              (concat
+                (when prev [(link prev "edge-prev" "prev" :previous-page "Previous page" "‹")])
+                (when next [(link next "edge-next" "next" :next-page "Next page" "›")])))))))
+
 (defn- section-items
   "The ordered walk items: `{:type :part :section s}` for part dividers
    (no page of their own) and `{:type :page :spec …}` for everything
@@ -616,7 +643,7 @@
            (when-let [b (theme-toggle ctx)] [b])
            (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
-           [(into [:main {}] main)]
+           [(into [:main {}] (concat (when-let [e (edge-nav ctx)] [e]) main))]
            (when-let [e (edit-link ctx)] [[:footer {:class "page-footer"} e]])
            (when-let [nav (:nav-hiccup ctx)] [nav])))])
 
