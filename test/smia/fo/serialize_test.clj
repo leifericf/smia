@@ -30,6 +30,15 @@
   (is (= "<fo:block role=\"&quot;q&quot;\">x</fo:block>"
          (frag [:fo/block {:role "\"q\""} "x"]))))
 
+(deftest xml-illegal-control-characters-never-reach-the-output
+  (testing "C0 controls other than tab, newline, and CR are dropped"
+    (is (= "<fo:block>ab</fo:block>"
+           (frag [:fo/block (str "a" (char 12) "b")])))
+    (is (= "<fo:block role=\"ab\">x</fo:block>"
+           (frag [:fo/block {:role (str "a" (char 0) "b")} "x"]))))
+  (testing "tab and newline are legal and survive"
+    (is (= "<fo:block>a\tb\nc</fo:block>" (frag [:fo/block "a\tb\nc"])))))
+
 (deftest preserves-preformatted-whitespace
   (testing "no pretty-printing: newlines and spaces in text survive"
     (is (= "<fo:block white-space=\"pre\">line1\n  line2</fo:block>"

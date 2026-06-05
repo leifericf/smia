@@ -47,14 +47,22 @@
 
 ;; --- private helpers -------------------------------------------------------
 
+(def ^:private xml-illegal-chars
+  "Characters XML 1.0 forbids outright: the C0 controls other than tab,
+   newline, and CR, plus U+FFFE/U+FFFF. No escape exists — the numeric
+   entity is illegal too — so they are dropped from text and attributes."
+  #"[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]")
+
 (defn- escape-text [^String s]
   (-> s
+      (str/replace xml-illegal-chars "")
       (str/replace "&" "&amp;")
       (str/replace "<" "&lt;")
       (str/replace ">" "&gt;")))
 
 (defn- escape-attr [^String s]
   (-> s
+      (str/replace xml-illegal-chars "")
       (str/replace "&" "&amp;")
       (str/replace "<" "&lt;")
       (str/replace ">" "&gt;")

@@ -29,6 +29,15 @@
     (is (= "<div></div>"
            (html/serialize [:div] {:mode :xhtml :xml-declaration? false})))))
 
+(deftest xml-illegal-control-characters-never-reach-the-output
+  (testing "C0 controls other than tab, newline, and CR are dropped"
+    (is (= "<pre>ab</pre>"
+           (html/serialize [:pre (str "a" (char 12) "b")])))
+    (is (= "<p title=\"ab\">x</p>"
+           (html/serialize [:p {:title (str "a" (char 11) "b")} "x"]))))
+  (testing "tab and newline are legal and survive"
+    (is (= "<pre>a\tb\nc</pre>" (html/serialize [:pre "a\tb\nc"])))))
+
 (deftest attributes-are-sorted-for-determinism
   (is (= "<a class=\"nav\" href=\"x.html\" id=\"n1\">go</a>"
          (html/serialize [:a {:id "n1" :href "x.html" :class "nav"} "go"]))))
