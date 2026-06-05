@@ -20,6 +20,7 @@
    [smia.book.dictionary :as dictionary]
    [smia.error :as error]
    [smia.html.assemble :as html-assemble]
+   [smia.html.chrome :as chrome]
    [clojure.string :as str]))
 
 ;; --- the :sidebar chrome -----------------------------------------------------
@@ -35,11 +36,11 @@
          [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
          [:title {} (page-title ctx title)]
          [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
-        (concat (when-let [t (html-assemble/theme-script ctx)] [t])
-                (when-let [r (html-assemble/reader-script ctx)] [r])
-                (when-let [s (html-assemble/search-script ctx)] [s])
-                (when-let [k (html-assemble/keys-script ctx)] [k])
-                (html-assemble/mermaid-scripts ctx))))
+        (concat (when-let [t (chrome/theme-script ctx)] [t])
+                (when-let [r (chrome/reader-script ctx)] [r])
+                (when-let [s (chrome/search-script ctx)] [s])
+                (when-let [k (chrome/keys-script ctx)] [k])
+                (chrome/mermaid-scripts ctx))))
 
 (defn- current?
   "True when a contents entry's `href` (an absolute-from-root page url,
@@ -80,7 +81,7 @@
           [:a {:class "book-sidebar-title" :href ((:href-to ctx) (:home-url ctx))}
            (:book-title ctx)]]
          (concat
-           (when-let [f (html-assemble/search-form ctx)] [f])
+           (when-let [f (chrome/search-form ctx)] [f])
            [(toc-list ctx)]))])
 
 (defn- mobile-contents
@@ -95,7 +96,7 @@
          [:summary {:class "book-mobile-summary"}
           (dictionary/localize (:language ctx) :contents)]]
         (concat
-          (when-let [f (html-assemble/search-form ctx)] [f])
+          (when-let [f (chrome/search-form ctx)] [f])
           [(toc-list ctx)])))
 
 (defn- sidebar-page-wrap [ctx title main]
@@ -103,22 +104,22 @@
    (head ctx title)
    (into [:body {}]
          (concat
-           (when-let [p (html-assemble/reading-progress ctx)] [p])
-           (when-let [b (html-assemble/theme-toggle ctx)] [b])
-           (when-let [c (html-assemble/reader-controls ctx)] [c])
+           (when-let [p (chrome/reading-progress ctx)] [p])
+           (when-let [b (chrome/theme-toggle ctx)] [b])
+           (when-let [c (chrome/reader-controls ctx)] [c])
            [[:div {:class "book-layout"}
              (mobile-contents ctx)
              (sidebar-toc ctx)
              (into [:div {:class "book-content"}]
                    (concat
                      [(into [:main {}]
-                            (concat (when-let [e (html-assemble/edge-nav ctx)] [e])
-                                    (when-let [b (html-assemble/breadcrumb ctx)] [b])
+                            (concat (when-let [e (chrome/edge-nav ctx)] [e])
+                                    (when-let [b (chrome/breadcrumb ctx)] [b])
                                     main))]
-                     (when-let [e (html-assemble/edit-link ctx)]
+                     (when-let [e (chrome/edit-link ctx)]
                        [[:footer {:class "page-footer"} e]])
                      (when-let [nav (:nav-hiccup ctx)] [nav])))]]
-           (when-let [h (html-assemble/keyboard-help ctx)] [h])))])
+           (when-let [h (chrome/keyboard-help ctx)] [h])))])
 
 (def ^:private sidebar-chrome
   "Two-column docs chrome: the sidebar rail is the table of contents; the

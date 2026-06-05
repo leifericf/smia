@@ -60,6 +60,7 @@
    "src/smia/html/serialize.clj"
    "src/smia/html/links.clj"
    "src/smia/html/expand.clj"
+   "src/smia/html/chrome.clj"
    "src/smia/html/assemble.clj"
    "src/smia/theme/compile.clj"
    "src/smia/theme/css.clj"

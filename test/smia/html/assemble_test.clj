@@ -4,6 +4,7 @@
    [smia.book.structure :as structure]
    [smia.error]
    [smia.html.assemble :as html-assemble]
+   [smia.html.chrome :as chrome]
    [clojure.test :refer [deftest is testing]]))
 
 (def ^:private manuscript
@@ -235,7 +236,7 @@
 
 (deftest edit-link-builds-from-edit-url-and-source-file
   (testing "an edit link joins the base url to the page's source file"
-    (let [link (html-assemble/edit-link
+    (let [link (chrome/edit-link
                  {:edit-url "https://github.com/me/book/edit/main"
                   :page     {:source-file "chapters/01-intro.md"}})]
       (is (= :a (first link)))
@@ -243,6 +244,6 @@
              (:href (second link))))
       (is (= "Edit this page" (last link)))))
   (testing "no edit-url means no link"
-    (is (nil? (html-assemble/edit-link {:page {:source-file "x.md"}}))))
+    (is (nil? (chrome/edit-link {:page {:source-file "x.md"}}))))
   (testing "a page with no source file (generated matter) gets no link"
-    (is (nil? (html-assemble/edit-link {:edit-url "https://e.com" :page {}})))))
+    (is (nil? (chrome/edit-link {:edit-url "https://e.com" :page {}})))))
