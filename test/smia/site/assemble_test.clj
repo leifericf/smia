@@ -255,3 +255,43 @@
   (let [res (clojure.java.io/resource "smia/site/mermaid.js")]
     (is (some? res))
     (is (pos? (count (slurp res))))))
+
+;; --- the dark-mode toggle island --------------------------------------------
+
+(def ^:private toggle-result
+  (site/assemble book (assoc tokens :site {:dark {:toggle true}})))
+
+(deftest toggle-island-adds-the-explicit-data-theme-blocks
+  (let [css (get (:pages toggle-result) "styles.css")]
+    (testing "an explicit choice overrides the media query, both ways"
+      (is (str/includes? css "html[data-theme=\"dark\"]"))
+      (is (str/includes? css "html[data-theme=\"light\"]")))
+    (testing "the toggle button is styled"
+      (is (str/includes? css ".theme-toggle")))))
+
+(deftest toggle-island-emits-a-pre-paint-script-and-a-button
+  (let [page (get (:pages toggle-result) "ch-one/index.html")]
+    (testing "the island script is loaded, not deferred, so it runs before paint"
+      (is (str/includes? page "<script src=\"../theme.js\">"))
+      (is (not (str/includes? page "defer=\"defer\" src=\"../theme.js\""))))
+    (testing "a toggle button is rendered, inert until the script wires it"
+      (is (str/includes? page "data-theme-toggle"))
+      (is (str/includes? page "<button")))
+    (testing "the bundle is named for the emit shell"
+      (is (some #(= {:resource "smia/site/theme.js" :path "theme.js"} %)
+                (:bundled toggle-result))))))
+
+(deftest dark-without-toggle-stays-os-driven-only
+  (let [r    (site/assemble book (assoc tokens :site {:dark true}))
+        css  (get (:pages r) "styles.css")
+        page (get (:pages r) "ch-one/index.html")]
+    (is (str/includes? css "@media (prefers-color-scheme: dark)"))
+    (is (not (str/includes? css "html[data-theme")))
+    (is (not (str/includes? page "theme.js")))
+    (is (not (str/includes? page "data-theme-toggle")))
+    (is (not (some #(= "theme.js" (:path %)) (:bundled r))))))
+
+(deftest shipped-theme-bundle-is-on-the-classpath
+  (let [res (clojure.java.io/resource "smia/site/theme.js")]
+    (is (some? res))
+    (is (pos? (count (slurp res))))))

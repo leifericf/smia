@@ -29,7 +29,7 @@
  ;; zero-JavaScript site. The same manuscript builds either way.
  :site    {:layout :sidebar
            :search true
-           :dark   true}
+           :dark   {:toggle true}}
  :layout  {:page-size      :digest
            :margin-top     "24mm"
            :margin-bottom  "24mm"

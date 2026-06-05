@@ -108,11 +108,9 @@
              "--card"    (:card light)}
             (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c])) palette)))])
 
-(defn- dark-media-vars
-  "An `@media (prefers-color-scheme: dark)` wrapper whose single `:root`
-   rule overrides the custom properties with the dark palette: the computed
-   defaults under the `:dark` token group, plus any `:dark {:code …}` syntax
-   overrides."
+(defn- dark-var-props
+  "The dark palette as a custom-property map: the computed defaults under
+   the `:dark` token group, plus any `:dark {:code …}` syntax overrides."
   [tokens]
   (let [overrides (reduce-kv (fn [m author-k var-name]
                                (if-let [v (get (:dark tokens) author-k)]
@@ -121,8 +119,38 @@
                              {} dark-author-keys)
         dark-tok  (into {} (map (fn [[kind c]] [(str "--tok-" (name kind)) c]))
                         (get-in tokens [:dark :code]))]
-    [["@media (prefers-color-scheme: dark)"
-      [":root" (vars->props (merge dark-var-defaults overrides dark-tok))]]]))
+    (vars->props (merge dark-var-defaults overrides dark-tok))))
+
+(defn- dark-media-vars
+  "An `@media (prefers-color-scheme: dark)` wrapper whose single `:root`
+   rule overrides the custom properties with the dark palette, so the OS
+   setting governs with no JavaScript."
+  [tokens]
+  [["@media (prefers-color-scheme: dark)"
+    [":root" (dark-var-props tokens)]]])
+
+(defn- toggle-rules
+  "The opt-in toggle layer (`:site {:dark {:toggle true}}`): explicit
+   `html[data-theme=…]` overrides whose specificity beats both `:root` and
+   the media query, so a reader's stored choice wins either way, and the
+   styling for the toggle button itself. The button is positioned out of
+   flow and tinted from the same variables, so it tracks the active scheme."
+  [tokens light palette]
+  (let [[_ light-props] (root-light-vars light palette)]
+    [["html[data-theme=\"dark\"]" (dark-var-props tokens)]
+     ["html[data-theme=\"light\"]" light-props]
+     [".theme-toggle" {:position      "fixed"
+                       :top           "0.75em"
+                       :right         "0.75em"
+                       :z-index       "20"
+                       :font          "inherit"
+                       :font-size     "0.8em"
+                       :cursor        "pointer"
+                       :padding       "0.3em 0.6em"
+                       :color         "var(--ink)"
+                       :background    "var(--panel)"
+                       :border        "1px solid var(--rule)"
+                       :border-radius "4px"}]]))
 
 (defn compile-css
   "Compile validated `tokens` into ordered CSS rules
@@ -131,9 +159,12 @@
    With `{:dark? true}` (the site assembler passes it when the book opts
    into dark mode) the colors are emitted as `var(--…)` references over a
    leading `:root` of light values and a dark `@media` override. The default
-   and EPUB path (`:dark?` false) emit the literal stylesheet byte for byte."
+   and EPUB path (`:dark?` false) emit the literal stylesheet byte for byte.
+   `{:toggle? true}` (which implies `:dark?`) also emits the explicit
+   `html[data-theme=…]` overrides the toggle island flips, and the button
+   style."
   ([tokens] (compile-css tokens {}))
-  ([tokens {:keys [dark?]}]
+  ([tokens {:keys [dark? toggle?]}]
    (let [{:keys [color type spacing code]} tokens
          body-family (get type :body-family "serif")
          head-family (get type :heading-family "sans-serif")
@@ -413,6 +444,10 @@
         (if dark?
           (dark-media-vars tokens)
           (dark-rules tokens))
+
+        ;; the opt-in toggle: explicit overrides that beat the media query
+        ;; both ways, plus the button style. Only reachable under `:dark?`.
+        (when toggle? (toggle-rules tokens light palette))
 
         ;; the theme's :css styling hatch, last so user rules win
         (:css tokens))))))

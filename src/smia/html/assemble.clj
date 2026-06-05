@@ -105,6 +105,7 @@
                     :edit-url    (:edit-url opts)
                     :mermaid     (boolean (:mermaid opts))
                     :mermaid-src (:mermaid-src opts)
+                    :dark-toggle (boolean (:dark-toggle opts))
                     :highlight?  (boolean (:highlight? opts))}]
      {:pages     (into [(home-page book contents chrome base-ctx resolver)]
                        (map-indexed
@@ -346,6 +347,32 @@
       :always
       (conj [:script {:defer "defer" :src ((:href-to ctx) "mermaid.js")}]))))
 
+(defn theme-script
+  "The dark-mode toggle island's script tag, when the toggle is on. Unlike
+   the search and mermaid scripts it is NOT deferred: it runs in `<head>`
+   before first paint so a stored light/dark choice applies with no flash.
+   With JavaScript off the script never runs and the OS setting governs."
+  [ctx]
+  (when (:dark-toggle ctx)
+    [:script {:src ((:href-to ctx) "theme.js")}]))
+
+(defn theme-toggle
+  "The dark-mode toggle button, when the toggle is on. It ships `hidden`
+   and inert; the island unhides and wires it, so a no-JavaScript reader
+   never sees a dead control while the OS scheme still applies. Positioned
+   out of flow by `.theme-toggle`, so its place in the markup is just tab
+   order."
+  [ctx]
+  (when (:dark-toggle ctx)
+    [:button {:type "button"
+              :class "theme-toggle"
+              :data-theme-toggle "data-theme-toggle"
+              :hidden "hidden"
+              :aria-pressed "false"
+              :aria-label (dictionary/localize (:language ctx)
+                                               :toggle-color-scheme "Toggle dark mode")}
+     (dictionary/localize (:language ctx) :toggle-color-scheme "Toggle dark mode")]))
+
 (defn edit-link
   "An \"Edit this page\" link, when the book set `:book/edit-url` and the
    current page has a known source file. The href is the base URL joined to
@@ -581,10 +608,12 @@
                        title
                        (str title " — " (:book-title ctx)))]
           [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
-         (concat (when-let [s (search-script ctx)] [s])
+         (concat (when-let [t (theme-script ctx)] [t])
+                 (when-let [s (search-script ctx)] [s])
                  (mermaid-scripts ctx)))
    (into [:body {}]
          (concat
+           (when-let [b (theme-toggle ctx)] [b])
            (when-let [f (search-form ctx)] [f])
            (when-let [nav (:nav-hiccup ctx)] [nav])
            [(into [:main {}] main)]

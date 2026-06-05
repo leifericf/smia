@@ -34,7 +34,8 @@
          [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
          [:title {} (page-title ctx title)]
          [:link {:rel "stylesheet" :href ((:href-to ctx) "styles.css")}]]
-        (concat (when-let [s (html-assemble/search-script ctx)] [s])
+        (concat (when-let [t (html-assemble/theme-script ctx)] [t])
+                (when-let [s (html-assemble/search-script ctx)] [s])
                 (html-assemble/mermaid-scripts ctx))))
 
 (defn- current?
@@ -75,15 +76,17 @@
 (defn- sidebar-page-wrap [ctx title main]
   [:html
    (head ctx title)
-   [:body {}
-    [:div {:class "book-layout"}
-     (sidebar-toc ctx)
-     (into [:div {:class "book-content"}]
-           (concat
-             [(into [:main {}] main)]
-             (when-let [e (html-assemble/edit-link ctx)]
-               [[:footer {:class "page-footer"} e]])
-             (when-let [nav (:nav-hiccup ctx)] [nav])))]]])
+   (into [:body {}]
+         (concat
+           (when-let [b (html-assemble/theme-toggle ctx)] [b])
+           [[:div {:class "book-layout"}
+             (sidebar-toc ctx)
+             (into [:div {:class "book-content"}]
+                   (concat
+                     [(into [:main {}] main)]
+                     (when-let [e (html-assemble/edit-link ctx)]
+                       [[:footer {:class "page-footer"} e]])
+                     (when-let [nav (:nav-hiccup ctx)] [nav])))]]))])
 
 (def ^:private sidebar-chrome
   "Two-column docs chrome: the sidebar rail is the table of contents; the

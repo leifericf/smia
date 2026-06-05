@@ -26,7 +26,8 @@ for some editions and not others. An interface vocabulary names keys, menus, and
 controls, and worked-example and disclosure blocks group richer content. The
 generated apparatus localizes to the book's language. The site edition adds
 opt-in dark mode that follows the reader's system setting with no JavaScript,
-and per-page "Edit this page" links. LaTeX math and PlantUML
+an optional toggle for an explicit choice, and per-page "Edit this page" links.
+LaTeX math and PlantUML
 diagrams render at build time into self-contained SVG, identical in every
 edition, with no JavaScript and no math font needed at read time. Mermaid
 diagrams are an opt-in, site-only exception, rendered in the browser and shown

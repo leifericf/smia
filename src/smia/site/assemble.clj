@@ -143,6 +143,9 @@
    (let [search?     (boolean (get-in tokens [:site :search]))
          mermaid     (get-in tokens [:site :mermaid])
          mermaid-src (when (map? mermaid) (:src mermaid))
+         dark        (get-in tokens [:site :dark])
+         dark?       (boolean dark)
+         toggle?     (boolean (and (map? dark) (:toggle dark)))
          {:keys [pages resources] :as assembled}
          (html-assemble/assemble
            book (cond-> {:highlight? (get-in tokens [:type :highlight] false)
@@ -150,11 +153,11 @@
                          :location   html-assemble/nested-location}
                   search?   (assoc :search true)
                   mermaid   (assoc :mermaid true :mermaid-src mermaid-src)
+                  toggle?   (assoc :dark-toggle true)
                   edit-url  (assoc :edit-url edit-url)
                   downloads (assoc :downloads downloads)))
-         dark?    (boolean (get-in tokens [:site :dark]))
          site-url (some-> site-url (str/replace #"/*$" "/"))
-         page-map (into {"styles.css" (css/css tokens {:dark? dark?})}
+         page-map (into {"styles.css" (css/css tokens {:dark? dark? :toggle? toggle?})}
                         (map (fn [{:keys [file hiccup]}]
                                [file (html-serialize/serialize
                                        hiccup {:doctype? true})])
@@ -175,4 +178,5 @@
       :resources resources
       :bundled   (cond-> []
                    search? (conj {:resource "smia/site/search.js" :path "search.js"})
-                   mermaid (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"}))})))
+                   mermaid (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"})
+                   toggle? (conj {:resource "smia/site/theme.js" :path "theme.js"}))})))

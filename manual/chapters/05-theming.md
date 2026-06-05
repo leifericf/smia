@@ -105,6 +105,18 @@ A computed dark palette is the default; override any of its colors — `:text`, 
 
 The custom-property layer is the site's alone; the EPUB keeps a literal stylesheet, since e-readers do their own theming and older ones support custom properties unevenly. A book that does not opt in emits exactly the same stylesheet as before.
 
+### A reader-controlled toggle
+
+The default follows the operating system. To add a button that lets the reader override it, set `:dark` to a map with `:toggle`:
+
+```edn
+:site {:dark {:toggle true}}
+```
+
+This adds a small ClojureScript island, compiled to a committed bundle and shipped on the page. It records the reader's choice in the browser's `localStorage` and reflects it on the page, so an explicit choice overrides the system setting and survives across pages and visits. The script loads ahead of first paint, so a stored choice applies with no flash of the wrong scheme. The page is still hosted as plain static files — nothing runs on a server.
+
+With JavaScript disabled the button stays hidden and nothing breaks: the operating-system setting still governs through the media query, exactly as `:dark true` alone behaves. The toggle is the only part of dark mode that uses JavaScript; the color scheme itself never needs it. Palette overrides under the `:dark` token group apply to both the system scheme and the explicit choice.
+
 ## Mermaid diagrams
 
 A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small committed script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.

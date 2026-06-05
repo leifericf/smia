@@ -170,3 +170,21 @@
       (is (str/includes? dark "--tok-keyword: #ffcc66;"))))
   (testing "the variables path stays deterministic"
     (is (= (css/css tokens {:dark? true}) (css/css tokens {:dark? true})))))
+
+(deftest the-toggle-adds-explicit-data-theme-overrides
+  (testing "without :toggle? no data-theme blocks are emitted"
+    (is (not (str/includes? (css/css tokens {:dark? true}) "data-theme"))))
+  (testing ":toggle? emits a light and a dark explicit override plus the button style"
+    (let [out (css/css tokens {:dark? true :toggle? true})]
+      (is (str/includes? out "html[data-theme=\"dark\"] {"))
+      (is (str/includes? out "html[data-theme=\"light\"] {"))
+      (is (str/includes? out ".theme-toggle {"))
+      (testing "the explicit dark block carries the dark variable values"
+        (let [dark (subs out (str/index-of out "html[data-theme=\"dark\"]"))]
+          (is (str/includes? dark "--ink: #e6e6e6;"))))
+      (testing "the explicit light block carries the light variable values"
+        (let [light (subs out (str/index-of out "html[data-theme=\"light\"]"))]
+          (is (str/includes? light "--ink: #1c1c1c;"))))))
+  (testing "the toggle CSS stays deterministic"
+    (is (= (css/css tokens {:dark? true :toggle? true})
+           (css/css tokens {:dark? true :toggle? true})))))
