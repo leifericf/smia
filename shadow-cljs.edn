@@ -1,7 +1,7 @@
 ;; The site islands' builds. Smia-dev only: each release bundle is
 ;; committed under resources/smia/site/ and shipped on the classpath, so
 ;; building a book never needs Node. Rebuild after changing cljs/ with:
-;;   npm install && npx shadow-cljs release search mermaid theme
+;;   npm install && npx shadow-cljs release search mermaid theme reader keys
 ;; then copy build/cljs/<name>.js over resources/smia/site/<name>.js.
 {:deps   {:aliases [:cljs]}
  :builds {:search  {:target     :browser
@@ -19,4 +19,8 @@
           :reader  {:target     :browser
                     :output-dir "build/cljs"
                     :asset-path "."
-                    :modules    {:reader {:init-fn smia.site.reader-client/init}}}}}
+                    :modules    {:reader {:init-fn smia.site.reader-client/init}}}
+          :keys    {:target     :browser
+                    :output-dir "build/cljs"
+                    :asset-path "."
+                    :modules    {:keys {:init-fn smia.site.keys-client/init}}}}}
