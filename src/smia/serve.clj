@@ -58,15 +58,20 @@
    would escape `root` (a traversal attempt)."
   [root path]
   (when-let [decoded (decode-path (str/replace path #"\?.*$" ""))]
-    (let [rel     (str/replace decoded #"^/+" "")
-          target  (if (or (str/blank? rel) (str/ends-with? rel "/"))
-                    (io/file root rel "index.html")
-                    (io/file root rel))
-          target  (if (.isDirectory target) (io/file target "index.html") target)
-          rootc   (str (.getCanonicalFile (io/file root)) java.io.File/separator)
-          filec   (.getCanonicalFile target)]
-      (when (str/starts-with? (str filec) rootc)
-        filec))))
+    ;; Canonicalization rejects a path the OS cannot name (e.g. an embedded
+    ;; NUL byte) with an IOException; treat that as a malformed path and
+    ;; resolve to nothing rather than letting it surface as a 500.
+    (try
+      (let [rel     (str/replace decoded #"^/+" "")
+            target  (if (or (str/blank? rel) (str/ends-with? rel "/"))
+                      (io/file root rel "index.html")
+                      (io/file root rel))
+            target  (if (.isDirectory target) (io/file target "index.html") target)
+            rootc   (str (.getCanonicalFile (io/file root)) java.io.File/separator)
+            filec   (.getCanonicalFile target)]
+        (when (str/starts-with? (str filec) rootc)
+          filec))
+      (catch java.io.IOException _ nil))))
 
 (defn- respond [root ^HttpExchange ex]
   (try

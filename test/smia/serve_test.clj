@@ -51,7 +51,9 @@
       (is (= (.getCanonicalFile (io/file dir "100%.txt"))
              (serve/resolve-file dir "/100%25.txt"))))
     (testing "a malformed escape resolves to nothing rather than throwing"
-      (is (nil? (serve/resolve-file dir "/100%zz.txt"))))))
+      (is (nil? (serve/resolve-file dir "/100%zz.txt"))))
+    (testing "a path the OS cannot name (an embedded NUL) resolves to nothing"
+      (is (nil? (serve/resolve-file dir "/sub%00/index.html"))))))
 
 (deftest serve!-serves-names-with-url-special-characters
   (let [dir (tmp-site)]
