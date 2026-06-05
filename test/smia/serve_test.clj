@@ -37,6 +37,33 @@
       (is (nil? (serve/resolve-file dir "/../secret")))
       (is (nil? (serve/resolve-file dir "/part-1/../../secret"))))))
 
+(deftest resolve-file-decodes-paths-without-form-semantics
+  (let [dir (tmp-site)]
+    (spit (io/file dir "a+b.txt") "plus")
+    (spit (io/file dir "a b.txt") "space")
+    (spit (io/file dir "100%.txt") "percent")
+    (testing "a literal + in a file name stays a +"
+      (is (= (.getCanonicalFile (io/file dir "a+b.txt"))
+             (serve/resolve-file dir "/a+b.txt"))))
+    (testing "percent escapes decode exactly once"
+      (is (= (.getCanonicalFile (io/file dir "a b.txt"))
+             (serve/resolve-file dir "/a%20b.txt")))
+      (is (= (.getCanonicalFile (io/file dir "100%.txt"))
+             (serve/resolve-file dir "/100%25.txt"))))
+    (testing "a malformed escape resolves to nothing rather than throwing"
+      (is (nil? (serve/resolve-file dir "/100%zz.txt"))))))
+
+(deftest serve!-serves-names-with-url-special-characters
+  (let [dir (tmp-site)]
+    (spit (io/file dir "a+b.txt") "plus")
+    (spit (io/file dir "100%.txt") "percent")
+    (let [{:keys [server]} (serve/serve! {:dir dir :port 0})
+          port             (.getPort (.getAddress server))]
+      (try
+        (is (= "plus" (slurp (str "http://localhost:" port "/a+b.txt"))))
+        (is (= "percent" (slurp (str "http://localhost:" port "/100%25.txt"))))
+        (finally (serve/stop! {:server server}))))))
+
 (deftest serve!-serves-files-over-http
   (let [dir              (tmp-site)
         {:keys [server]} (serve/serve! {:dir dir :port 0})

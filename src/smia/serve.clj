@@ -42,26 +42,35 @@
   (let [ext (str/lower-case (or (second (re-find #"\.([^.]+)$" filename)) ""))]
     (get content-types ext "application/octet-stream")))
 
+(defn- decode-path
+  "Percent-decode a raw URL path exactly once. Unlike form decoding, a
+   `+` is a literal plus. Returns nil for a malformed escape sequence."
+  [^String path]
+  (try
+    (URLDecoder/decode (str/replace path "+" "%2B") "UTF-8")
+    (catch IllegalArgumentException _ nil)))
+
 (defn resolve-file
-  "Resolve a request `path` to a file under `root`, applying the
-   directory-index convention: a path ending in `/`, or one naming a
-   directory, serves that directory's `index.html`. Returns the canonical
-   `File`, or nil when the path would escape `root` (a traversal attempt)."
+  "Resolve a raw (still percent-encoded) request `path` to a file under
+   `root`, applying the directory-index convention: a path ending in `/`,
+   or one naming a directory, serves that directory's `index.html`.
+   Returns the canonical `File`, or nil when the path is malformed or
+   would escape `root` (a traversal attempt)."
   [root path]
-  (let [decoded (URLDecoder/decode (str/replace path #"\?.*$" "") "UTF-8")
-        rel     (str/replace decoded #"^/+" "")
-        target  (if (or (str/blank? rel) (str/ends-with? rel "/"))
-                  (io/file root rel "index.html")
-                  (io/file root rel))
-        target  (if (.isDirectory target) (io/file target "index.html") target)
-        rootc   (str (.getCanonicalFile (io/file root)) java.io.File/separator)
-        filec   (.getCanonicalFile target)]
-    (when (str/starts-with? (str filec) rootc)
-      filec)))
+  (when-let [decoded (decode-path (str/replace path #"\?.*$" ""))]
+    (let [rel     (str/replace decoded #"^/+" "")
+          target  (if (or (str/blank? rel) (str/ends-with? rel "/"))
+                    (io/file root rel "index.html")
+                    (io/file root rel))
+          target  (if (.isDirectory target) (io/file target "index.html") target)
+          rootc   (str (.getCanonicalFile (io/file root)) java.io.File/separator)
+          filec   (.getCanonicalFile target)]
+      (when (str/starts-with? (str filec) rootc)
+        filec))))
 
 (defn- respond [root ^HttpExchange ex]
   (try
-    (let [f (resolve-file root (.getPath (.getRequestURI ex)))]
+    (let [f (resolve-file root (.getRawPath (.getRequestURI ex)))]
       (if (and f (.isFile f))
         (let [bytes (Files/readAllBytes (.toPath f))]
           (.set (.getResponseHeaders ex) "Content-Type" (content-type (.getName f)))
