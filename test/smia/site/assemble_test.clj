@@ -213,7 +213,7 @@
       (is (str/includes? page "<script defer=\"defer\" src=\"../search.js\">")))))
 
 (deftest search-bundle-is-named-for-the-emit-shell
-  (is (= [{:resource "smia/site/search.js" :path "search.js"}]
+  (is (= [{:island :search :path "search.js"}]
          (:bundled search-result))))
 
 (deftest search-index-json-is-deterministic
@@ -226,18 +226,18 @@
   (is (= [] (:bundled result)))
   (is (not (str/includes? (get pages "ch-one/index.html") "search"))))
 
-(deftest shipped-search-bundle-is-on-the-classpath
-  (let [r (clojure.java.io/resource "smia/site/search.js")]
+(deftest search-island-source-is-on-the-classpath
+  (let [r (clojure.java.io/resource "smia/site/search_client.cljs")]
     (is (some? r))
     (is (pos? (count (slurp r))))))
 
-(deftest shipped-reader-bundle-is-on-the-classpath
-  (let [r (clojure.java.io/resource "smia/site/reader.js")]
+(deftest reader-island-source-is-on-the-classpath
+  (let [r (clojure.java.io/resource "smia/site/reader_client.cljs")]
     (is (some? r))
     (is (pos? (count (slurp r))))))
 
-(deftest shipped-keys-bundle-is-on-the-classpath
-  (let [r (clojure.java.io/resource "smia/site/keys.js")]
+(deftest keys-island-source-is-on-the-classpath
+  (let [r (clojure.java.io/resource "smia/site/keys_client.cljs")]
     (is (some? r))
     (is (pos? (count (slurp r))))))
 
@@ -259,7 +259,7 @@
     (testing "the deferred island bundle is linked (page-relative)"
       (is (str/includes? page "src=\"../mermaid.js\"")))
     (testing "the bundle is named for the emit shell"
-      (is (some #(= {:resource "smia/site/mermaid.js" :path "mermaid.js"} %)
+      (is (some #(= {:island :mermaid :path "mermaid.js"} %)
                 (:bundled r))))))
 
 (deftest mermaid-src-adds-a-vendor-loader-before-the-bundle
@@ -277,8 +277,8 @@
     (is (str/includes? page "graph TD") "the source still shows as a listing")
     (is (not (some #(= "mermaid.js" (:path %)) (:bundled r))))))
 
-(deftest shipped-mermaid-bundle-is-on-the-classpath
-  (let [res (clojure.java.io/resource "smia/site/mermaid.js")]
+(deftest mermaid-island-source-is-on-the-classpath
+  (let [res (clojure.java.io/resource "smia/site/mermaid_client.cljs")]
     (is (some? res))
     (is (pos? (count (slurp res))))))
 
@@ -304,7 +304,7 @@
       (is (str/includes? page "data-theme-toggle"))
       (is (str/includes? page "<button")))
     (testing "the bundle is named for the emit shell"
-      (is (some #(= {:resource "smia/site/theme.js" :path "theme.js"} %)
+      (is (some #(= {:island :theme :path "theme.js"} %)
                 (:bundled toggle-result))))))
 
 ;; --- the reader-preferences island ------------------------------------------
@@ -338,7 +338,7 @@
     (testing "the panel's grid display does not defeat the hidden attribute"
       (is (str/includes? css ".reader-panel[hidden] {")))
     (testing "the bundle is named for the emit shell"
-      (is (some #(= {:resource "smia/site/reader.js" :path "reader.js"} %)
+      (is (some #(= {:island :reader :path "reader.js"} %)
                 (:bundled r))))))
 
 (deftest reader-with-dark-folds-the-theme-control-into-the-cluster
@@ -388,7 +388,7 @@
     (testing "the hidden attribute still hides it despite the flex display"
       (is (str/includes? css ".kbd-help[hidden] {")))
     (testing "the bundle is named for the emit shell"
-      (is (some #(= {:resource "smia/site/keys.js" :path "keys.js"} %)
+      (is (some #(= {:island :keys :path "keys.js"} %)
                 (:bundled r))))))
 
 (deftest without-the-token-no-keyboard-island
@@ -409,7 +409,7 @@
     (is (not (str/includes? page "data-theme-toggle")))
     (is (not (some #(= "theme.js" (:path %)) (:bundled r))))))
 
-(deftest shipped-theme-bundle-is-on-the-classpath
-  (let [res (clojure.java.io/resource "smia/site/theme.js")]
+(deftest theme-island-source-is-on-the-classpath
+  (let [res (clojure.java.io/resource "smia/site/theme_client.cljs")]
     (is (some? res))
     (is (pos? (count (slurp res))))))

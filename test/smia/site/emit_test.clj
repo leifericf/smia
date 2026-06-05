@@ -84,14 +84,17 @@
       (is (= :smia.site.emit/missing-resource
              (:warning/type (first (:warnings result))))))))
 
-(deftest bundled-classpath-resources-are-copied
-  (let [out (tmp-dir "bundled")]
+(deftest bundled-files-are-copied
+  (let [out    (tmp-dir "bundled")
+        bundle (io/file (tmp-dir "bundled-cache") "search.js")]
+    (io/make-parents bundle)
+    (spit bundle "console.log('island');")
     (emit/emit! {:out-dir   out
                  :book-root (tmp-dir "bundled-root")
                  :pages     {"index.html" "<!DOCTYPE html>\n<html></html>"}
                  :resources []
-                 :bundled   [{:resource "smia/site/search.js" :path "search.js"}]})
-    (testing "the shipped bundle lands beside the pages"
+                 :bundled   [{:file bundle :path "search.js"}]})
+    (testing "the compiled bundle lands beside the pages"
       (is (.exists (io/file out "search.js")))
       (is (pos? (.length (io/file out "search.js")))))
     (testing "the sweep never touches it"
@@ -101,14 +104,15 @@
                    :resources []})
       (is (.exists (io/file out "search.js"))))))
 
-(deftest missing-bundled-resource-is-a-hard-error
+(deftest missing-bundled-file-is-a-hard-error
   (let [out (tmp-dir "bundled-missing")
         d   (try (emit/emit! {:out-dir   out
                               :book-root (tmp-dir "x")
                               :pages     {}
                               :resources []
-                              :bundled   [{:resource "smia/site/nope.js"
+                              :bundled   [{:file (io/file (tmp-dir "empty-cache")
+                                                          "nope.js")
                                            :path "nope.js"}]})
                  nil
                  (catch Exception e (ex-data e)))]
-    (is (= :smia.site.emit/missing-bundled-resource (:error/type d)))))
+    (is (= :smia.site.emit/missing-bundled-file (:error/type d)))))

@@ -43,11 +43,12 @@ jobs:
       - name: Validate dogfood manual with code checks
         run: clojure -M:run validate manual --validate-code
 
-      - name: Build dogfood user manual (screen + print)
+      - name: Build dogfood user manual (screen + print + site)
         run: |
-          clojure -M:run:math:diagrams build manual \
+          clojure -M:run:cljs:math:diagrams build manual \
             --edition screen \
             --edition print \
+            --edition site \
             --output-root build/ci
 
       - name: Smoke-test the programmatic -X API
@@ -57,6 +58,8 @@ jobs:
         run: |
           test -f build/ci/smia-manual/pdf/smia-manual-screen.pdf
           test -f build/ci/smia-manual/pdf/smia-manual-print.pdf
+          test -f build/ci/smia-manual/site/index.html
+          test -f build/ci/smia-manual/site/search.js
           test -f build/ci/smia-manual/artifacts.edn
 
       - name: Upload dogfood artifacts

@@ -33,6 +33,7 @@
    [smia.svg.resolve :as svg-resolve]
    [smia.site.assemble :as site-assemble]
    [smia.site.emit :as site-emit]
+   [smia.site.islands :as islands]
    [smia.theme.compile :as theme-compile]
    [smia.theme.load :as theme]
    [clojure.java.io :as io])
@@ -294,8 +295,9 @@
        :warnings (:warnings result)})))
 
 (defn- render-site!
-  "Assemble the static site (pure) and write its page map (shell).
-   Returns the artifact entry."
+  "Assemble the static site (pure), compile the island bundles it needs
+   (on demand, cached), and write its page map (shell). Returns the
+   artifact entry."
   [{:keys [book-root book tokens config]} {:keys [edition out-dir]}]
   (let [{:keys [pages resources bundled]} (site-assemble/assemble
                                             book tokens
@@ -303,11 +305,15 @@
                                              :redirects (:book/redirects config)
                                              :site-url  (:book/site-url config)
                                              :edit-url  (:book/edit-url config)})
+        compiled (islands/ensure-bundles! (map :island bundled))
         result (site-emit/emit! {:out-dir   out-dir
                                  :book-root book-root
                                  :pages     pages
                                  :resources resources
-                                 :bundled   bundled})]
+                                 :bundled   (mapv (fn [{:keys [island path]}]
+                                                    {:file (get compiled island)
+                                                     :path path})
+                                                  bundled)})]
     {:edition  edition
      :path     out-dir
      :paths    {:dir out-dir :index (str out-dir "/index.html")}

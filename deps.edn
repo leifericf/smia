@@ -1,4 +1,7 @@
-{:paths ["src" "resources"]
+;; "cljs" holds the site islands' ClojureScript sources. They ride the
+;; main classpath as inert data; the compiler that turns one into a
+;; browser bundle sits behind the optional :cljs alias.
+{:paths ["src" "resources" "cljs"]
 
  :deps {org.clojure/clojure        {:mvn/version "1.12.0"}
         org.clojure/tools.cli      {:mvn/version "1.1.230"}
@@ -11,15 +14,19 @@
 
  :aliases
  {:test  {:extra-paths ["test" "test/resources"]
-          ;; jlatexmath and plantuml are here because the dogfood manual
-          ;; carries live math and a live diagram, and the
-          ;; characterization tests build it in-process.
+          ;; jlatexmath, plantuml, and the ClojureScript toolchain are
+          ;; here because the dogfood manual carries live math, a live
+          ;; diagram, and the site islands, and the characterization
+          ;; tests build it in-process.
           :extra-deps  {io.github.cognitect-labs/test-runner
                         {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                         org.apache.pdfbox/pdfbox {:mvn/version "3.0.3"}
                         org.w3c/epubcheck {:mvn/version "5.1.0"}
                         org.scilab.forge/jlatexmath {:mvn/version "1.0.7"}
-                        net.sourceforge.plantuml/plantuml-mit {:mvn/version "1.2024.8"}}
+                        net.sourceforge.plantuml/plantuml-mit {:mvn/version "1.2024.8"}
+                        org.clojure/clojurescript {:mvn/version "1.11.132"}
+                        no.cjohansen/replicant    {:mvn/version "2025.12.1"}
+                        thheller/shadow-cljs      {:mvn/version "2.28.20"}}
           :main-opts   ["-m" "cognitect.test-runner"]
           :exec-fn     cognitect.test-runner.api/test}
 
@@ -28,13 +35,14 @@
 
   :run {:main-opts ["-m" "smia.cli"]}
 
-  ;; Smia-dev only: rebuild the committed search island bundle
-  ;; (resources/smia/site/search.js) via shadow-cljs. Book builds never
-  ;; need this alias or Node.
-  :cljs {:extra-paths ["cljs"]
-         :extra-deps  {org.clojure/clojurescript {:mvn/version "1.11.132"}
-                       no.cjohansen/replicant    {:mvn/version "2025.12.1"}
-                       thheller/shadow-cljs      {:mvn/version "2.28.20"}}}
+  ;; The site islands' ClojureScript compiler, all JVM (no Node). A site
+  ;; build whose theme enables an island compiles its bundle on demand;
+  ;; compose this alias with the command like the optional renderers,
+  ;; e.g. `clojure -M:run:cljs build manual --edition site`. A book
+  ;; using no island never needs it.
+  :cljs {:extra-deps {org.clojure/clojurescript {:mvn/version "1.11.132"}
+                      no.cjohansen/replicant    {:mvn/version "2025.12.1"}
+                      thheller/shadow-cljs      {:mvn/version "2.28.20"}}}
 
   :build {:exec-fn   smia.api/build
           :exec-args {}}

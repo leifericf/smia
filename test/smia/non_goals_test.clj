@@ -27,12 +27,12 @@
         "v1 alpha must not depend on Datomic")))
 
 (deftest cljs-toolchain-stays-in-the-dev-only-alias
-  ;; The search island's bundle is compiled at Smia-dev time and ships as
-  ;; a committed classpath resource, so building a book never needs
-  ;; ClojureScript or a JS bundler. The toolchain may appear only inside
-  ;; the dev-only :cljs alias — never in the core deps or any alias a
-  ;; book build composes.
-  (let [without-cljs (update deps-edn :aliases dissoc :cljs)
+  ;; The island bundles compile on demand at site-build time, behind the
+  ;; optional :cljs alias — all JVM, never Node. The toolchain may appear
+  ;; only there and in :test (the characterization tests build the
+  ;; dogfood manual's site, islands and all, in-process) — never in the
+  ;; core deps or any alias a book build always composes.
+  (let [without-cljs (update deps-edn :aliases dissoc :cljs :test)
         keys-flat    (mapcat keys
                              (filter map?
                                      (tree-seq coll? seq without-cljs)))]

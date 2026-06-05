@@ -1,8 +1,8 @@
-;; The site islands' builds. Smia-dev only: each release bundle is
-;; committed under resources/smia/site/ and shipped on the classpath, so
-;; building a book never needs Node. Rebuild after changing cljs/ with:
-;;   npm install && npx shadow-cljs release search mermaid theme reader keys
-;; then copy build/cljs/<name>.js over resources/smia/site/<name>.js.
+;; The site islands' dev builds. Smia-dev only: a site build compiles
+;; each island bundle on demand (smia.site.islands, inline config), so
+;; nothing compiled is committed and no Node is involved anywhere. This
+;; file only serves interactive island development on the JVM, e.g.:
+;;   clojure -M:cljs -m shadow.cljs.devtools.cli watch theme
 {:deps   {:aliases [:cljs]}
  :builds {:search  {:target     :browser
                     :output-dir "build/cljs"

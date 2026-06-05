@@ -46,7 +46,7 @@ jobs:
 
       - name: Build every edition
         run: |
-          clojure -M:run:math:diagrams build manual \
+          clojure -M:run:cljs:math:diagrams build manual \
             --edition screen \
             --edition print \
             --edition print-x \

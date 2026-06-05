@@ -13,7 +13,6 @@ target/
 CLAUDE.md
 .mcp.json
 .claude/
-# CLJS toolchain state (dev-only; the release bundle is committed
-# under resources/smia/site/).
-node_modules/
+# CLJS compiler state (dev-only; island bundles compile on demand
+# into a temp-dir cache, never into the repo).
 .shadow-cljs/

@@ -136,8 +136,8 @@
    The theme's `:site {:search true}` token turns on the search island:
    the page map gains a deterministic `search-index.json` and a static
    `search/` fallback page, the chrome gains the form and script tag,
-   and `:bundled` names the shipped `search.js` for the emit shell to
-   copy from the classpath. The default stays zero JavaScript."
+   and `:bundled` names the island for the execute shell to compile on
+   demand and the emit shell to copy. The default stays zero JavaScript."
   ([book tokens] (assemble book tokens {}))
   ([book tokens {:keys [downloads redirects site-url edit-url]}]
    (let [search?     (boolean (get-in tokens [:site :search]))
@@ -189,8 +189,8 @@
      {:pages     page-map
       :resources resources
       :bundled   (cond-> []
-                   search?     (conj {:resource "smia/site/search.js" :path "search.js"})
-                   mermaid     (conj {:resource "smia/site/mermaid.js" :path "mermaid.js"})
-                   standalone? (conj {:resource "smia/site/theme.js" :path "theme.js"})
-                   reader?     (conj {:resource "smia/site/reader.js" :path "reader.js"})
-                   keyboard?   (conj {:resource "smia/site/keys.js" :path "keys.js"}))})))
+                   search?     (conj {:island :search :path "search.js"})
+                   mermaid     (conj {:island :mermaid :path "mermaid.js"})
+                   standalone? (conj {:island :theme :path "theme.js"})
+                   reader?     (conj {:island :reader :path "reader.js"})
+                   keyboard?   (conj {:island :keys :path "keys.js"}))})))
