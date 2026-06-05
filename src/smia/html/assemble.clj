@@ -428,7 +428,7 @@
                       (label :focus-mode "Focus mode")
                       (switch :data-focus-toggle :focus-mode "Focus mode")]
                      (when (:reader-theme ctx)
-                       [(label :color-scheme "Theme")
+                       [(label :dark-mode "Dark mode")
                         (switch :data-theme-toggle :toggle-color-scheme "Toggle dark mode")])
                      [[:button {:type "button" :class "reader-reset" :data-reader-reset ""}
                        (loc :reset-defaults "Reset to defaults")]]))]))))

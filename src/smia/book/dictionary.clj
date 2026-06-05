@@ -38,7 +38,7 @@
         :reader-settings "Reader settings" :reading-width "Width"
         :narrower "Narrower" :wider "Wider"
         :text-size "Text size" :smaller "Smaller text" :larger "Larger text"
-        :contrast "Contrast" :high-contrast "High contrast" :color-scheme "Theme"
+        :contrast "Contrast" :high-contrast "High contrast"
         :reset-defaults "Reset to defaults"
         :focus-mode "Focus mode" :breadcrumb "Breadcrumb"
         ;; keyboard shortcuts and the help overlay
