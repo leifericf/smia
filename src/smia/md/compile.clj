@@ -62,17 +62,32 @@
 
 ;; --- heading attributes ----------------------------------------------------
 
+(defn- read-whole-map
+  "Parse all of `s` as exactly one EDN map (nothing after it), or nil."
+  [s]
+  (try
+    (let [r (java.io.PushbackReader. (java.io.StringReader. s))
+          form (edn/read {:eof ::eof} r)]
+      (when (and (map? form) (= ::eof (edn/read {:eof ::eof} r)))
+        form))
+    (catch Exception _ nil)))
+
 (defn- split-trailing-edn-map
   "If string `s` ends with a bare EDN map (`… {:id :x}`), return `[text-before
-   attrs]`; otherwise nil. Additive to CommonMark: a heading with no trailing
-   map is untouched."
+   attrs]`; otherwise nil. The map opens at the rightmost `{` that reads as
+   one complete map running to the end of the string, so literal braces
+   earlier in the heading stay content. Additive to CommonMark: a heading
+   with no trailing map is untouched."
   [s]
   (when (string? s)
     (let [t (str/trimr s)]
-      (when-let [open (and (str/ends-with? t "}") (str/index-of t "{"))]
-        (let [parsed (try (edn/read-string (subs t open)) (catch Exception _ nil))]
-          (when (map? parsed)
-            [(str/trimr (subs t 0 open)) parsed]))))))
+      (when (str/ends-with? t "}")
+        (loop [open (str/last-index-of t "{")]
+          (when open
+            (if-let [attrs (read-whole-map (subs t open))]
+              [(str/trimr (subs t 0 open)) attrs]
+              (recur (when (pos? open)
+                       (str/last-index-of t "{" (dec open)))))))))))
 
 (defn- clean-heading-text
   "Strip a trailing EDN attribute map from heading text (used for the

@@ -180,7 +180,15 @@
   (testing "a heading with no trailing map is plain CommonMark"
     (is (= [[:h2 "Plain heading"]] (md->body "## Plain heading\n"))))
   (testing "the H1 title strips its attribute map too"
-    (is (= "Quickstart" (:title (second (md->chapter "# Quickstart {:id :qs}\n")))))))
+    (is (= "Quickstart" (:title (second (md->chapter "# Quickstart {:id :qs}\n"))))))
+  (testing "only the trailing map is attrs; earlier braces stay content"
+    (is (= "Title {:a 1} more"
+           (:title (second (md->chapter "# Title `{:a 1}` more {:id :foo}\n")))))
+    (is (= [[:h2 {:id :x} "A {b} c"]]
+           (md->body "## A {b} c {:id :x}\n"))))
+  (testing "a trailing map may itself nest maps"
+    (is (= [[:h2 {:style {:b 1}} "S"]]
+           (md->body "## S {:style {:b 1}}\n")))))
 
 (deftest bullet-and-ordered-lists
   (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n")))
