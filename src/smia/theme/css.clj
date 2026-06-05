@@ -233,6 +233,12 @@
          ["h3" {:font-size (get type :h3-size "13pt")}]
          ["p" {:margin (str "0 0 " paragraph)}]
          ["a" {:color link}]
+         ;; a visible focus ring for keyboard users, on every interactive
+         ;; element, tinted from the link color so it tracks the scheme.
+         ["a:focus-visible, button:focus-visible, summary:focus-visible"
+          {:outline        (str "2px solid " link)
+           :outline-offset "2px"
+           :border-radius  "2px"}]
 
          ;; code — inline code is sized down to sit level with the serif
          ;; body (monospace x-heights run large); the `pre code` reset keeps
@@ -349,6 +355,13 @@
                           :margin    "1em auto 0"
                           :padding   "0 1em"
                           :font-size "0.85em"}]
+         ;; chrome navigation reads as quiet text — the contents nav, the
+         ;; bottom prev/next, the footer — so the underline stays a signal
+         ;; reserved for links in the prose. Hover restores it.
+         [".toc a, .page-nav a, .page-footer a"
+          {:text-decoration "none" :transition "color 0.15s"}]
+         [".toc a:hover, .page-nav a:hover, .page-footer a:hover"
+          {:text-decoration "underline"}]
 
          ;; icon-only previous/next chevrons that sit in the reading column's
          ;; own margins, a visual shortcut beside the labeled bottom nav.

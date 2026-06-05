@@ -63,6 +63,19 @@
       (is (= "wrap" (:flex-wrap (rule rules ".book-layout"))))
       (is (not (str/includes? (css/css tokens) "@media"))))))
 
+(deftest chrome-links-are-quiet-and-focus-is-visible
+  (let [rules (css/compile-css tokens)
+        nav   (rule rules ".toc a, .page-nav a, .page-footer a")
+        focus (rule rules
+                "a:focus-visible, button:focus-visible, summary:focus-visible")]
+    (testing "chrome navigation links drop the browser underline"
+      (is (= "none" (:text-decoration nav))))
+    (testing "body prose links keep their underline (the global rule sets only color)"
+      (is (= {:color "#2a52be"} (rule rules "a"))))
+    (testing "keyboard focus shows a visible ring everywhere"
+      (is (some? focus))
+      (is (str/includes? (:outline focus) "solid")))))
+
 (deftest sidebar-rail-gets-a-quiet-modern-treatment
   (let [rules     (css/compile-css tokens)
         selectors (set (map first rules))]
