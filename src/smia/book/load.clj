@@ -197,10 +197,26 @@
     (vector? node) (mapv #(substitute-includes sources %) node)
     :else          node))
 
+(defn- escaping-path?
+  "True for a content-referenced path that would read outside the book: an
+   absolute path, or any `..` segment. Includes and data tables are pulled
+   from the manuscript's own content (the less-trusted `.md` surface, which
+   is otherwise eval-free), so — like image sources — they must stay within
+   the book root and never name an arbitrary file on the build machine."
+  [path]
+  (or (str/starts-with? path "/")
+      (some #{".."} (str/split path #"[/\\]"))))
+
 (defn- read-include
-  "Shell: slurp the include source at `book-root`/`path`. A missing file is
-   a hard error."
+  "Shell: slurp the include source at `book-root`/`path`. A path that escapes
+   the book root, or a missing file, is a hard error."
   [book-root path]
+  (when (escaping-path? path)
+    (throw (error/ex :smia.book.load/unsafe-include
+                     (str "Included source path " (pr-str path) " escapes the "
+                          "book directory. Include paths must be relative and "
+                          "stay within the book.")
+                     {:book-root book-root :include path})))
   (let [f (io/file book-root path)]
     (when-not (.exists f)
       (throw (error/ex :smia.book.load/missing-include
@@ -276,9 +292,15 @@
     :else          node))
 
 (defn- read-data
-  "Shell: slurp the data-table source at `book-root`/`path`. A missing file
-   is a hard error."
+  "Shell: slurp the data-table source at `book-root`/`path`. A path that
+   escapes the book root, or a missing file, is a hard error."
   [book-root path]
+  (when (escaping-path? path)
+    (throw (error/ex :smia.book.load/unsafe-data
+                     (str "Data-table source path " (pr-str path) " escapes the "
+                          "book directory. Data paths must be relative and stay "
+                          "within the book.")
+                     {:book-root book-root :data path})))
   (let [f (io/file book-root path)]
     (when-not (.exists f)
       (throw (error/ex :smia.book.load/missing-data

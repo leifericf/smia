@@ -235,6 +235,33 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :smia.book.load/missing-include (:error/type d))))))
 
+(deftest include-that-escapes-the-book-root-is-a-hard-error
+  (testing "a parent-escaping include never reaches the filesystem"
+    (let [dir    (tmp-book "inc-escape")
+          secret (io/file (.getParentFile dir) "secret.txt")]
+      (spit secret "TOP SECRET")
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"../secret.txt\"}\n```\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/unsafe-include (:error/type d)))
+        (is (= "../secret.txt" (get-in d [:error/context :include]))))))
+  (testing "an absolute include path is rejected too"
+    (let [dir (tmp-book "inc-abs")]
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"/etc/hosts\"}\n```\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/unsafe-include (:error/type d)))))))
+
+(deftest data-table-that-escapes-the-book-root-is-a-hard-error
+  (let [dir    (tmp-book "data-escape")
+        secret (io/file (.getParentFile dir) "secret.csv")]
+    (spit secret "a,b\n1,2\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"../secret.csv\"}\n:::\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/unsafe-data (:error/type d)))
+      (is (= "../secret.csv" (get-in d [:error/context :data]))))))
+
 ;; The collect and substitute halves of include resolution are pure, so they
 ;; can be exercised directly — no disk, no slurp.
 
