@@ -83,8 +83,9 @@
         nav   (rule rules ".toc a, .page-nav a, .page-footer a")
         focus (rule rules
                 "a:focus-visible, button:focus-visible, summary:focus-visible")]
-    (testing "chrome navigation links drop the browser underline"
-      (is (= "none" (:text-decoration nav))))
+    (testing "chrome navigation links are quiet muted text without an underline"
+      (is (= "none" (:text-decoration nav)))
+      (is (= "#666666" (:color nav))))
     (testing "body prose links keep their underline (the global rule sets only color)"
       (is (= {:color "#2a52be"} (rule rules "a"))))
     (testing "keyboard focus shows a visible ring everywhere"

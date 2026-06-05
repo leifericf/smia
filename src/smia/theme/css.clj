@@ -417,13 +417,14 @@
                           :margin    "1em auto 0"
                           :padding   "0 1em"
                           :font-size "0.85em"}]
-         ;; chrome navigation reads as quiet text — the contents nav, the
-         ;; bottom prev/next, the footer — so the underline stays a signal
-         ;; reserved for links in the prose. Hover restores it.
+         ;; chrome navigation reads as quiet muted text — the contents nav,
+         ;; the bottom prev/next, the footer — matching the sidebar rail, so
+         ;; the link blue and the underline stay signals reserved for the
+         ;; prose. Hover darkens to the body ink.
          [".toc a, .page-nav a, .page-footer a"
-          {:text-decoration "none" :transition "color 0.15s"}]
+          {:color muted :text-decoration "none" :transition "color 0.15s"}]
          [".toc a:hover, .page-nav a:hover, .page-footer a:hover"
-          {:text-decoration "underline"}]
+          {:color text}]
 
          ;; faint previous/next chevrons in the reading column's margins: a
          ;; bare glyph, no box, kept well clear of the text and nearly
