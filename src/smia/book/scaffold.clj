@@ -80,6 +80,11 @@
    ever overwritten. Returns `{:target <path> :files [<rel-path> …]}`."
   [target]
   (let [dir (.getCanonicalFile (io/file target))]
+    (when (and (.exists dir) (not (.isDirectory dir)))
+      (throw (error/ex :smia.book.scaffold/target-not-a-directory
+                       (str "Target exists and is not a directory: "
+                            (.getPath dir))
+                       {:target (.getPath dir)})))
     (when (and (.exists dir) (seq (.list dir)))
       (throw (error/ex :smia.book.scaffold/target-not-empty
                        (str "Target directory is not empty: " (.getPath dir))

@@ -74,6 +74,13 @@
       (is (not (.exists (io/file dir "book.edn")))
           "nothing is written into an occupied directory"))))
 
+(deftest init-refuses-a-target-that-is-a-file
+  (let [f (tmp-target "plain-file")]
+    (spit f "i am a file")
+    (let [d (catch-data #(scaffold/init! (.getPath f)))]
+      (is (= :smia.book.scaffold/target-not-a-directory (:error/type d)))
+      (is (= "i am a file" (slurp f)) "the existing file is untouched"))))
+
 ;; --- the scaffold is a buildable book -----------------------------------------
 
 (deftest scaffolded-book-validates-and-plans
