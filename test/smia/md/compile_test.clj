@@ -264,6 +264,20 @@
            [:tbody [:tr [:td "1"] [:td "2"]]]]]
          (md->body "| A | B |\n|---|---|\n| 1 | 2 |\n"))))
 
+(deftest gfm-table-column-alignment-becomes-per-cell-align
+  (testing "the separator row's colons set each column's :align"
+    (is (= [[:table {}
+             [:thead [:tr [:th {:align "left"} "A"] [:th {:align "center"} "B"]
+                      [:th {:align "right"} "C"]]]
+             [:tbody [:tr [:td {:align "left"} "1"] [:td {:align "center"} "2"]
+                      [:td {:align "right"} "3"]]]]]
+           (md->body (str "| A | B | C |\n|:--|:-:|--:|\n| 1 | 2 | 3 |\n")))))
+  (testing "an unaligned column keeps a bare cell"
+    (is (= [[:table {}
+             [:thead [:tr [:th "A"]]]
+             [:tbody [:tr [:td "1"]]]]]
+           (md->body "| A |\n|---|\n| 1 |\n")))))
+
 (deftest table-cols-from-preceding-edn-line
   (is (= [[:table {:cols [3 1]}
            [:thead [:tr [:th "A"] [:th "B"]]]

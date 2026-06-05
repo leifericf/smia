@@ -49,6 +49,23 @@
     (is (= 2 (:number-columns-spanned (second (first cells)))))
     (is (= 3 (:number-rows-spanned (second (second cells)))))))
 
+(deftest table-cells-carry-per-cell-alignment
+  (let [out      (ex [:table [:tr [:td {:align :center :valign :top} "x"]
+                              [:td {:align "right"} "y"]
+                              [:td {:valign :bottom} "z"]]])
+        cells    (filter #(and (vector? %) (= :fo/table-cell (first %)))
+                         (tree-seq vector? seq out))
+        block-of (fn [cell] (first (filter #(and (vector? %) (= :fo/block (first %)))
+                                           (tree-seq vector? seq cell))))]
+    (testing "valign maps to display-align on the cell"
+      (is (= "before" (:display-align (second (first cells)))))
+      (is (= "after" (:display-align (second (nth cells 2))))))
+    (testing "align maps to text-align on the cell block"
+      (is (= "center" (:text-align (second (block-of (first cells))))))
+      (is (= "right" (:text-align (second (block-of (second cells)))))))
+    (testing "a cell without alignment keeps a bare block"
+      (is (nil? (:display-align (second (second cells))))))))
+
 (deftest richer-blocks-expand
   (testing ":example is a kept-together callout with an optional title"
     (let [[tag attrs title body] (ex [:example {:title "Worked"} [:p "x"]])]

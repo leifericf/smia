@@ -185,8 +185,10 @@
 (defn- table-row->hiccup [row]
   (into [:tr]
         (map (fn [cell]
-               (into [(if (:header cell) :th :td)]
-                     (compile-inline-seq (:children cell))))
+               (let [tag   (if (:header cell) :th :td)
+                     align (:alignment cell)]
+                 (into (if align [tag {:align (name align)}] [tag])
+                       (compile-inline-seq (:children cell)))))
              (:children row))))
 
 (defn- compile-table [node attrs]

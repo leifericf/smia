@@ -121,15 +121,29 @@
   [tag]
   (fn [a c ctx] (into [tag (id-attrs a)] (expand-all c ctx))))
 
+(defn- cell-style
+  "An inline `style` for a cell's `:align`/`:valign`, or nil. The
+   declarations are emitted in a fixed order so the markup is
+   deterministic. Alignment is per-cell content, not theme styling, so it
+   rides an inline style rather than a CSS class."
+  [a]
+  (let [decls (cond-> []
+                (:align a)  (conj (str "text-align: " (name (:align a))))
+                (:valign a) (conj (str "vertical-align: " (name (:valign a)))))]
+    (when (seq decls) (str/join "; " decls))))
+
 (defn- cell
-  "A table cell (`:td`/`:th`) that keeps its anchor id and any
-   `:colspan`/`:rowspan` spanning attributes."
+  "A table cell (`:td`/`:th`) that keeps its anchor id, any
+   `:colspan`/`:rowspan` spanning attributes, and any per-cell
+   `:align`/`:valign` alignment."
   [tag]
   (fn [a c ctx]
-    (into [tag (cond-> (id-attrs a)
-                 (:colspan a) (assoc :colspan (:colspan a))
-                 (:rowspan a) (assoc :rowspan (:rowspan a)))]
-          (expand-all c ctx))))
+    (let [style (cell-style a)]
+      (into [tag (cond-> (id-attrs a)
+                   (:colspan a) (assoc :colspan (:colspan a))
+                   (:rowspan a) (assoc :rowspan (:rowspan a))
+                   style        (assoc :style style))]
+            (expand-all c ctx)))))
 
 ;; --- captions, figures, tables ----------------------------------------------
 

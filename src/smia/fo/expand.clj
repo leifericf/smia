@@ -245,12 +245,28 @@
   (let [[_ _ children] (hiccup/parse-node section)]
     (filter #(and (vector? %) (= :tr (first %))) (flatten-children children))))
 
+(defn- display-align
+  "Map an HTML-style vertical alignment to FO's `display-align`. An
+   unknown value is dropped (left to FOP's default)."
+  [valign]
+  (case (keyword valign)
+    :top    "before"
+    (:middle :center) "center"
+    :bottom "after"
+    nil))
+
 (defn- cell->fo [cell style]
-  (let [[tag attrs children] (hiccup/parse-node cell)]
+  (let [[tag attrs children] (hiccup/parse-node cell)
+        align (:align attrs)
+        da    (display-align (:valign attrs))
+        block (cond-> {}
+                (= tag :th) (assoc :font-weight "bold")
+                align       (assoc :text-align (name align)))]
     [:fo/table-cell (cond-> (get style :table-cell)
                       (:colspan attrs) (assoc :number-columns-spanned (:colspan attrs))
-                      (:rowspan attrs) (assoc :number-rows-spanned (:rowspan attrs)))
-     (into [:fo/block (when (= tag :th) {:font-weight "bold"})]
+                      (:rowspan attrs) (assoc :number-rows-spanned (:rowspan attrs))
+                      da               (assoc :display-align da))
+     (into [:fo/block (when (seq block) block)]
            (expand-all children style))]))
 
 (defn- row->fo [tr style]

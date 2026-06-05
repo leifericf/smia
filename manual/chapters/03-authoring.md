@@ -35,6 +35,8 @@ Table columns are equal width by default. Give `:table` a `:cols` vector of posi
 
 A cell may span columns or rows: `[:td {:colspan 2} …]` and `[:th {:rowspan 3} …]` carry through to both the HTML and the PDF. Markdown's table grammar has no span syntax, so a table with merged cells is written in Hiccup (directly in a `.clj` chapter or through a `{=hiccup}` escape).
 
+A cell carries its own alignment too: `[:td {:align "right"} …]` sets the horizontal alignment (`"left"`, `"center"`, `"right"`) and `[:td {:valign "top"} …]` the vertical (`"top"`, `"middle"`, `"bottom"`). Both render in every edition. The colons in a Markdown separator row (`|:--|:-:|--:|`) set a column's horizontal alignment the same way, applied to every cell in the column.
+
 ## Layer 2: book extensions
 
 Some things HTML cannot name. Smia adds them:

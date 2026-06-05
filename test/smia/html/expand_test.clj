@@ -42,6 +42,22 @@
   (is (= [:th {:rowspan 3} "y"]
          (html-expand/expand [:th {:rowspan 3} "y"] ctx))))
 
+(deftest table-cells-carry-per-cell-alignment
+  (testing "align and valign ride a deterministic inline style"
+    (is (= [:td {:style "text-align: center; vertical-align: top"} "x"]
+           (html-expand/expand [:td {:align :center :valign :top} "x"] ctx)))
+    (is (= [:td {:style "text-align: right"} "y"]
+           (html-expand/expand [:td {:align "right"} "y"] ctx))))
+  (testing "a cell without alignment is unchanged"
+    (is (= [:td {} "z"] (html-expand/expand [:td "z"] ctx)))))
+
+(deftest nested-table-expands-inside-a-cell
+  (let [out (html-expand/expand
+              [:table [:tr [:td [:table [:tr [:td "inner"]]]]]] ctx)
+        inner (find-all out :table)]
+    (is (= 2 (count inner)) "both the outer and the nested table expand")
+    (is (= [:td {} "inner"] (last (find-all out :td))))))
+
 (deftest foldable-code-wraps-the-listing-in-details
   (testing ":fold wraps the pre in a native disclosure with a summary"
     (let [out (html-expand/expand [:pre {:lang :clojure :fold "Show it"} "(+ 1 2)"] ctx)]
