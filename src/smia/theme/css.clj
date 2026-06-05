@@ -189,8 +189,10 @@
    flow and tinted from the same variables, so it tracks the active scheme."
   [tokens light palette]
   (let [[_ light-props] (root-light-vars light palette)]
-    [["html[data-theme=\"dark\"]" (dark-var-props tokens)]
-     ["html[data-theme=\"light\"]" light-props]
+    [["html[data-theme=\"dark\"]" (assoc (dark-var-props tokens)
+                                         :color-scheme "dark")]
+     ["html[data-theme=\"light\"]" (assoc light-props
+                                          :color-scheme "light")]
      [".theme-toggle" {:position      "fixed"
                        :top           "1em"
                        :right         "1em"
@@ -272,7 +274,11 @@
          tok-color   (fn [kind c] (if vars? (str "var(--tok-" (name kind) ")") c))]
     (vec
       (concat
-        (when vars? [(root-vars light palette reader? measure)])
+        ;; with dark mode on, tell the UA both schemes exist so native UI
+        ;; (scrollbars, form controls) follows the palette flip; the
+        ;; toggle's data-theme rules pin it to an explicit choice
+        (when vars? [(cond-> (root-vars light palette reader? measure)
+                       dark? (update 1 assoc :color-scheme "light dark"))])
         [;; reading column and base typography
          ["body" (cond-> {:font-family body-family
                           :font-size   font-size

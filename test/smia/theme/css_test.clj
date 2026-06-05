@@ -313,6 +313,21 @@
   (testing "the literal path keeps the hardcoded line-number color"
     (is (str/includes? (css/css tokens) ".line-no {\n  color: #999999;"))))
 
+(deftest dark-mode-declares-the-color-scheme
+  (testing "dark? declares both schemes so native UI follows the palette"
+    (is (str/includes? (css/css tokens {:dark? true})
+                       "color-scheme: light dark")))
+  (testing "the toggle pins the scheme to the reader's explicit choice"
+    (let [out   (css/css tokens {:dark? true :toggle? true})
+          dark  (subs out (str/index-of out "html[data-theme=\"dark\"]"))
+          light (subs out (str/index-of out "html[data-theme=\"light\"]"))]
+      (is (str/includes? dark "color-scheme: dark"))
+      (is (str/includes? light "color-scheme: light"))))
+  (testing "without dark mode no color-scheme is declared"
+    (is (not (str/includes? (css/css tokens) "color-scheme")))
+    (is (not (str/includes? (css/css tokens {:reader? true}) "color-scheme"))
+        "the reader-only variables layer keeps the UA default")))
+
 (deftest the-toggle-adds-explicit-data-theme-overrides
   (testing "without :toggle? no data-theme blocks are emitted"
     (is (not (str/includes? (css/css tokens {:dark? true}) "data-theme"))))
