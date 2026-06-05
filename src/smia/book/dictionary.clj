@@ -47,6 +47,9 @@
         :show-this-help "Show this help" :close "Close"
         :pagination "Pagination" :previous-page "Previous page" :next-page "Next page"
         :search-placeholder "Search…" :search-aria "Search this book"
+        :search-no-matches
+        "No matches — press Enter to browse the book by category."
+        :search-suggestions "Search suggestions"
         :search-fallback-note
         (str "With JavaScript enabled, the search box suggests matches as you "
              "type. Without it, the book is listed here by category.")

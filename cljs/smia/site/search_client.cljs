@@ -145,13 +145,13 @@
       (when-let [sn (:snippet hit)]
         (into [:span {:class "search-hit-snippet"}] sn))]]))
 
-(defn- popover-view [state root]
+(defn- popover-view [state root labels]
   (let [{:keys [groups selected query]} state
         idx (atom -1)]
     (cond
       (seq groups)
       [:div {:class "search-popover" :role "listbox"
-             :aria-label "Search suggestions"}
+             :aria-label (:suggestions labels)}
        (for [{:keys [label hits]} groups]
          [:div {:class "search-cat"}
           [:h4 label]
@@ -161,12 +161,11 @@
 
       (not (str/blank? query))
       [:div {:class "search-popover" :role "status"}
-       [:p {:class "search-no-results"}
-        "No matches — press Enter to browse the book by category."]])))
+       [:p {:class "search-no-results"} (:no-matches labels)]])))
 
-(defn- island-view [state root open?]
+(defn- island-view [state root labels open?]
   [:div {:class "search-island-mount"}
-   (when open? (popover-view state root))])
+   (when open? (popover-view state root labels))])
 
 ;; ---------- Wiring -----------------------------------------------------------
 
@@ -180,6 +179,14 @@
   (let [input     (.querySelector form "input[name=q]")
         index-url (.getAttribute form "data-index-url")
         root      (or (.getAttribute form "data-root") "")
+        ;; the page carries the localized strings; the literals are only a
+        ;; fallback for a form rendered without them
+        labels    {:no-matches
+                   (or (.getAttribute form "data-no-matches")
+                       "No matches — press Enter to browse the book by category.")
+                   :suggestions
+                   (or (.getAttribute form "data-suggestions-label")
+                       "Search suggestions")}
         mount     (let [div (.createElement js/document "div")]
                     (set! (.-className div) "search-island")
                     (.appendChild form div)
@@ -187,7 +194,7 @@
         state     (atom {:query "" :groups [] :selected nil :open? false})
         render!   (fn []
                     (let [s @state]
-                      (r.dom/render mount (island-view s root (:open? s)))))
+                      (r.dom/render mount (island-view s root labels (:open? s)))))
         update-query!
         (debounce
           (fn []

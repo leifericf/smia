@@ -210,7 +210,11 @@
       (is (str/includes? page "data-index-url=\"../search-index.json\""))
       (is (str/includes? page "data-root=\"../\"")))
     (testing "the deferred script tag is page-relative"
-      (is (str/includes? page "<script defer=\"defer\" src=\"../search.js\">")))))
+      (is (str/includes? page "<script defer=\"defer\" src=\"../search.js\">")))
+    (testing "the island's strings ride localized data attributes"
+      (is (str/includes? page (str "data-no-matches=\"No matches — press "
+                                   "Enter to browse the book by category.\"")))
+      (is (str/includes? page "data-suggestions-label=\"Search suggestions\"")))))
 
 (deftest search-bundle-is-named-for-the-emit-shell
   (is (= [{:island :search :path "search.js"}]

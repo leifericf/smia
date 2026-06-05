@@ -322,7 +322,15 @@
               :action         (href-to (:search-url ctx))
               :data-island    "smia-search"
               :data-index-url (href-to "search-index.json")
-              :data-root      (href-to "")}
+              :data-root      (href-to "")
+              ;; the island renders client-side, so its strings travel as
+              ;; localized data attributes rather than hardcoded English
+              :data-no-matches
+              (dictionary/localize (:language ctx) :search-no-matches
+                                   "No matches — press Enter to browse the book by category.")
+              :data-suggestions-label
+              (dictionary/localize (:language ctx) :search-suggestions
+                                   "Search suggestions")}
        [:input {:type "search" :name "q"
                 :placeholder (dictionary/localize (:language ctx) :search-placeholder "Search…")
                 :aria-label  (dictionary/localize (:language ctx) :search-aria "Search this book")
