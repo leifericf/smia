@@ -35,6 +35,12 @@
   (let [out (request/normalize (assoc valid-base :editions []) :build)]
     (is (= [:screen :print] (:editions out)))))
 
+(deftest unknown-request-keys-are-rejected
+  (let [d (catch-error #(request/normalize (assoc valid-base :edtions [:site])
+                                           :build))]
+    (is (= :smia.build.request/unknown-keys (:error/type d)))
+    (is (= [:edtions] (get-in d [:error/context :unknown-keys])))))
+
 (deftest repeated-editions-build-once
   (let [out (request/normalize (assoc valid-base :editions [:screen :screen :print :screen])
                                :build)]

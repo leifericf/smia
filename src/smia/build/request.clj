@@ -45,6 +45,17 @@
     (throw (error/ex :smia.build.request/invalid-request
                      "Request must be a map."
                      {:request request-map})))
+  (let [known   #{:book-root :config-path :editions :output-root :dry-run
+                  :validate-code :clean :licensee}
+        unknown (vec (sort (remove known (keys request-map))))]
+    (when (seq unknown)
+      (throw (error/ex :smia.build.request/unknown-keys
+                       (str "Unknown request key(s): "
+                            (str/join ", " (map pr-str unknown))
+                            ". Accepted keys: "
+                            (str/join ", " (map pr-str (sort known))) ".")
+                       {:unknown-keys unknown
+                        :accepted     (vec (sort known))}))))
   (let [{:keys [book-root config-path editions output-root dry-run
                 validate-code clean licensee]} request-map
         normalized {:command       command
