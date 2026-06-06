@@ -209,6 +209,16 @@
                  "book.edn"))]
       (is (= :smia.book.config/invalid-edit-url (:error/type d))))))
 
+(deftest redirect-old-paths-stay-inside-the-site
+  (doseq [bad ["../evil" "/abs/path" "a/../../b" ""]]
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/redirects {bad :target}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-redirects (:error/type d))
+          (str (pr-str bad) " is rejected")))))
+
 (deftest malformed-redirects-rejected
   (testing "a non-map"
     (let [d (catch-data

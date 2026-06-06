@@ -50,6 +50,16 @@
   (sweep-stale-html! out-dir (set (filter #(str/ends-with? % ".html")
                                           (keys pages))))
   (doseq [[path content] (sort-by key pages)]
+    ;; every page path is build-generated, but a config-fed path (a
+    ;; redirect stub) passes through here too — refuse anything that
+    ;; would land outside the output directory
+    (when (or (str/blank? path)
+              (str/starts-with? path "/")
+              (some #{".."} (str/split path #"[/\\]")))
+      (throw (error/ex :smia.site.emit/unsafe-page-path
+                       (str "Page path " (pr-str path) " escapes the output "
+                            "directory and is not written.")
+                       {:path path})))
     (let [f (io/file out-dir path)]
       (io/make-parents f)
       (spit f content)))

@@ -135,3 +135,18 @@
                  (catch Exception e (smia.error/data e)))]
       (is (= :smia.site.emit/unsafe-resource (:error/type d)))
       (is (not (.exists (io/file out "img/link.png")))))))
+
+(deftest page-paths-cannot-leave-the-output-directory
+  (let [root (tmp-dir "page-escape")
+        out  (str root "/site")]
+    (.mkdirs (io/file out))
+    (doseq [bad ["../escaped.html" "/abs.html" "a/../../b.html"]]
+      (let [d (try (emit/emit! {:out-dir   out
+                                :book-root out
+                                :pages     {bad "<!DOCTYPE html>\n<html></html>"}
+                                :resources []})
+                   nil
+                   (catch Exception e (smia.error/data e)))]
+        (is (= :smia.site.emit/unsafe-page-path (:error/type d))
+            (str (pr-str bad) " is rejected"))))
+    (is (not (.exists (io/file root "escaped.html"))))))

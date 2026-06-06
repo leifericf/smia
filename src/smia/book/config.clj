@@ -282,7 +282,18 @@
       (throw (error/ex :smia.book.config/invalid-redirects
                        (str ":book/redirects must be a map of old URL path "
                             "(string) -> target id (keyword) in " path ".")
-                       {:path path :redirects r})))))
+                       {:path path :redirects r})))
+    ;; an old path becomes a file under the site output directory, so it
+    ;; must be a relative site path that stays inside it
+    (doseq [[old _] r]
+      (when (or (str/blank? old)
+                (str/starts-with? old "/")
+                (some #{".."} (str/split old #"[/\\]")))
+        (throw (error/ex :smia.book.config/invalid-redirects
+                         (str "Redirect old path " (pr-str old) " in " path
+                              " must be a relative site path with no .. "
+                              "segments.")
+                         {:path path :redirect old}))))))
 
 (defn- check-site-url
   "`:book/site-url` (optional) must be an absolute http(s) URL — the
