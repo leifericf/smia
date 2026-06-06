@@ -49,12 +49,22 @@
 (defn- read-edn [^java.io.File f]
   (try
     (with-open [r (PushbackReader. (io/reader f))]
-      (edn/read r))
+      (let [tokens (edn/read r)
+            more   (edn/read {:eof ::eof} r)]
+        (when-not (= ::eof more)
+          (throw (error/ex :smia.theme.load/invalid-edn
+                           (str "Theme file must hold exactly one EDN map; "
+                                "found content after it: " (.getPath f))
+                           {:path (.getPath f)})))
+        tokens))
     (catch java.io.IOException e
       (throw (error/ex :smia.theme.load/unreadable
                        (str "Could not read theme file: " (.getPath f))
                        {:path (.getPath f) :cause (.getMessage e)})))
     (catch RuntimeException e
-      (throw (error/ex :smia.theme.load/invalid-edn
-                       (str "Theme file is not valid EDN: " (.getPath f))
-                       {:path (.getPath f) :cause (.getMessage e)})))))
+      ;; the trailing-content error above is already structured; pass it on
+      (if (error/data e)
+        (throw e)
+        (throw (error/ex :smia.theme.load/invalid-edn
+                         (str "Theme file is not valid EDN: " (.getPath f))
+                         {:path (.getPath f) :cause (.getMessage e)}))))))

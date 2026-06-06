@@ -62,3 +62,12 @@
   (let [d (catch-data
             #(theme/validate (assoc base-groups :css {"p" {}}) "theme.edn"))]
     (is (= :smia.theme.load/invalid-tokens (:error/type d)))))
+
+(deftest theme-file-must-hold-exactly-one-map
+  (let [dir (java.io.File. (System/getProperty "java.io.tmpdir")
+                           (str "smia-theme-" (System/nanoTime)))]
+    (.mkdirs dir)
+    (spit (java.io.File. dir "theme.edn")
+          "{:color {} :type {} :spacing {} :layout {}} {:junk 1}")
+    (let [d (catch-data #(theme/load-tokens {:book-root (.getPath dir)}))]
+      (is (= :smia.theme.load/invalid-edn (:error/type d))))))
