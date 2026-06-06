@@ -254,9 +254,32 @@
     :bottom "after"
     nil))
 
+(def ^:private cell-aligns
+  "The horizontal alignments a cell accepts; FOP rejects anything else at
+   render time, far from the authoring error."
+  #{:left :center :right :justify})
+
+(defn- checked-span
+  "Validate a `:colspan`/`:rowspan` value: a positive integer or nil."
+  [k v]
+  (when (and (some? v) (not (and (integer? v) (pos? v))))
+    (throw (error/ex :smia.fo.expand/invalid-cell-attr
+                     (str "A cell " k " must be a positive integer, got: "
+                          (pr-str v))
+                     {:attr k :value v})))
+  v)
+
 (defn- cell->fo [cell style]
   (let [[tag attrs children] (hiccup/parse-node cell)
         align (:align attrs)
+        _     (when (and align (not (cell-aligns (keyword align))))
+                (throw (error/ex :smia.fo.expand/invalid-cell-attr
+                                 (str "A cell :align must be one of "
+                                      "left, center, right, justify; got: "
+                                      (pr-str align))
+                                 {:attr :align :value align})))
+        _     (checked-span :colspan (:colspan attrs))
+        _     (checked-span :rowspan (:rowspan attrs))
         da    (display-align (:valign attrs))
         block (cond-> {}
                 (= tag :th) (assoc :font-weight "bold")

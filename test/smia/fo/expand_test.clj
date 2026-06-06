@@ -599,3 +599,15 @@
   (testing "an integer start still numbers from there"
     (is (= "5." (-> (ex [:ol {:start 5} [:li "a"]])
                     (nth 2) (nth 1) (nth 2) (nth 1))))))
+
+(deftest table-cell-attrs-are-validated
+  (testing "an unknown :align is rejected"
+    (let [d (catch-data #(ex [:table [:tr [:td {:align :bogus} "x"]]]))]
+      (is (= :smia.fo.expand/invalid-cell-attr (:error/type d)))))
+  (testing "a non-positive span is rejected"
+    (doseq [attrs [{:colspan 0} {:rowspan -1} {:colspan "2"}]]
+      (let [d (catch-data #(ex [:table [:tr [:td attrs "x"] [:td "y"]]]))]
+        (is (= :smia.fo.expand/invalid-cell-attr (:error/type d))
+            (str (pr-str attrs) " is rejected")))))
+  (testing "valid alignment and spans still expand"
+    (is (ex [:table [:tr [:td {:align "right" :colspan 2} "x"]]]))))
