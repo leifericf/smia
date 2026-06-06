@@ -96,13 +96,31 @@
     (tryStart [_ state _matched]
       (let [content (.toString (.getContent (.getLine state)))
             idx     (.getNextNonSpaceIndex state)
-            m       (re-matches open-re (subs content idx))]
-        (if (and m (< (.getIndent state) 4))
+            line    (subs content idx)
+            m       (re-matches open-re line)]
+        (cond
+          (and m (< (.getIndent state) 4))
           (let [block (proxy [CustomBlock] [])]
             (.put directive-meta block {:name (nth m 1) :attrs-string (nth m 2)})
             (-> (BlockStart/of (into-array BlockParser [(directive-block-parser block)]))
                 (.atIndex (count content))))
-          (BlockStart/none))))))
+
+          ;; A ::: line that is neither a well-formed opener nor a closing
+          ;; fence consumed by an open directive would otherwise fall back
+          ;; to paragraph prose and render as garbage text. A closing fence
+          ;; only reaches here when no directive is open — a stray closer.
+          (and (str/starts-with? line ":::")
+               (< (.getIndent state) 4))
+          (throw (error/ex :smia.md.parse/malformed-directive
+                           (str "Malformed directive line: " (pr-str line) ". "
+                                "An opener is :::name optionally followed by "
+                                "one EDN attribute map; a closer is a line "
+                                "containing only :::.")
+                           {:source line
+                            :line   (when-let [^SourceSpan s (.getSourceSpan (.getLine state))]
+                                      (inc (.getLineIndex s)))}))
+
+          :else (BlockStart/none))))))
 
 ;; --- positions and traversal ----------------------------------------------
 
@@ -219,7 +237,19 @@
    directive still open at end of document is a structured error — it
    would otherwise silently absorb the rest of the chapter."
   [source source-name]
-  (let [doc (-> (.parse ^Parser @parser source)
+  (let [doc (-> (try
+                  (.parse ^Parser @parser source)
+                  (catch clojure.lang.ExceptionInfo e
+                    ;; a structured error thrown mid-parse (a malformed
+                    ;; directive line) does not know the source's name;
+                    ;; add it here where it is known.
+                    (if-let [d (error/data e)]
+                      (throw (error/ex (:error/type d)
+                                       (str (:error/message d)
+                                            " (in " source-name ")")
+                                       (assoc (:error/context d)
+                                              :source-name source-name)))
+                      (throw e))))
                 node->data
                 (assoc :source-name source-name))]
     (when-let [d (first-unclosed-directive doc)]

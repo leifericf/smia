@@ -30,6 +30,29 @@
            (-> (parse/parse ":::admonition {:kind :note}\nbody\n:::\n" "d.md")
                :children first :type)))))
 
+(deftest malformed-directive-line-is-rejected
+  (testing "an opener whose attribute region does not close"
+    (let [d (catch-data
+              #(parse/parse ":::admonition {:kind :note\nBody.\n:::\n" "d.md"))]
+      (is (= :smia.md.parse/malformed-directive (:error/type d)))
+      (is (= 1 (:line (:error/context d))))
+      (is (= "d.md" (:source-name (:error/context d))))))
+  (testing "an opener with trailing content after the attribute map"
+    (let [d (catch-data
+              #(parse/parse ":::admonition {:kind :note} junk\nBody.\n:::\n" "d.md"))]
+      (is (= :smia.md.parse/malformed-directive (:error/type d)))))
+  (testing "a closing fence with no open directive"
+    (let [d (catch-data #(parse/parse "Body.\n\n:::\nmore\n" "d.md"))]
+      (is (= :smia.md.parse/malformed-directive (:error/type d)))))
+  (testing "a ::: line inside a fenced code block stays content"
+    (is (= :fenced-code-block
+           (-> (parse/parse "```\n:::not-a-directive {\n```\n" "d.md")
+               :children first :type))))
+  (testing "an indented ::: line is code, not a directive"
+    (is (= :indented-code-block
+           (-> (parse/parse "    :::name {\n" "d.md")
+               :children first :type)))))
+
 (deftest parses-into-a-document-of-blocks
   (let [doc (parse/parse "# H\n\npara\n\n- a\n- b\n" "d.md")]
     (is (= :document (:type doc)))
