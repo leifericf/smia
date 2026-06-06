@@ -34,12 +34,29 @@
                          (str "Evaluator symbol did not resolve: " evaluate)
                          {:lang lang :symbol evaluate})))))
 
+(def ^:private levels
+  "The validation depths a block may request."
+  #{:parse :compile :run :assert})
+
+(defn- check-level
+  "Throw when a block's `:level` names no known validation depth — a typo
+   like `:prase` must not silently fall through to `:run`."
+  [{:keys [attrs source]}]
+  (let [level (get attrs :level :run)]
+    (when-not (contains? levels level)
+      (throw (error/ex :smia.eval/invalid-level
+                       (str "Unknown :level " (pr-str level) " on a :test "
+                            "block; use one of :parse, :compile, :run, "
+                            ":assert.")
+                       {:level level :source source})))))
+
 (defn validate-blocks!
   "Run every block in `blocks` (each `{:lang :source :attrs}`). Returns
    `{:status :ok :validated n :results [...]}`, or throws
    `:smia.eval/validation-failed` carrying every failure."
   [blocks]
   (let [results  (mapv (fn [{:keys [lang] :as block}]
+                         (check-level block)
                          (assoc block :result ((resolve-evaluator lang) block)))
                        blocks)
         failures (filter #(= :failed (get-in % [:result :status])) results)]

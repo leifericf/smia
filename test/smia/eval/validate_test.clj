@@ -37,3 +37,21 @@
         r  (validate/validate-chapters! [ch])]
     (is (= :ok (:status r)))
     (is (= 0 (:validated r)))))
+
+(deftest unknown-level-is-an-error-not-a-run
+  (let [marker (str (System/getProperty "java.io.tmpdir")
+                    "/smia-eval-level-" (System/nanoTime))
+        ch [:chapter {} [:pre {:lang :clojure :test true :level :prase}
+                         (str "(spit " (pr-str marker) " \"ran\")")]]
+        d  (catch-data #(validate/validate-chapters! [ch]))]
+    (is (= :smia.eval/invalid-level (:error/type d)))
+    (is (= :prase (get-in d [:error/context :level])))
+    (is (not (.exists (java.io.File. marker))) "the block never executes")))
+
+(deftest every-known-level-is-accepted
+  (let [ch [:chapter {}
+            [:pre {:lang :clojure :test true :level :parse} "(+ 1 2)"]
+            [:pre {:lang :clojure :test true :level :compile} "(+ 1 2)"]
+            [:pre {:lang :clojure :test true :level :run} "(+ 1 2)"]
+            [:pre {:lang :clojure :test true :level :assert} "(= 3 (+ 1 2))"]]]
+    (is (= :ok (:status (validate/validate-chapters! [ch]))))))
