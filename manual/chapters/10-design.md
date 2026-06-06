@@ -64,9 +64,21 @@ Sugar nested inside a raw `:fo/*` or `:html/*` element still expands, so the lay
 
 Keeping assembly, expansion, and serialization pure means the hard part of the engine runs on in-memory data, with no files and no FOP. Reading inputs, evaluating chapters, and rendering are confined to a thin shell. Values that cross between the two are checked against schemas, so a malformed value fails at the boundary with a structured error.
 
-## Why Apache FOP, in-process
+## Why XSL-FO, and why in-process
 
-FOP is a pure-JVM XSL-FO formatter. Smia calls it as a library, never as a subprocess, so a build needs only a JVM. One process also makes errors easy to surface: FOP's events become structured Smia errors and warnings.
+XSL-FO is the W3C's page-formatting vocabulary: a tree of formatting objects that a formatter lays out into pages. Apache FOP is a pure-JVM implementation of it. Smia calls FOP as a library, never as a subprocess, so a build needs only a JVM, and FOP's events become structured Smia errors and warnings. The model has set books for two decades, and its history explains why Smia uses it the way it does.
+
+The classic route to FO ran through a toolchain: AsciiDoc or DocBook sources, the DocBook XSL stylesheets, an XSLT pass to FO, then the formatter, each stage installed and configured separately. The AsciiDoc ecosystem's own wrapper for that pipeline, [asciidoctor-fopub](https://github.com/asciidoctor/asciidoctor-fopub), describes the experience:
+
+> If you've ever had to do this conversion, you will appreciate how overly-complex it is. It requires fetching the right combination of software (including the right versions), putting all the files in the right location and associating them together using a catalog and passing in the correct parameters. *It's boring and tedious.*
+
+Customizing the output meant maintaining XSLT layers over those stylesheets, a craft of its own.
+
+The next generation escaped by leaving FO behind. [Asciidoctor PDF](https://github.com/asciidoctor/asciidoctor-pdf) "bypasses the step of generating an intermediary format such as DocBook, Apache FO, or LaTeX" and aims "to take the pain out of creating PDF documents from AsciiDoc". For a Ruby ecosystem carrying a Java toolchain, that was a sound trade. The cost lands elsewhere: a converter that writes PDF directly, or prints through a browser engine, takes on line breaking, page breaking, footnote placement, keeps, and tables that span pages itself, and that apparatus is what a book needs most.
+
+Smia's reading of this history is that the pain was never the formatting model; it was the toolchain around it. So Smia keeps the engine and discards the toolchain. There is no XSLT and no intermediate document on disk: the FO is generated programmatically from the same tree every edition shares, theming is the token map from [the theming chapter](#theming), and the formatter runs inside the one build process.
+
+The specification's history shapes the bet as well. The W3C stopped at an [XSL-FO 2.0 working draft in January 2012](https://www.w3.org/TR/xslfo20/), and the [working group has closed](https://www.w3.org/XML/XPPL/); [XSL 1.1](https://www.w3.org/TR/xsl11/) is the final Recommendation. A frozen specification is a liability for an authoring format and something else for an internal representation: a finished, stable compile target, whose living dependency is the formatter rather than the spec. The FO backend also sits behind the same pure-transform seam as the HTML editions, so the architecture is not married to one formatter; a different page engine, should one earn the place, would be a backend beside it rather than a rewrite beneath it.
 
 ## Determinism
 
