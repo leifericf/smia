@@ -88,11 +88,12 @@
     (catch Exception _ nil)))
 
 (defn- split-trailing-edn-map
-  "If string `s` ends with a bare EDN map (`… {:id :x}`), return `[text-before
-   attrs]`; otherwise nil. The map opens at the rightmost `{` that reads as
-   one complete map running to the end of the string, so literal braces
-   earlier in the heading stay content. Additive to CommonMark: a heading
-   with no trailing map is untouched."
+  "If string `s` ends with a non-empty bare EDN map (`… {:id :x}`), return
+   `[text-before attrs]`; otherwise nil. The map opens at the rightmost `{`
+   that reads as one complete map running to the end of the string, so
+   literal braces earlier in the heading stay content. An empty `{}` names
+   no attributes and stays text. Additive to CommonMark: a heading with no
+   trailing map is untouched."
   [s]
   (when (string? s)
     (let [t (str/trimr s)]
@@ -100,7 +101,8 @@
         (loop [open (str/last-index-of t "{")]
           (when open
             (if-let [attrs (read-whole-map (subs t open))]
-              [(str/trimr (subs t 0 open)) attrs]
+              (when (seq attrs)
+                [(str/trimr (subs t 0 open)) attrs])
               (recur (when (pos? open)
                        (str/last-index-of t "{" (dec open)))))))))))
 

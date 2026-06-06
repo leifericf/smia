@@ -201,7 +201,10 @@
            (md->body "## A {b} c {:id :x}\n"))))
   (testing "a trailing map may itself nest maps"
     (is (= [[:h2 {:style {:b 1}} "S"]]
-           (md->body "## S {:style {:b 1}}\n")))))
+           (md->body "## S {:style {:b 1}}\n"))))
+  (testing "a trailing empty map carries no attributes and stays text"
+    (is (= [[:h2 "Using {}"]] (md->body "## Using {}\n")))
+    (is (= "Using {}" (:title (second (md->chapter "# Using {}\n")))))))
 
 (deftest bullet-and-ordered-lists
   (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n")))
