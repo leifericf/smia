@@ -576,3 +576,17 @@
 (deftest diagram-without-rendered-svg-names-the-alias
   (let [d (catch-data #(ex [:diagram {:source "A -> B"}]))]
     (is (= :smia.diagram/renderer-unavailable (:error/type d)))))
+
+(deftest image-sources-stay-inside-the-book
+  (testing "a parent-escaping source is rejected"
+    (let [d (catch-data #(ex [:img {:src "../secret.png" :alt "x"}]))]
+      (is (= :smia.fo.expand/unsafe-image-src (:error/type d)))))
+  (testing "an absolute source is rejected"
+    (let [d (catch-data #(ex [:img {:src "/etc/passwd" :alt "x"}]))]
+      (is (= :smia.fo.expand/unsafe-image-src (:error/type d)))))
+  (testing "a relative in-book source expands"
+    (is (= [:fo/external-graphic {:src "url('img/w.png')"}]
+           (ex [:img {:src "img/w.png" :alt "x"}]))))
+  (testing "a remote source passes through"
+    (is (= [:fo/external-graphic {:src "url('https://x.test/w.png')"}]
+           (ex [:img {:src "https://x.test/w.png" :alt "x"}])))))

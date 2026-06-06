@@ -547,6 +547,24 @@
           (cons [:fo/block {:font-weight "bold" :space-after "3pt"} summary]
                 (expand-all children style)))))
 
+(defn- checked-image-src
+  "Return a local image `src` after verifying it stays inside the book
+   root (FOP resolves it against the book's base URI): it must be relative
+   with no `..` segments. A remote source (any URI scheme) passes through —
+   mirroring the site edition's resource rule, so the same book builds in
+   both formats."
+  [src]
+  (when (and src
+             (not (re-find #"^[A-Za-z][A-Za-z0-9+.-]*:" src))
+             (or (str/starts-with? src "/")
+                 (some #{".."} (str/split src #"[/\\]"))))
+    (throw (error/ex :smia.fo.expand/unsafe-image-src
+                     (str "Image source " (pr-str src) " escapes the book "
+                          "directory. Image paths must be relative and stay "
+                          "within the book.")
+                     {:src src})))
+  src)
+
 (defn- footnote [_author children style]
   [:fo/footnote
    [:fo/inline {:baseline-shift "super" :font-size "8pt"} "*"]
@@ -641,7 +659,7 @@
                                 c s)
                                (styled-inline {} c s)))
      :img        (fn [a _ _] [:fo/external-graphic
-                              (cond-> {:src (str "url('" (:src a) "')")}
+                              (cond-> {:src (str "url('" (checked-image-src (:src a)) "')")}
                                 (:width a)  (assoc :content-width (:width a))
                                 (:height a) (assoc :content-height (:height a)))])
      :ul         (fn [a c s] (list-block :ul a c s))
