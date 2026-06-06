@@ -454,9 +454,17 @@
         (throw (error/ex :smia.book.load/missing-references
                          (str "References file not found: " (.getPath f))
                          {:book-root book-root :references path})))
-      (let [refs (edn/read-string (slurp f))]
-        (when-not (map? refs)
-          (throw (error/ex :smia.book.load/invalid-references
-                           "References file must be an EDN map of key -> entry."
-                           {:path (.getPath f)})))
-        refs))))
+      (with-open [reader (java.io.PushbackReader. (io/reader f))]
+        (let [refs (edn/read {:eof ::eof} reader)
+              more (try (edn/read {:eof ::eof} reader)
+                        (catch Exception _ ::trailing))]
+          (when-not (map? refs)
+            (throw (error/ex :smia.book.load/invalid-references
+                             "References file must be an EDN map of key -> entry."
+                             {:path (.getPath f)})))
+          (when-not (= ::eof more)
+            (throw (error/ex :smia.book.load/invalid-references
+                             (str "References file must hold exactly one EDN map; "
+                                  "found content after it: " (.getPath f))
+                             {:path (.getPath f)})))
+          refs)))))

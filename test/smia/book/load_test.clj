@@ -228,6 +228,24 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :smia.book.load/conflicting-include-keys (:error/type d))))))
 
+(deftest references-file-must-hold-exactly-one-map
+  (let [dir (tmp-book "refs")]
+    (spit (io/file dir "refs.edn")
+          "{:smith {:author \"Smith\" :year 2020}} {:jones {:author \"Jones\"}}")
+    (let [d (catch-data #(load/load-manuscript
+                          (.getPath dir)
+                          {:book/title "T" :book/chapters []
+                           :book/references "refs.edn"}))]
+      (is (= :smia.book.load/invalid-references (:error/type d)))))
+  (testing "a single references map still loads"
+    (let [dir (tmp-book "refs-ok")]
+      (spit (io/file dir "refs.edn") "{:smith {:author \"Smith\" :year 2020}}\n")
+      (is (= {:smith {:author "Smith" :year 2020}}
+             (:references (load/load-manuscript
+                           (.getPath dir)
+                           {:book/title "T" :book/chapters []
+                            :book/references "refs.edn"})))))))
+
 (deftest include-must-name-a-regular-file
   (testing "a blank include path is rejected"
     (let [dir (tmp-book "inc-blank")]
