@@ -190,7 +190,18 @@
                                            "file: " include)
                                       {:include include :tag tag})))
 
-                 lines (select-lines text lines)
+                 lines
+                 (do
+                   (when-not (and (vector? lines) (= 2 (count lines))
+                                  (every? integer? lines)
+                                  (<= 1 (first lines) (second lines)))
+                     (throw (error/ex :smia.book.load/invalid-include-lines
+                                      (str "An include's :lines must be a vector "
+                                           "of two 1-based line numbers [from to] "
+                                           "with from <= to, got: " (pr-str lines))
+                                      {:include include :lines lines})))
+                   (select-lines text lines))
+
                  :else text)]
       [:pre (dissoc attrs :include :lines :tag) text])
 

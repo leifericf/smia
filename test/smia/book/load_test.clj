@@ -228,6 +228,21 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :smia.book.load/conflicting-include-keys (:error/type d))))))
 
+(deftest include-lines-must-be-a-valid-range
+  (let [dir (tmp-book "inc-lines")]
+    (spit-chapter dir "src/s.clj" "l1\nl2\nl3\nl4\nl5\n")
+    (doseq [bad ["[5 3]" "[3]" "\"3-5\"" "[0 2]" "[1 2 3]" "[1.5 2]"]]
+      (spit-chapter dir "chapters/01-x.md"
+                    (str "# X\n\n```clojure {:include \"src/s.clj\" :lines " bad "}\n```\n"))
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/invalid-include-lines (:error/type d))
+            (str ":lines " bad " is rejected"))))
+    (spit-chapter dir "chapters/01-x.md"
+                  "# X\n\n```clojure {:include \"src/s.clj\" :lines [2 3]}\n```\n")
+    (is (= [:chapter {:id :x :title "X"} [:pre {:lang :clojure} "l2\nl3"]]
+           (load/load-chapter (.getPath dir) "chapters/01-x.md"))
+        "a valid range still selects")))
+
 (deftest missing-include-is-a-hard-error
   (let [dir (tmp-book "noinc")]
     (spit-chapter dir "chapters/01-x.md"
