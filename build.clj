@@ -37,7 +37,7 @@
    does, so the stamp cannot break PDF byte-determinism."
   [_]
   (b/delete {:path "target"})
-  (let [basis (b/create-basis {:aliases [:cljs :math :diagrams]})]
+  (let [basis (b/create-basis {:aliases [:cljs :math :diagrams :slf4j-nop]})]
     (b/copy-dir {:src-dirs ["src" "cljs"] :target-dir class-dir})
     (b/write-file {:path   (str class-dir "/smia/version.edn")
                    :string (pr-str {:version (version) :sha (short-sha)})})
