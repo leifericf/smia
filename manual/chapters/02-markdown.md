@@ -86,7 +86,7 @@ x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
 
 Smia renders the notation at build time, in process, into SVG whose glyphs are outline paths. The same image appears in every edition — the PDFs, the site, the EPUB — with no JavaScript in the page and no font needed at view time. A formula used twice renders once. Inline math sits on a fixed middle alignment rather than a true text baseline; notation with deep descenders may sit a little high.
 
-Rendering needs the optional `:math` alias, composed with the command the same way as the code evaluators below:
+The packaged `smia` command bundles the renderer. On the Clojure CLI track it sits behind the optional `:math` alias, composed with the command the same way as the code evaluators below:
 
 ```
 clojure -M:run:math build
@@ -185,7 +185,7 @@ The notes are data, so the code stays exactly as written and a reader can copy i
 For a programming book, a code sample should actually work. Mark a fenced block `{:test true}` and run a build or `validate` with `--validate-code`:
 
 ```
-clojure -M:run validate manual --validate-code
+smia validate manual --validate-code
 ```
 
 Smia then evaluates each marked block through a language-keyed **evaluator registry** and fails the build if any block fails. Validation verifies; it does not capture output. The rendered text stays exactly as written, only the check runs, so the build remains deterministic. The assertion below, for instance, is checked at build time when validation is on:
@@ -205,7 +205,7 @@ An optional `:level` in the block's EDN map selects how far to go: `:parse`, `:c
 | Java | JShell (part of the JDK) | none |
 | Kotlin | JSR-223 scripting | the `:eval-kotlin` alias |
 
-A book pulls in only the evaluators it uses; compose the aliases with the command, for example `clojure -M:run:eval-groovy validate manual --validate-code`. The registry accepts further languages as data, but no other evaluators ship today. Validating a non-JVM language would need an external toolchain, and the build deliberately stays within one JVM process.
+A book pulls in only the evaluators it uses. Clojure and Java validation works everywhere, including from the packaged `smia` command; the Groovy and Kotlin evaluators are not bundled in the jar, so validating those languages runs on the Clojure CLI track with the alias composed with the command, for example `clojure -M:run:eval-groovy validate manual --validate-code`. The registry accepts further languages as data, but no other evaluators ship today. Validating a non-JVM language would need an external toolchain, and the build deliberately stays within one JVM process.
 
 :::admonition {:kind :warning}
 Validation is **not** sandboxed: a `{:test true}` block runs with the full authority of the build JVM, the same trust model as a `.clj` chapter. This is deliberate, so a validated sample behaves exactly as it will for a reader. Only validate manuscripts you trust.

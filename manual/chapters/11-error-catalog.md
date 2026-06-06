@@ -66,14 +66,14 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 
 ## Math and diagrams
 
-- `:smia.math/renderer-unavailable`: the manuscript carries `[:math]` notation but the renderer's optional dependency is not on the classpath. Compose the `:math` alias with the command: `clojure -M:run:math build`.
+- `:smia.math/renderer-unavailable`: the manuscript carries `[:math]` notation but the renderer's optional dependency is not on the classpath. The packaged `smia` command bundles the renderer, so this arises only on the Clojure CLI track; compose the `:math` alias with the command: `clojure -M:run:math build`.
 - `:smia.math/render-failed`: a formula's LaTeX could not be rendered (a syntax error in the notation); the error names the offending notation.
-- `:smia.diagram/renderer-unavailable`: the manuscript carries a `[:diagram]` but the renderer's optional dependency is not on the classpath. Compose the `:diagrams` alias with the command: `clojure -M:run:diagrams build`.
+- `:smia.diagram/renderer-unavailable`: the manuscript carries a `[:diagram]` but the renderer's optional dependency is not on the classpath. The packaged `smia` command bundles the renderer, so this arises only on the Clojure CLI track; compose the `:diagrams` alias with the command: `clojure -M:run:diagrams build`.
 - `:smia.diagram/render-failed`: a diagram's source could not be rendered; the error names the offending source.
 
 ## Site islands
 
-- `:smia.site.islands/compiler-unavailable`: the theme enables a site island but the ClojureScript compiler is not on the classpath. Compose the `:cljs` alias with the command: `clojure -M:run:cljs build`.
+- `:smia.site.islands/compiler-unavailable`: the theme enables a site island but the ClojureScript compiler is not on the classpath. The packaged `smia` command bundles the compiler, so this arises only on the Clojure CLI track; compose the `:cljs` alias with the command: `clojure -M:run:cljs build`.
 - `:smia.site.islands/missing-source`: an island's ClojureScript source is missing from the classpath. This is a packaging bug in Smia, not an authoring error.
 
 ## Code validation
@@ -81,7 +81,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.eval/validation-failed`: one or more `{:test true}` blocks failed; the context lists each failure.
 - `:smia.eval/unsupported-language`: a marked block names a language with no registered evaluator.
 - `:smia.eval/missing-language`: a `{:test true}` block has no `:lang`.
-- `:smia.eval/evaluator-unavailable`: an evaluator's optional dependency is not on the classpath.
+- `:smia.eval/evaluator-unavailable`: an evaluator's optional dependency is not on the classpath. The packaged `smia` command does not bundle the Groovy and Kotlin evaluators; validating those languages runs on the Clojure CLI track with the `:eval-groovy` or `:eval-kotlin` alias composed with the command.
 
 ## Editions
 

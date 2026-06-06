@@ -6,9 +6,9 @@ also be written in Hiccup, the Clojure data that Markdown compiles to. The name
 is Norwegian for a smithy.
 
 Smia is written in Clojure and renders PDFs with
-[Apache FOP](https://xmlgraphics.apache.org/fop/). A JDK and the Clojure CLI are
-the only prerequisites; everything else arrives as a Maven dependency, and the
-whole build runs inside one JVM process.
+[Apache FOP](https://xmlgraphics.apache.org/fop/). The whole build runs inside
+one JVM process; a Java runtime is the only prerequisite, and the package
+managers below install one alongside Smia.
 
 **[Read the manual online](https://smia.leifericf.com)**. Smia builds and
 publishes its own manual. It walks from the quickstart to a finished, published
@@ -16,30 +16,70 @@ book, covers every feature on the way, and its design chapter explains how Smia
 works inside. Download any edition from the site's Downloads page or from the
 repository's [Releases](https://github.com/leifericf/smia/releases/latest).
 
+## Install
+
+With Homebrew (macOS or Linux; the tap is added automatically):
+
+```bash
+brew install leifericf/smia/smia
+```
+
+With Scoop (Windows):
+
+```powershell
+scoop bucket add java
+scoop bucket add smia https://github.com/leifericf/scoop-smia
+scoop install smia
+```
+
+Both install a JDK alongside Smia. Alternatively, download `smia.jar` from
+[Releases](https://github.com/leifericf/smia/releases/latest), install a JDK
+(17 or later, for example [Temurin](https://adoptium.net)), and run
+`java -jar smia.jar <command>`. [jbang](https://www.jbang.dev) users can skip
+both steps: `jbang app install --name smia <jar URL>` provisions the JDK and
+registers the command in one go.
+
 ## Quick start
 
 ```bash
-clojure -M:run init my-book      # scaffold a minimal, buildable book
-clojure -M:run build my-book     # write the screen and print PDFs
-clojure -M:run preview my-book   # rebuild on every save
+smia init my-book      # scaffold a minimal, buildable book
+smia build my-book     # write the screen and print PDFs
+smia preview my-book   # rebuild on every save
 ```
 
 A book is a `book.edn`, its chapter sources, and a `theme.edn`. Output lands
 under `build/<slug>/`, and the repeatable `--edition` flag selects the site,
-the EPUB, and the press-ready PDF/X beyond the default PDFs.
+the EPUB, and the press-ready PDF/X beyond the default PDFs. The installed
+command bundles the math and diagram renderers and the site islands'
+ClojureScript compiler, so every feature is available without further setup.
 
-Optional capabilities sit behind deps aliases composed with the command:
-`:math` and `:diagrams` for the build-time SVG renderers, `:cljs` for the
-site's opt-in script islands. The manual that ships in this repository uses
-all three:
+See `smia build --help` for the full option list, or
+[the commands chapter](https://smia.leifericf.com/manual/part-2/commands/)
+for the whole command set.
+
+## For Clojure developers
+
+From a checkout of this repository the CLI is `clojure -M:run <command>`,
+and the optional capabilities sit behind deps aliases composed with the
+command: `:math` and `:diagrams` for the build-time SVG renderers, `:cljs`
+for the site's opt-in script islands. The manual that ships in this
+repository uses all three:
 
 ```bash
 clojure -M:run:cljs:math:diagrams build manual --edition site
 ```
 
-See `clojure -M:run build --help` for the full option list, or
-[the commands chapter](https://smia.leifericf.com/manual/part-2/commands/)
-for the whole command set.
+Smia is also a git dependency (`io.github.leifericf/smia` with a `:git/tag`
+and `:git/sha`) and a Clojure CLI tool:
+
+```bash
+clojure -Ttools install io.github.leifericf/smia '{:git/tag "<tag>" :git/sha "<sha>"}' :as smia
+clojure -Tsmia init :target '"my-book"'
+```
+
+[The commands chapter](https://smia.leifericf.com/manual/part-2/commands/)
+covers the whole Clojure track: the `-X` map API, REPL preview, and library
+use.
 
 ## License
 
