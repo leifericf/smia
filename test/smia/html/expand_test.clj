@@ -121,6 +121,13 @@
   (is (= [:dl {} [:dt {} "t"] [:dd {} "d"]]
          (html-expand/expand [:dl [:dt "t"] [:dd "d"]] ctx))))
 
+(deftest ordered-list-keeps-its-start-ordinal
+  (is (= [:ol {:start 3} [:li {} "three"] [:li {} "four"]]
+         (html-expand/expand [:ol {:start 3} [:li "three"] [:li "four"]] ctx)))
+  (testing "a default-start list carries no start attribute"
+    (is (= [:ol {} [:li {} "one"]]
+           (html-expand/expand [:ol [:li "one"]] ctx)))))
+
 (deftest external-link-keeps-href
   (is (= [:a {:href "https://x.example"} "x"]
          (html-expand/expand [:a {:href "https://x.example"} "x"] ctx))))

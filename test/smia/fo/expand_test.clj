@@ -173,6 +173,12 @@
     (is (str/includes? xml ">1.</fo:block>"))
     (is (str/includes? xml ">2.</fo:block>"))))
 
+(deftest ordered-list-numbers-from-its-start
+  (let [xml (ser/serialize (ex [:ol {:start 3} [:li "a"] [:li "b"]])
+                           {:xml-declaration? false})]
+    (is (str/includes? xml ">3.</fo:block>"))
+    (is (str/includes? xml ">4.</fo:block>"))))
+
 (deftest table-expands-with-header-and-columns
   (let [out (ex [:table
                  [:thead [:tr [:th "A"] [:th "B"]]]

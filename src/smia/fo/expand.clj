@@ -194,13 +194,14 @@
   (filter #(and (vector? %) (= :li (first %))) (hiccup/flatten-children children)))
 
 (defn- list-block [list-type author children style]
-  (let [base (cond-> (get style list-type)
-               (:id author) (assoc :id (hiccup/as-id (:id author))))]
+  (let [base  (cond-> (get style list-type)
+                (:id author) (assoc :id (hiccup/as-id (:id author))))
+        start (if (= list-type :ol) (or (:start author) 1) 1)]
     (into [:fo/list-block base]
           (map-indexed
             (fn [i item]
               (let [[_ _ item-children] (hiccup/parse-node item)
-                    label (if (= list-type :ol) (str (inc i) ".") "•")]
+                    label (if (= list-type :ol) (str (+ start i) ".") "•")]
                 [:fo/list-item
                  [:fo/list-item-label {:end-indent "label-end()"}
                   [:fo/block label]]

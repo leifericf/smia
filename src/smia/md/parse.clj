@@ -141,7 +141,9 @@
       BulletList         (assoc base :type :bullet-list
                                 :tight (.isTight ^ListBlock n) :children (kids n))
       OrderedList        (assoc base :type :ordered-list
-                                :tight (.isTight ^ListBlock n) :children (kids n))
+                                :tight (.isTight ^ListBlock n)
+                                :start (.getStartNumber ^OrderedList n)
+                                :children (kids n))
       ListItem           (assoc base :type :list-item :children (kids n))
       BlockQuote         (assoc base :type :block-quote :children (kids n))
       Link               (assoc base :type :link

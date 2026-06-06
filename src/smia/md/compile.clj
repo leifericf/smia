@@ -417,7 +417,10 @@
    :hard-line-break     (fn [_] [:br])
    :thematic-break      (fn [_] [:hr])
    :bullet-list         (fn [n] (into [:ul] (map #(compile-list-item % (:tight n)) (:children n))))
-   :ordered-list        (fn [n] (into [:ol] (map #(compile-list-item % (:tight n)) (:children n))))
+   :ordered-list        (fn [n] (let [start (:start n)
+                                       items (map #(compile-list-item % (:tight n)) (:children n))]
+                                   (into (if (and start (not= 1 start)) [:ol {:start start}] [:ol])
+                                         items)))
    :list-item           (fn [n] (compile-list-item n true))
    :block-quote         (fn [n] (into [:blockquote] (compile-block-seq (:children n))))
    :link                compile-link

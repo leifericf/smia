@@ -194,6 +194,14 @@
   (is (= [[:ul [:li "a"] [:li "b"]]] (md->body "- a\n- b\n")))
   (is (= [[:ol [:li "one"] [:li "two"]]] (md->body "1. one\n2. two\n"))))
 
+(deftest ordered-list-preserves-a-non-default-start
+  (testing "a list starting above 1 carries its start ordinal"
+    (is (= [[:ol {:start 3} [:li "three"] [:li "four"]]]
+           (md->body "3. three\n4. four\n"))))
+  (testing "a list starting at 1 carries no start attribute"
+    (is (= [[:ol [:li "one"] [:li "two"]]]
+           (md->body "1. one\n2. two\n")))))
+
 (deftest tight-lists-inline-their-items
   ;; No blank lines between items -> a CommonMark "tight" list -> items
   ;; render inline, with no inner paragraph block.

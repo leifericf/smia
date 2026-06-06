@@ -415,7 +415,10 @@
    :h5         (passthrough :h5)
    :h6         (passthrough :h6)
    :ul         (passthrough :ul)
-   :ol         (passthrough :ol)
+   :ol         (fn [a c ctx]
+                 (into [:ol (cond-> (id-attrs a)
+                              (:start a) (assoc :start (:start a)))]
+                       (expand-all c ctx)))
    :li         (passthrough :li)
    :dl         (passthrough :dl)
    :dt         (passthrough :dt)
