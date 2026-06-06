@@ -15,11 +15,30 @@
 
 ;; ---------- Normalization --------------------------------------------------
 
+(def ^:private combining-marks "[\\u0300-\\u036f]")
+
 (defn- normalize [s]
   (some-> s
           str/lower-case
           (.normalize "NFD")
-          (.replace (js/RegExp. "[\\u0300-\\u036f]" "g") "")))
+          (.replace (js/RegExp. combining-marks "g") "")))
+
+(defn- fold-with-offsets
+  "Fold `s` the same way `normalize` does, but per character, returning
+   `#js [folded offsets]` where `offsets[k]` is the index in `s` of the
+   character the k-th folded character came from. The fold can change a
+   string's length (decomposed source loses its standalone combining
+   marks), so a match located in the folded string must map its
+   boundaries back through `offsets` to slice the original correctly."
+  [s]
+  (let [n    (count s)
+        offs #js []]
+    (loop [i 0, out ""]
+      (if (< i n)
+        (let [f (normalize (.charAt s i))]
+          (dotimes [_ (count f)] (.push offs i))
+          (recur (inc i) (str out f)))
+        #js [out offs]))))
 
 ;; ---------- Index ----------------------------------------------------------
 
@@ -93,17 +112,26 @@
 
 (defn- snippet
   "~100 chars of `text` centred on the first occurrence of `q`, the
-   match wrapped in <mark>."
-  [q {:keys [text text-norm]}]
-  (when (and text text-norm)
-    (let [i (.indexOf text-norm q)]
+   match wrapped in <mark>. `q` is matched against the folded text, and
+   its match boundaries are mapped back to the original text through the
+   fold's offset table, so the highlight lands on the right characters
+   even when folding changed the string's length."
+  [q {:keys [text]}]
+  (when text
+    (let [fo    (fold-with-offsets text)
+          tnorm (aget fo 0)
+          offs  (aget fo 1)
+          i     (.indexOf tnorm q)]
       (when (>= i 0)
-        (let [pad   50
-              from  (max 0 (- i pad))
-              to    (min (count text) (+ i (count q) pad))
-              before (subs text from i)
-              match  (subs text i (+ i (count q)))
-              after  (subs text (+ i (count q)) to)]
+        (let [qn     (count q)
+              start  (aget offs i)
+              end    (if (< (+ i qn) (.-length offs)) (aget offs (+ i qn)) (count text))
+              pad    50
+              from   (max 0 (- start pad))
+              to     (min (count text) (+ end pad))
+              before (subs text from start)
+              match  (subs text start end)
+              after  (subs text end to)]
           [(cond->> before (pos? from) (str "…"))
            [:mark match]
            (cond-> after (< to (count text)) (str "…"))])))))
