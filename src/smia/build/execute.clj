@@ -48,6 +48,10 @@
    Returns `{:request <normalized> :manuscript {...} :paths {...}}`."
   [request]
   (let [{:keys [config path warnings]} (config/load-config request)
+        ;; :all expands here, where the config can say what the book is
+        ;; set up for (it decides whether :print-x joins)
+        request                        (update request :editions
+                                               request/expand-all config)
         {:keys [tokens]}               (theme/load-tokens request)
         paths                          (build-paths request config)]
     (when (and (some #{:print-x} (:editions request))

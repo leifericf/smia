@@ -59,6 +59,26 @@
                                 :build))]
     (is (= :smia.build.request/invalid-editions (:error/type d)))))
 
+(deftest all-editions-marker-survives-normalize
+  (testing ":all passes validation as a marker; the config decides later"
+    (let [out (request/normalize (assoc valid-base :editions [:all]) :build)]
+      (is (= [:all] (:editions out))))))
+
+(deftest all-mixed-with-other-editions-is-hard-error
+  (let [d (catch-error
+            #(request/normalize (assoc valid-base :editions [:all :epub])
+                                :build))]
+    (is (= :smia.build.request/invalid-editions (:error/type d)))))
+
+(deftest expand-all-includes-print-x-only-when-configured
+  (testing ":all means every edition the book is set up for"
+    (is (= [:screen :print :epub :site]
+           (request/expand-all [:all] {:book/slug "b"})))
+    (is (= [:screen :print :print-x :epub :site]
+           (request/expand-all [:all] {:book/slug "b" :book/print-x {}})))
+    (is (= [:epub] (request/expand-all [:epub] {:book/print-x {}}))
+        "explicit editions pass through untouched")))
+
 (deftest valid-single-edition-request
   (let [out (request/normalize (assoc valid-base :editions [:print]) :build)]
     (is (= [:print] (:editions out)))

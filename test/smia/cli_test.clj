@@ -118,6 +118,14 @@
 (deftest epub-edition-is-accepted-on-the-command-line
   (is (= 0 (run-code ["build" fixture "--edition" "epub" "--dry-run"]))))
 
+(deftest all-edition-is-accepted-on-the-command-line
+  (testing "--edition all dry-runs every edition the book is set up for"
+    (is (= 0 (run-code ["build" fixture "--edition" "all" "--dry-run"])))))
+
+(deftest all-edition-mixed-with-another-is-a-runtime-error
+  (is (= 1 (run-code ["build" fixture "--edition" "all" "--edition" "epub"
+                      "--dry-run"]))))
+
 (deftest clean-flag-is-translated-and-accepted
   (is (= {:book-root fixture :clean true}
          (args->request fixture {:clean true})))

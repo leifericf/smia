@@ -13,7 +13,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 
 - `:smia.build.request/invalid-value`: `:book-root`, `:config-path`, or `:output-root` was given as a non-string. A missing or blank `:book-root` is not an error; it defaults to `.`, and a non-existent book then surfaces as `:smia.book.config/missing`.
 - `:smia.build.request/unknown-edition`: an edition outside the supported set was requested.
-- `:smia.build.request/invalid-editions`: `:editions` was not a vector of keywords.
+- `:smia.build.request/invalid-editions`: `:editions` was not a vector of keywords, or `:all` was combined with another edition (it stands for every edition the book is set up for and must appear alone).
 - `:smia.build.request/print-x-requires-config`: `:print-x` was requested but `book.edn` has no `:book/print-x` map. PDF/X needs embedded fonts and an ICC output intent.
 - `:smia.book.scaffold/target-not-empty`: `init` was pointed at a directory that already has entries. The scaffold never overwrites anything; pick a fresh directory.
 

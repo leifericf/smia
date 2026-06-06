@@ -38,6 +38,8 @@ Build the requested editions. With no `--edition`, both PDF editions build:
 smia build my-book --edition screen --edition print
 ```
 
+`--edition all` builds every edition the book is set up for: screen, print, EPUB, and the site, plus the press-ready PDF/X when `book.edn` carries a `:book/print-x` map. It stands alone and does not combine with other `--edition` flags.
+
 The installed command bundles the math and diagram renderers and the site islands' compiler, so a book that uses them needs nothing extra. From a source checkout those capabilities sit behind optional aliases composed with the command; a build that needs a dependency it cannot load fails with a structured error naming the alias. See the Clojure track below.
 
 PDF output is written under `build/<slug>/pdf/` with deterministic names like `<slug>-screen.pdf`, and `--edition site` writes a static site under `build/<slug>/site/`. Every build adds an `artifacts.edn` manifest listing the editions, paths, and build metadata. The editions themselves are described in [the editions chapter](#editions); see `smia build --help` for the full option list.

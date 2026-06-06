@@ -26,7 +26,7 @@
    ["-h" "--help"             "Show this help."]])
 
 (def ^:private build-options
-  (into [["-e" "--edition EDITION" "Edition to build (screen|print|print-x|site|epub); repeatable."
+  (into [["-e" "--edition EDITION" "Edition to build (screen|print|print-x|site|epub); repeatable. \"all\" selects every edition the book is set up for."
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
          [nil "--clean" "Remove the book's output directory before building."]

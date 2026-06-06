@@ -29,6 +29,24 @@
    editions are produced by default; a request may select any subset."
   [:screen :print])
 
+(def all-editions
+  "The order `:all` expands to. `:print-x` joins only when the book
+   carries `:book/print-x` config; see `expand-all`."
+  [:screen :print :print-x :epub :site])
+
+(defn expand-all
+  "Expand the `:all` editions marker against the loaded `config`: every
+   edition the book is set up for, which includes `:print-x` only when
+   `:book/print-x` is configured (PDF/X needs embedded fonts and an ICC
+   output intent, so it cannot be implied). Explicit editions pass
+   through untouched. Pure; called from the shell once the config is
+   loaded, since normalize cannot know what the book is set up for."
+  [editions config]
+  (if (= [:all] editions)
+    (vec (cond->> all-editions
+           (not (:book/print-x config)) (remove #{:print-x})))
+    editions))
+
 (def ^:private default-output-root "build")
 (def ^:private default-config-path "book.edn")
 (def ^:private default-book-root ".")
@@ -100,16 +118,25 @@
       (throw (error/ex :smia.build.request/invalid-editions
                        ":editions must contain only keywords."
                        {:editions editions :non-keywords (vec bad)})))
-    (let [unknown (remove supported-editions editions)]
-      (when (seq unknown)
-        (throw (error/ex :smia.build.request/unknown-edition
-                         (str "Unsupported edition(s): "
-                              (str/join ", " (map pr-str unknown)))
-                         {:editions         editions
-                          :unknown-editions (vec unknown)
-                          :supported        (vec (sort supported-editions))}))))
-    ;; a repeated edition builds once — first occurrence keeps its place
-    (vec (distinct editions))))
+    (when (and (some #{:all} editions)
+               (seq (remove #{:all} editions)))
+      (throw (error/ex :smia.build.request/invalid-editions
+                       ":all stands for every edition and cannot be combined with others."
+                       {:editions (vec editions)})))
+    (if (some #{:all} editions)
+      ;; keep the marker; the shell expands it once the config is loaded
+      [:all]
+      (do
+        (let [unknown (remove supported-editions editions)]
+          (when (seq unknown)
+            (throw (error/ex :smia.build.request/unknown-edition
+                             (str "Unsupported edition(s): "
+                                  (str/join ", " (map pr-str unknown)))
+                             {:editions         editions
+                              :unknown-editions (vec unknown)
+                              :supported        (vec (sort supported-editions))}))))
+        ;; a repeated edition builds once — first occurrence keeps its place
+        (vec (distinct editions))))))
 
 (defn- resolve-book-root
   "Resolve `:book-root` to a directory path. A missing or blank value

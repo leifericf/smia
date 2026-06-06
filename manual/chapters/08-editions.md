@@ -16,11 +16,12 @@ Mathematical notation follows the same once-before-everything rule: each formula
 - `:site`: a static HTML site.
 - `:epub`: an EPUB3 package for e-readers.
 
-With no `--edition`, the two PDF editions build. Select any subset by repeating the flag:
+With no `--edition`, the two PDF editions build. Select any subset by repeating the flag, or `all` for every edition the book is set up for (PDF/X joins only when `:book/print-x` is configured):
 
 ```bash
 smia build my-book --edition site
 smia build my-book --edition screen --edition site
+smia build my-book --edition all
 ```
 
 The `artifacts.edn` manifest lists what was built under `:build/editions`, with one artifact entry per edition.
