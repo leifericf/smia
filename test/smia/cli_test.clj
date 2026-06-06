@@ -87,6 +87,10 @@
   (is (= 2 (run-code ["build" fixture "--no-such-flag"])))
   (is (= 2 (run-code ["preview" fixture "--no-such-flag"]))))
 
+(deftest out-of-range-port-is-a-usage-error
+  (is (= 2 (run-code ["preview" fixture "--port" "-1"])))
+  (is (= 2 (run-code ["preview" fixture "--port" "70000"]))))
+
 (deftest dry-run-build-succeeds
   (testing "A dry-run build returns 0 and renders nothing"
     (is (= 0 (run-code ["build" fixture "--dry-run"])))))

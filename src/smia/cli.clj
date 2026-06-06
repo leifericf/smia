@@ -40,7 +40,8 @@
           :multi true :default [] :default-desc "" :update-fn conj :parse-fn keyword]
          [nil "--output-root PATH" "Directory for build output."]
          [nil "--port PORT" "Port to serve the site on when previewing it (default 8000)."
-          :parse-fn #(Integer/parseInt %) :default 8000]]
+          :parse-fn #(Integer/parseInt %) :default 8000
+          :validate [#(<= 1 % 65535) "Must be a port number between 1 and 65535."]]]
         common-options))
 
 (def ^:private top-level-help
