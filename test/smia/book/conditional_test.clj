@@ -111,3 +111,12 @@
     (is (not (cond/edition-dependent?
                (cond/prune-manuscript m {:draft true} {} {}
                                       cond/mentions-edition?))))))
+
+(deftest conditional-inside-an-attribute-value-is-an-error
+  (let [d (catch-data
+            #(cond/prune [:chapter {}
+                          [:figure {:caption [:when {:defined :x} "c"]}
+                           [:p "b"]]]
+                         {} nil))]
+    (is (= :smia.book.conditional/conditional-in-attribute (:error/type d)))
+    (is (= :caption (get-in d [:error/context :attribute])))))

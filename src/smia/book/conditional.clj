@@ -96,6 +96,19 @@
         [(prune child context skip?)]))
     children))
 
+(defn- check-attrs!
+  "A `[:when …]` in attribute-value position has nowhere to splice and
+   would otherwise surface much later as an unknown-tag render error;
+   reject it here with the attribute named."
+  [attrs]
+  (doseq [[k v] attrs]
+    (when (when-node? v)
+      (throw (error/ex :smia.book.conditional/conditional-in-attribute
+                       (str "Conditional content is not supported inside an "
+                            "attribute value (" (pr-str k) "); wrap the "
+                            "element in [:when …] instead.")
+                       {:attribute k :value v})))))
+
 (defn prune
   "Resolve `[:when …]` nodes in one chapter `form` against `context`. `skip?`
    (a predicate on a condition, or nil) leaves matching conditions in place
@@ -105,6 +118,7 @@
     (let [[tag & more] form
           attrs        (when (map? (first more)) (first more))
           kids         (if attrs (rest more) more)]
+      (when attrs (check-attrs! attrs))
       (into (if attrs [tag attrs] [tag])
             (prune-seq kids context skip?)))
     form))
