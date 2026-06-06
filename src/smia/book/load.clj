@@ -102,13 +102,14 @@
 (defn- chapter-id-from-path
   "Derive a chapter `:id` keyword from a chapter file path: basename, minus
    extension and a leading `NN-`/`NN_` ordering prefix. e.g.
-   `chapters/02-authoring.md` -> `:authoring`."
+   `chapters/02-authoring.md` -> `:authoring`. Nil when nothing remains
+   (a prefix-only name like `01-.md`)."
   [rel-path]
-  (-> (io/file rel-path)
-      (.getName)
-      (str/replace #"\.[^.]*$" "")
-      (str/replace #"^\d+[-_]" "")
-      (keyword)))
+  (let [s (-> (io/file rel-path)
+              (.getName)
+              (str/replace #"\.[^.]*$" "")
+              (str/replace #"^\d+[-_]" ""))]
+    (when (seq s) (keyword s))))
 
 (defn- select-lines
   "Return the inclusive 1-based `[from to]` line range of `text`."
@@ -393,9 +394,16 @@
             compiled-attrs       (cond-> compiled-attrs
                                    (and smarten? (:title compiled-attrs))
                                    (update :title md-typography/smarten-string))
-            merged (merge {:id (chapter-id-from-path rel-path)}
+            merged (merge (when-let [id (chapter-id-from-path rel-path)]
+                            {:id id})
                           compiled-attrs
                           attrs)]
+        (when-not (:id merged)
+          (throw (error/ex :smia.book.load/underivable-id
+                           (str "Cannot derive a chapter :id from the filename "
+                                (pr-str rel-path) "; rename the file or add an "
+                                ":id to the front-matter.")
+                           {:path (.getPath f)})))
         (md-schema/check merged :smia.book.load/invalid-front-matter)
         (when-not (:title merged)
           (throw (error/ex :smia.book.load/missing-title

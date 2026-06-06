@@ -228,6 +228,17 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :smia.book.load/conflicting-include-keys (:error/type d))))))
 
+(deftest prefix-only-filename-needs-a-front-matter-id
+  (let [dir (tmp-book "no-id")]
+    (spit-chapter dir "chapters/01-.md" "# T\n\nx\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-.md"))]
+      (is (= :smia.book.load/underivable-id (:error/type d)))))
+  (testing "front-matter :id rescues a prefix-only filename"
+    (let [dir (tmp-book "fm-id")]
+      (spit-chapter dir "chapters/01-.md" "{:id :intro}\n# T\n\nx\n")
+      (is (= :intro
+             (:id (second (load/load-chapter (.getPath dir) "chapters/01-.md"))))))))
+
 (deftest references-file-must-hold-exactly-one-map
   (let [dir (tmp-book "refs")]
     (spit (io/file dir "refs.edn")
