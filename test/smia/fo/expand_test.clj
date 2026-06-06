@@ -590,3 +590,12 @@
   (testing "a remote source passes through"
     (is (= [:fo/external-graphic {:src "url('https://x.test/w.png')"}]
            (ex [:img {:src "https://x.test/w.png" :alt "x"}])))))
+
+(deftest ordered-list-start-must-be-an-integer
+  (doseq [bad ["5" 2.5 :five]]
+    (let [d (catch-data #(ex [:ol {:start bad} [:li "a"]]))]
+      (is (= :smia.fo.expand/invalid-list-start (:error/type d))
+          (str ":start " (pr-str bad) " is rejected"))))
+  (testing "an integer start still numbers from there"
+    (is (= "5." (-> (ex [:ol {:start 5} [:li "a"]])
+                    (nth 2) (nth 1) (nth 2) (nth 1))))))

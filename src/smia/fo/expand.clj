@@ -194,6 +194,12 @@
   (filter #(and (vector? %) (= :li (first %))) (hiccup/flatten-children children)))
 
 (defn- list-block [list-type author children style]
+  (when (and (= list-type :ol) (some? (:start author))
+             (not (integer? (:start author))))
+    (throw (error/ex :smia.fo.expand/invalid-list-start
+                     (str "An :ol :start must be an integer, got: "
+                          (pr-str (:start author)))
+                     {:start (:start author)})))
   (let [base  (cond-> (get style list-type)
                 (:id author) (assoc :id (hiccup/as-id (:id author))))
         start (if (= list-type :ol) (or (:start author) 1) 1)]
