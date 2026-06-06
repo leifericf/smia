@@ -33,8 +33,9 @@
         ;; in-flow furniture: the xref page phrase, the disclosure
         ;; summary, and the overview panel's default title
         :on-page "on page" :details "Details" :overview "Overview"
-        ;; site chrome
+        ;; site chrome and the EPUB navigation document
         :contents "Contents" :table-of-contents "Table of contents"
+        :landmarks "Landmarks" :start-of-content "Start of content"
         :downloads "Downloads" :search "Search" :edit-this-page "Edit this page"
         :toggle-color-scheme "Toggle dark mode"
         ;; reader-preferences control cluster

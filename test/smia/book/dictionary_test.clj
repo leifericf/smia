@@ -3,10 +3,12 @@
    [smia.book.dictionary :as dict]
    [smia.book.number :as number]
    [smia.book.structure :as structure]
+   [smia.epub.assemble :as epub-assemble]
    [smia.fo.expand :as fo-expand]
    [smia.html.expand :as html-expand]
    [smia.site.search-index :as search-index]
    [m1p.core :as m1p]
+   [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]))
 
 ;; --- the fallback chain -----------------------------------------------------
@@ -85,6 +87,29 @@
       (doseq [out [(fo-expand/expand [:overview {} [:p "x"]] {:language "zz"})
                    (html-expand/expand [:overview {} [:p "x"]] {:language "zz"})]]
         (is (some #(= "Oversikt" %) (tree-seq vector? seq out)))))))
+
+(deftest epub-navigation-labels-are-localized
+  (with-redefs [dict/dictionaries
+                (assoc dict/dictionaries :zz
+                       (m1p/prepare-dictionary
+                        {:contents "Innhold"
+                         :table-of-contents "Innholdsfortegnelse"
+                         :landmarks "Landemerker"
+                         :start-of-content "Innholdets begynnelse"}))]
+    (let [book (:manuscript
+                (number/assign
+                 {:title "B" :language "zz"
+                  :numbering structure/default-numbering
+                  :sections [{:kind :chapter
+                              :content [:chapter {:id :a :title "A"} [:p "x"]]}]}))
+          nav  (->> (:entries (epub-assemble/assemble
+                               book {:color {} :type {} :code {} :spacing {} :layout {}}
+                               {:identifier "x" :language "zz"}))
+                    (filter #(= "OEBPS/nav.xhtml" (:path %)))
+                    first :content)]
+      (doseq [s ["Innhold" "Innholdsfortegnelse" "Landemerker"
+                 "Innholdets begynnelse"]]
+        (is (str/includes? nav s) (str s " appears in the nav document"))))))
 
 (deftest search-category-labels-are-localized
   (with-redefs [dict/dictionaries

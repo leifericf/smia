@@ -20,6 +20,7 @@
    the shell (`epub.zip`) turns them into a byte-reproducible archive.
    No IO."
   (:require
+   [smia.book.dictionary :as dictionary]
    [smia.fo.serialize :as fo-serialize]
    [smia.html.assemble :as html-assemble]
    [smia.html.serialize :as html-serialize]
@@ -85,7 +86,8 @@
                             resources)
         nav-entry     {:path    "OEBPS/nav.xhtml"
                        :id      "nav"
-                       :content (nav-doc contents page-entries)}
+                       :content (nav-doc contents page-entries
+                                         (or language (:language book)))}
         css-entry     {:path    "OEBPS/styles.css"
                        :id      "css"
                        :content (css/css tokens)}
@@ -205,26 +207,28 @@
         (recur more (conj lis li))))))
 
 (defn- nav-doc
-  "The EPUB navigation document: the table of contents and the landmarks."
-  [contents pages]
+  "The EPUB navigation document: the table of contents and the landmarks,
+   labelled in the book's `language`."
+  [contents pages language]
   (let [home-file  "index.xhtml"
         body-start (or (some (fn [{:keys [path id]}]
                                (when (and id (str/starts-with? id "chapter-"))
                                  (subs path (count "OEBPS/"))))
                              pages)
-                       (subs (:path (first pages)) (count "OEBPS/")))]
+                       (subs (:path (first pages)) (count "OEBPS/")))
+        label      #(dictionary/localize language %)]
     (html-serialize/serialize
       [:html {:xmlns/epub "http://www.idpf.org/2007/ops"}
-       [:head [:title {} "Contents"]]
+       [:head [:title {} (label :contents)]]
        [:body {}
         [:nav {:epub/type "toc" :role "doc-toc"}
-         [:h1 {} "Contents"]
+         [:h1 {} (label :contents)]
          (nav-ol contents)]
         [:nav {:epub/type "landmarks" :hidden "hidden"}
-         [:h2 {} "Landmarks"]
+         [:h2 {} (label :landmarks)]
          [:ol {}
           [:li {} [:a {:epub/type "toc" :href home-file}
-                   "Table of contents"]]
+                   (label :table-of-contents)]]
           [:li {} [:a {:epub/type "bodymatter" :href body-start}
-                   "Start of content"]]]]]]
+                   (label :start-of-content)]]]]]]
       {:mode :xhtml :doctype? true})))
