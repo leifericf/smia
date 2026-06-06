@@ -172,3 +172,18 @@
   (testing "the downloads page is site-only by construction"
     (is (nil? (entry "OEBPS/downloads.xhtml")))
     (is (not-any? #(str/includes? (str (:path %)) "downloads") entries))))
+
+(deftest resource-manifest-ids-are-unique
+  (let [m    {:title "B"
+              :numbering structure/default-numbering
+              :sections [{:kind :chapter
+                          :content [:chapter {:id :a :title "A"}
+                                    [:p [:img {:src "img/a.png" :alt ""}]]
+                                    [:p [:img {:src "img-a.png" :alt ""}]]]}]}
+        b    (:manuscript (number/assign m))
+        opf  (->> (:entries (epub/assemble b tokens {:identifier "x"}))
+                  (filter #(= "OEBPS/content.opf" (:path %)))
+                  first :content)
+        ids  (map second (re-seq #"id=\"(res-[^\"]+)\"" opf))]
+    (is (= 2 (count ids)))
+    (is (apply distinct? ids))))

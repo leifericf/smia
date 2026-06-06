@@ -79,11 +79,17 @@
                                                   hiccup {:mode :xhtml :doctype? true})}
                                 (svg-referenced? hiccup) (assoc :properties "svg")))
                             pages)
-        image-entries (mapv (fn [{:keys [src]}]
-                              {:path     (str "OEBPS/" src)
-                               :id       (str "res-" (str/replace src #"[^A-Za-z0-9]" "-"))
-                               :resource src})
-                            resources)
+        image-entries (vec (map-indexed
+                             ;; the readable mangle is lossy ("img/a" and
+                             ;; "img-a" collide), so a positional suffix
+                             ;; keeps every manifest id unique; resources
+                             ;; arrive sorted, so the ids are deterministic
+                             (fn [i {:keys [src]}]
+                               {:path     (str "OEBPS/" src)
+                                :id       (str "res-" (inc i) "-"
+                                               (str/replace src #"[^A-Za-z0-9]" "-"))
+                                :resource src})
+                             resources))
         nav-entry     {:path    "OEBPS/nav.xhtml"
                        :id      "nav"
                        :content (nav-doc contents page-entries
