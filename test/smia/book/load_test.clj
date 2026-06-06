@@ -252,6 +252,46 @@
       (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
         (is (= :smia.book.load/unsafe-include (:error/type d)))))))
 
+(deftest symlinked-include-cannot-leave-the-book-root
+  (testing "a symlink inside the book pointing outside is rejected"
+    (let [dir    (tmp-book "inc-symlink")
+          secret (io/file (.getParentFile dir) "secret.txt")]
+      (spit secret "TOP SECRET")
+      (.mkdirs (io/file dir "src"))
+      (java.nio.file.Files/createSymbolicLink
+       (.toPath (io/file dir "src/link.txt"))
+       (.toPath secret)
+       (make-array java.nio.file.attribute.FileAttribute 0))
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"src/link.txt\"}\n```\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/unsafe-include (:error/type d))))))
+  (testing "a symlink that stays inside the book root still resolves"
+    (let [dir (tmp-book "inc-symlink-ok")]
+      (spit-chapter dir "src/real.txt" "in-book content")
+      (java.nio.file.Files/createSymbolicLink
+       (.toPath (io/file dir "src/alias.txt"))
+       (.toPath (io/file dir "src/real.txt"))
+       (make-array java.nio.file.attribute.FileAttribute 0))
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"src/alias.txt\"}\n```\n")
+      (is (= [:chapter {:id :x :title "X"} [:pre {:lang :clojure} "in-book content"]]
+             (load/load-chapter (.getPath dir) "chapters/01-x.md"))))))
+
+(deftest symlinked-data-table-cannot-leave-the-book-root
+  (let [dir    (tmp-book "data-symlink")
+        secret (io/file (.getParentFile dir) "secret.csv")]
+    (spit secret "a,b\n1,2\n")
+    (.mkdirs (io/file dir "data"))
+    (java.nio.file.Files/createSymbolicLink
+     (.toPath (io/file dir "data/link.csv"))
+     (.toPath secret)
+     (make-array java.nio.file.attribute.FileAttribute 0))
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/link.csv\"}\n:::\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/unsafe-data (:error/type d))))))
+
 (deftest data-table-that-escapes-the-book-root-is-a-hard-error
   (let [dir    (tmp-book "data-escape")
         secret (io/file (.getParentFile dir) "secret.csv")]

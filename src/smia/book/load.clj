@@ -207,11 +207,24 @@
   (or (str/starts-with? path "/")
       (some #{".."} (str/split path #"[/\\]"))))
 
+(defn- escapes-canonically?
+  "True when `book-root`/`path` resolves (symlinks followed) to a file
+   outside the book root. The lexical check above catches `..` and absolute
+   paths without touching the disk; this catches a symlink inside the book
+   that points out of it."
+  [book-root path]
+  (let [root (str (.getCanonicalPath (io/file book-root))
+                  java.io.File/separator)
+        target (.getCanonicalPath (io/file book-root path))]
+    (not (str/starts-with? target root))))
+
 (defn- read-include
   "Shell: slurp the include source at `book-root`/`path`. A path that escapes
-   the book root, or a missing file, is a hard error."
+   the book root (lexically or through a symlink), or a missing file, is a
+   hard error."
   [book-root path]
-  (when (escaping-path? path)
+  (when (or (escaping-path? path)
+            (escapes-canonically? book-root path))
     (throw (error/ex :smia.book.load/unsafe-include
                      (str "Included source path " (pr-str path) " escapes the "
                           "book directory. Include paths must be relative and "
@@ -295,7 +308,8 @@
   "Shell: slurp the data-table source at `book-root`/`path`. A path that
    escapes the book root, or a missing file, is a hard error."
   [book-root path]
-  (when (escaping-path? path)
+  (when (or (escaping-path? path)
+            (escapes-canonically? book-root path))
     (throw (error/ex :smia.book.load/unsafe-data
                      (str "Data-table source path " (pr-str path) " escapes the "
                           "book directory. Data paths must be relative and stay "
