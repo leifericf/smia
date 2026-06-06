@@ -88,12 +88,15 @@
 
 (defn serve!
   "Start a static file server for `dir` (default `.`) on `port` (default
-   8000). Returns a handle `{:server :port :dir}`; stop it with
-   `(.stop server 0)`. No blocking — the caller decides whether to wait."
-  [{:keys [dir port]}]
+   8000), bound to `host` (default loopback — a preview is for this
+   machine; pass `:host \"0.0.0.0\"` to expose it deliberately). Returns a
+   handle `{:server :port :dir}`; stop it with `(.stop server 0)`. No
+   blocking — the caller decides whether to wait."
+  [{:keys [dir port host]}]
   (let [root   (.getCanonicalFile (io/file (or dir ".")))
         port   (or port 8000)
-        server (HttpServer/create (InetSocketAddress. port) 0)]
+        server (HttpServer/create
+                 (InetSocketAddress. ^String (or host "127.0.0.1") (int port)) 0)]
     (.createContext server "/"
                     (reify HttpHandler
                       (handle [_ ex] (respond root ex))))

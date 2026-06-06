@@ -79,3 +79,10 @@
         (is (thrown? java.io.IOException
                      (slurp (str "http://localhost:" port "/nope/")))))
       (finally (serve/stop! {:server server})))))
+
+(deftest serve!-binds-loopback-by-default
+  (let [dir              (tmp-site)
+        {:keys [server]} (serve/serve! {:dir dir :port 0})]
+    (try
+      (is (.isLoopbackAddress (.getAddress (.getAddress server))))
+      (finally (serve/stop! {:server server})))))
