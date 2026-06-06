@@ -37,6 +37,12 @@
    entries rather than threading an environment through every node compiler."
   {})
 
+(def ^:dynamic *footnotes-in-flight*
+  "Labels whose definitions are being inlined right now. A reference to a
+   label already in flight is a definition cycle; without this guard it
+   would recurse until the stack blows."
+  #{})
+
 ;; --- helpers --------------------------------------------------------------
 
 (defn- err [type message ctx node]
@@ -367,11 +373,19 @@
       (compile-block-seq kids))))
 
 (defn- compile-footnote-reference [node]
-  (if-let [d (get *footnote-defs* (:label node))]
-    (into [:footnote] (footnote-body d))
-    (err :smia.md.compile/unknown-footnote
-         (str "No definition for footnote [^" (:label node) "].")
-         {:label (:label node)} node)))
+  (let [label (:label node)]
+    (when (contains? *footnotes-in-flight* label)
+      (err :smia.md.compile/circular-footnote
+           (str "Footnote [^" label "] is defined in terms of itself "
+                "(directly or through another footnote), so it can never "
+                "be inlined.")
+           {:label label} node))
+    (if-let [d (get *footnote-defs* label)]
+      (binding [*footnotes-in-flight* (conj *footnotes-in-flight* label)]
+        (into [:footnote] (footnote-body d)))
+      (err :smia.md.compile/unknown-footnote
+           (str "No definition for footnote [^" label "].")
+           {:label label} node))))
 
 ;; --- links ------------------------------------------------------------------
 

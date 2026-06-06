@@ -343,6 +343,17 @@
   ;; exists; an undefined "[^99]" is left as ordinary text.
   (is (= [[:p "Text.[^99]"]] (md->body "Text.[^99]\n"))))
 
+(deftest circular-footnote-definitions-are-an-error
+  (let [data (catch-data #(md->body "Text[^a].\n\n[^a]: see [^a] again\n"))]
+    (is (= :smia.md.compile/circular-footnote (:error/type data)))
+    (is (= "a" (-> data :error/context :label))))
+  (let [data (catch-data #(md->body "Text[^a].\n\n[^a]: see [^b]\n\n[^b]: see [^a]\n"))]
+    (is (= :smia.md.compile/circular-footnote (:error/type data)))))
+
+(deftest footnote-definitions-may-chain-without-cycles
+  (is (= [[:p "T" [:footnote "a " [:footnote "b done"]] "."]]
+         (md->body "T[^a].\n\n[^a]: a [^b]\n\n[^b]: b done\n"))))
+
 (deftest reference-style-links-and-images-compile
   ;; A link/image reference definition is metadata: the reference resolves
   ;; and the definition itself produces no output.
