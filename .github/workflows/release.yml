@@ -62,6 +62,23 @@ jobs:
           test -f "$d/pdf/smia-manual-print-x.pdf"
           test -f "$d/epub/smia-manual.epub"
 
+      - name: Build the standalone jar stamped with the release tag
+        env:
+          SMIA_VERSION: ${{ github.ref_name }}
+        run: clojure -T:jar uber
+
+      - name: Smoke-test the jar
+        run: |
+          java -jar target/smia.jar --version | grep -F "${{ github.ref_name }}"
+          java -jar target/smia.jar init /tmp/smoke-book
+          java -jar target/smia.jar build /tmp/smoke-book --output-root /tmp/smoke-out
+          test -f /tmp/smoke-out/smoke-book/pdf/smoke-book-screen.pdf
+          java -jar target/smia.jar build manual --edition site --output-root /tmp/jar-site
+          test -s /tmp/jar-site/smia-manual/site/search.js
+
+      - name: Print the jar checksum for the channel manifests
+        run: shasum -a 256 target/smia.jar
+
       - name: Stage the Pages site under /manual
         run: |
           root=build/release/site-root
@@ -86,6 +103,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            target/smia.jar
             build/release/smia-manual/pdf/smia-manual-screen.pdf
             build/release/smia-manual/pdf/smia-manual-print.pdf
             build/release/smia-manual/pdf/smia-manual-print-x.pdf
