@@ -97,7 +97,8 @@
                          {:editions         editions
                           :unknown-editions (vec unknown)
                           :supported        (vec (sort supported-editions))}))))
-    (vec editions)))
+    ;; a repeated edition builds once — first occurrence keeps its place
+    (vec (distinct editions))))
 
 (defn- resolve-book-root
   "Resolve `:book-root` to a directory path. A missing or blank value

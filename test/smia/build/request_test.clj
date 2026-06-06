@@ -35,6 +35,11 @@
   (let [out (request/normalize (assoc valid-base :editions []) :build)]
     (is (= [:screen :print] (:editions out)))))
 
+(deftest repeated-editions-build-once
+  (let [out (request/normalize (assoc valid-base :editions [:screen :screen :print :screen])
+                               :build)]
+    (is (= [:screen :print] (:editions out)))))
+
 (deftest unknown-edition-is-hard-error
   (let [d (catch-error
             #(request/normalize (assoc valid-base :editions [:screen :wat])
