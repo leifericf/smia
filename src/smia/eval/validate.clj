@@ -27,7 +27,14 @@
              (catch Exception e
                (throw (error/ex :smia.eval/evaluator-unavailable
                                 (str "Could not load the " (name lang) " evaluator"
-                                     (when requires (str "; add the optional dependency " requires))
+                                     (when requires
+                                       (str "; it needs the optional dependency "
+                                            requires " on the classpath. The"
+                                            " packaged smia jar does not bundle"
+                                            " it; run from the Clojure CLI with"
+                                            " the dependency added (in Smia's"
+                                            " checkout, compose the :eval-"
+                                            (name lang) " alias)"))
                                      ": " (.getMessage e))
                                 {:lang lang :requires requires :cause (.getMessage e)}))))
         (throw (error/ex :smia.eval/evaluator-unavailable

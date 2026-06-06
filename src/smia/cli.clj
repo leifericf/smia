@@ -1,5 +1,6 @@
 (ns smia.cli
-  "Human-facing command-line front-end, invoked via `clojure -M:run`.
+  "Human-facing command-line front-end: `smia <command>` from the packaged
+   jar, `clojure -M:run <command>` from a source checkout.
    Parses argv (the repeatable `--edition` selects deliverables) into the
    same request map consumed by `smia.build.request`
    and delegates to `smia.api`. The `-X` map API (`smia.api`)
@@ -11,8 +12,11 @@
    [smia.api :as api]
    [smia.build.preview :as preview]
    [smia.error :as error]
+   [clojure.edn :as edn]
+   [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.tools.cli :as cli]))
+   [clojure.tools.cli :as cli])
+  (:gen-class))
 
 ;; --- option specs ------------------------------------------------------
 
@@ -49,16 +53,35 @@
    \newline
    ["Smia builds technical books as PDF, EPUB, and a static site on the JVM."
     ""
-    "Usage: clojure -M:run <command> [book-root] [options]"
+    "Usage: smia <command> [book-root] [options]"
     ""
     "Commands:"
     "  init       Scaffold a new book into a directory."
     "  build      Build the requested editions."
     "  validate   Check a manuscript without rendering anything."
     "  preview    Rebuild on every save; serve the site when previewing it."
+    "  version    Print the Smia version."
     ""
-    "Run \"clojure -M:run <command> --help\" for command-specific options."
-    "The book-root positional defaults to \".\" (the current directory)."]))
+    "Run \"smia <command> --help\" for command-specific options."
+    "The book-root positional defaults to \".\" (the current directory)."
+    "From a source checkout, \"clojure -M:run\" stands in for \"smia\"."]))
+
+;; --- version -------------------------------------------------------------
+
+(defn- version-line
+  "Render the version stamped into the jar at build time
+   (`smia/version.edn` on the classpath), or a dev fallback when running
+   from source. Read defensively: a malformed stamp must never take the
+   CLI down. Only the version surface reads this — the render path never
+   does, so a stamped jar builds byte-identical output to a checkout."
+  []
+  (let [{:keys [version sha]}
+        (try
+          (some-> (io/resource "smia/version.edn") slurp edn/read-string)
+          (catch Exception _ nil))]
+    (if version
+      (str "Smia " version (when sha (str " (" sha ")")))
+      "Smia (dev)")))
 
 ;; --- argv -> request map ----------------------------------------------
 
@@ -128,10 +151,10 @@
 
 ;; --- subcommands -------------------------------------------------------
 
-(def ^:private init-usage "Usage: clojure -M:run init [target-dir]")
-(def ^:private build-usage "Usage: clojure -M:run build [book-root] [options]")
-(def ^:private validate-usage "Usage: clojure -M:run validate [book-root] [options]")
-(def ^:private preview-usage "Usage: clojure -M:run preview [book-root] [options]")
+(def ^:private init-usage "Usage: smia init [target-dir]")
+(def ^:private build-usage "Usage: smia build [book-root] [options]")
+(def ^:private validate-usage "Usage: smia validate [book-root] [options]")
+(def ^:private preview-usage "Usage: smia preview [book-root] [options]")
 
 (defn- run-subcommand
   "Parse `args` against `options`, then dispatch: print `usage` on `--help`
@@ -168,7 +191,7 @@
         (let [{:keys [target files]} (api/init {:target (or (first arguments) ".")})]
           (println "Initialized a new book in" target)
           (run! #(println " " %) files)
-          (println "Next: cd into it and run \"clojure -M:run build\".")
+          (println "Next: cd into it and run \"smia build\".")
           0)
         (catch Throwable t (report-exception t) 1)))))
 
@@ -226,11 +249,13 @@
   [argv]
   (let [[command & rest] argv]
     (case command
-      "init"              (run-init rest)
-      "build"             (run-build rest)
-      "validate"          (run-validate rest)
-      "preview"           (run-preview rest)
-      (nil "-h" "--help") (do (println top-level-help) 0)
+      "init"                (run-init rest)
+      "build"               (run-build rest)
+      "validate"            (run-validate rest)
+      "preview"             (run-preview rest)
+      ("version"
+       "--version")         (do (println (version-line)) 0)
+      (nil "-h" "--help")   (do (println top-level-help) 0)
       (do (err-println "unknown command:" command)
           (println top-level-help)
           2))))

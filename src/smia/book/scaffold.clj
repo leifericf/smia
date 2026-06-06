@@ -58,7 +58,7 @@
        "This is the first chapter of *" title "*. Build the book with:\n"
        "\n"
        "```\n"
-       "clojure -M:run build\n"
+       "smia build\n"
        "```\n"
        "\n"
        "The screen and print PDFs land under `build/`. Add chapters as\n"

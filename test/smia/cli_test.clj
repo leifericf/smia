@@ -64,6 +64,23 @@
 (deftest unknown-command-is-a-usage-error
   (is (= 2 (run-code ["frobnicate"]))))
 
+(deftest version-command-prints-the-version
+  (testing "Without a stamped version resource, the dev fallback prints"
+    (let [{:keys [code out]} (run-captured ["version"])]
+      (is (= 0 code))
+      (is (re-find #"^Smia" out)))))
+
+(deftest version-flag-matches-the-version-command
+  (is (= (:out (run-captured ["version"]))
+         (:out (run-captured ["--version"]))))
+  (is (= 0 (:code (run-captured ["--version"])))))
+
+(deftest help-spells-the-installed-command
+  (testing "Usage text leads with the installed `smia` spelling"
+    (let [{:keys [out]} (run-captured ["--help"])]
+      (is (re-find #"smia <command>" out))
+      (is (not (re-find #"clojure -M:run <command>" out))))))
+
 (deftest subcommand-help-succeeds
   (is (= 0 (run-code ["build" "--help"])))
   (is (= 0 (run-code ["validate" "--help"])))
