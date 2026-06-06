@@ -428,6 +428,15 @@
     (let [[_ _ table] (load/load-chapter (.getPath dir) "chapters/01-x.md")]
       (is (= [:tbody [:tr [:td "1"] [:td "2"]]] (nth table 3))))))
 
+(deftest ragged-data-table-rows-are-a-hard-error
+  (let [dir (tmp-book "data-ragged")]
+    (spit-chapter dir "data/g.csv" "a,b,c\n1,2\nx,y,z,w\n")
+    (spit-chapter dir "chapters/01-x.md"
+                  "# D\n\n:::table {:data \"data/g.csv\" :header true}\n:::\n")
+    (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+      (is (= :smia.book.load/ragged-data (:error/type d)))
+      (is (= "data/g.csv" (get-in d [:error/context :data]))))))
+
 (deftest missing-data-file-is-a-hard-error
   (let [dir (tmp-book "data-missing")]
     (spit-chapter dir "chapters/01-x.md"

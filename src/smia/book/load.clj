@@ -299,6 +299,15 @@
     (throw (error/ex :smia.book.load/empty-data
                      (str "Data-table source is empty: " (:data attrs))
                      {:data (:data attrs)})))
+  (let [width (count (first rows))]
+    (doseq [[i row] (map-indexed vector rows)]
+      (when-not (= width (count row))
+        (throw (error/ex :smia.book.load/ragged-data
+                         (str "Data-table rows must all be the same width: "
+                              (:data attrs) " row " (inc i) " has "
+                              (count row) " cells, expected " width ".")
+                         {:data (:data attrs) :row (inc i)
+                          :cells (count row) :expected width})))))
   (let [tattrs   (dissoc attrs :data :format :header)
         row-of   (fn [tag cells] (into [:tr] (map (fn [c] [tag c]) cells)))]
     (if (:header attrs)
