@@ -334,11 +334,13 @@
     (and (vector? node) (= :xref (first node)) (map? (second node)))
     (let [a    (second node)
           kids (children-of node)
-          entry (get registry (name (:to a)))]
+          to   (:to a)
+          entry (when (or (keyword? to) (string? to))
+                  (get registry (name to)))]
       (when-not entry
         (throw (error/ex :smia.book.number/unresolved-xref
-                         (str "Cross-reference to unknown id: " (:to a))
-                         {:to (:to a)})))
+                         (str "Cross-reference to unknown id: " (pr-str to))
+                         {:to to})))
       (if (seq kids)
         (into [:xref a] (map #(rewrite-refs % registry references) kids))
         [:xref (xref-attrs a entry)]))

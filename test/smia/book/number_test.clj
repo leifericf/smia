@@ -190,6 +190,15 @@
       (is (= :smia.book.number/unresolved-xref (:error/type d)))
       (is (= :nowhere (:to (:error/context d)))))))
 
+(deftest an-xref-without-a-target-is-a-hard-error
+  (doseq [bad [nil 42 [:vec]]]
+    (let [d (try (assign {:sections [(chapter-section :a "A"
+                                                      [:p [:xref {:to bad} "x"]])]})
+                 nil
+                 (catch Exception e (smia.error/data e)))]
+      (is (= :smia.book.number/unresolved-xref (:error/type d))
+          (str ":to " (pr-str bad) " is rejected cleanly")))))
+
 (defn- duplicate-id-error [manuscript]
   (try (assign manuscript) nil
        (catch Exception e (smia.error/data e))))
