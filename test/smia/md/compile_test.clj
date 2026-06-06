@@ -378,6 +378,10 @@
          (md->body "x\n\n[unused]: https://example.com\n"))
       "an unused reference definition is dropped, not an error"))
 
+(deftest link-to-empty-anchor-is-an-error
+  (let [d (catch-data #(md->body "See [here](#).\n"))]
+    (is (= :smia.md.compile/empty-xref (:error/type d)))))
+
 (deftest link-to-anchor-becomes-an-xref
   (is (= [[:p "See " [:xref {:to :theming} "the theming chapter"] "."]]
          (md->body "See [the theming chapter](#theming).\n")))

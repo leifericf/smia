@@ -415,7 +415,12 @@
 (defn- compile-link [node]
   (let [dest (:destination node)]
     (if (and dest (str/starts-with? dest "#"))
-      (into [:xref {:to (keyword (subs dest 1))}] (compile-inline-seq (:children node)))
+      (let [id (subs dest 1)]
+        (when (str/blank? id)
+          (err :smia.md.compile/empty-xref
+               "A link to \"#\" names no target; give the fragment an id."
+               {:destination dest} node))
+        (into [:xref {:to (keyword id)}] (compile-inline-seq (:children node))))
       (into [:a {:href dest}] (compile-inline-seq (:children node))))))
 
 (defn- compile-image [node]
