@@ -49,13 +49,22 @@
   (throw (error/ex type message (cond-> ctx (:pos node) (assoc :pos (:pos node))))))
 
 (defn- read-edn-1
-  "Read exactly one EDN form from `s`, or throw `error-type` with `node`'s
-   position."
+  "Read exactly one EDN form spanning all of `s` (whitespace aside), or
+   throw `error-type` with `node`'s position. Content after the form is an
+   error, not silently dropped — an author who wrote a second form meant it."
   [s error-type message node]
-  (try
-    (edn/read-string s)
-    (catch Exception e
-      (err error-type (str message ": " (.getMessage e)) {:source s} node))))
+  (let [r    (java.io.PushbackReader. (java.io.StringReader. s))
+        form (try
+               (edn/read {:eof ::eof} r)
+               (catch Exception e
+                 (err error-type (str message ": " (.getMessage e)) {:source s} node)))
+        more (try
+               (edn/read {:eof ::eof} r)
+               (catch Exception _ ::trailing))]
+    (when-not (= ::eof more)
+      (err error-type (str message ": unexpected content after the first form")
+           {:source s} node))
+    (when-not (= ::eof form) form)))
 
 (defn- inline-text
   "Concatenate the plain text of an inline subtree (headings, image alt,

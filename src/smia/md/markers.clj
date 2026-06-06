@@ -11,16 +11,27 @@
    [clojure.string :as str]))
 
 (defn- read-escape-edn
-  "Read an inline escape `payload` as a single EDN form, or throw a
-   structured error naming the unreadable source."
+  "Read an inline escape `payload` as a single EDN form spanning the whole
+   payload, or throw a structured error naming the unreadable source.
+   Content after the form is an error, not silently dropped."
   [payload]
-  (try
-    (edn/read-string payload)
-    (catch Exception e
+  (let [r    (java.io.PushbackReader. (java.io.StringReader. payload))
+        form (try
+               (edn/read {:eof ::eof} r)
+               (catch Exception e
+                 (throw (error/ex :smia.md.compile/invalid-raw-escape
+                                  (str "Inline raw escape is not readable EDN: "
+                                       (.getMessage e))
+                                  {:source payload}))))
+        more (try
+               (edn/read {:eof ::eof} r)
+               (catch Exception _ ::trailing))]
+    (when-not (= ::eof more)
       (throw (error/ex :smia.md.compile/invalid-raw-escape
-                       (str "Inline raw escape is not readable EDN: "
-                            (.getMessage e))
-                       {:source payload})))))
+                       (str "Inline raw escape must be a single EDN form; "
+                            "unexpected content after it: " (pr-str payload))
+                       {:source payload})))
+    (when-not (= ::eof form) form)))
 
 (defn- keyword-payload
   "Trim `payload` to a single keyword-safe token and intern it, or throw —

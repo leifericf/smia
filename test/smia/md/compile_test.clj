@@ -404,6 +404,22 @@
   (let [d (catch-data #(md->body "```{=hiccup}\n[:p \"unterminated\n```\n"))]
     (is (= :smia.md.compile/invalid-raw-escape (:error/type d)))))
 
+(deftest raw-escape-block-must-hold-exactly-one-form
+  (let [d (catch-data #(md->body "```{=hiccup}\n[:p \"kept\"]\n[:p \"second\"]\n```\n"))]
+    (is (= :smia.md.compile/invalid-raw-escape (:error/type d)))))
+
+(deftest inline-raw-escape-must-hold-exactly-one-form
+  (let [d (catch-data #(md->body "use `[:em \"a\"] junk`{=hiccup} here\n"))]
+    (is (= :smia.md.compile/invalid-raw-escape (:error/type d)))))
+
+(deftest directive-attrs-reject-trailing-content
+  (let [d (catch-data #(md->body ":::admonition {:kind :note} {:kind :tip}\nBody.\n:::\n"))]
+    (is (= :smia.md.compile/invalid-directive-attrs (:error/type d)))))
+
+(deftest fence-attrs-reject-trailing-content
+  (let [d (catch-data #(md->body "```clojure {:test true} {:more 1}\n(+ 1 2)\n```\n"))]
+    (is (= :smia.md.compile/invalid-fence-info (:error/type d)))))
+
 (deftest phase2-grammar-is-vocabulary-valid-and-expands
   (let [body (md->body (str ":::admonition {:kind :tip}\nBe **careful**.\n:::\n\n"
                             "{:cols [3 1]}\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n"
