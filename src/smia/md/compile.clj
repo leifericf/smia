@@ -279,6 +279,16 @@
       m)
     {}))
 
+(defn- require-empty-body
+  "Throw when a body-less directive carries content between its fences —
+   the content has nowhere to go and would otherwise vanish silently."
+  [node why]
+  (when (seq (:children node))
+    (err :smia.md.compile/unexpected-directive-body
+         (str "The :::" (:name node) " directive takes no body content ("
+              why "), but content was found between its fences.")
+         {:name (:name node)} node)))
+
 (def block-directives
   "Directive name (string) -> `(fn [node] -> author-hiccup)`. A plain map so
    the block-extension vocabulary is introspectable, data-driven, and
@@ -347,14 +357,18 @@
    ;; A data-sourced table: body-less, the rows come from the named file.
    ;; The loader (smia.book.load) reads :data and parses it per :format into
    ;; the table's rows; here the directive just carries the attributes.
-   (fn [node] [:table (directive-attrs node)])
+   (fn [node]
+     (require-empty-body node "its rows come from the :data file")
+     [:table (directive-attrs node)])
 
    "keep-together"
    (fn [node]
      (into [:keep-together (directive-attrs node)] (compile-block-seq (:children node))))
 
    "page-break"
-   (fn [_] [:page-break])})
+   (fn [node]
+     (require-empty-body node "it is a pure page mechanic")
+     [:page-break])})
 
 (defn- compile-directive [node]
   (if-let [f (get block-directives (:name node))]

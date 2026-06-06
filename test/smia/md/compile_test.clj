@@ -171,6 +171,19 @@
     (is (= [[:keep-together {} [:p "a"] [:p "b"]]]
            (md->body ":::keep-together\na\n\nb\n:::\n")))))
 
+(deftest body-less-directives-reject-content
+  (testing ":::table rows come from :data; body content cannot render"
+    (let [d (catch-data
+              #(md->body ":::table {:data \"x.csv\"}\nStray content.\n:::\n"))]
+      (is (= :smia.md.compile/unexpected-directive-body (:error/type d)))
+      (is (= "table" (:name (:error/context d))))))
+  (testing ":::page-break carries no content"
+    (let [d (catch-data #(md->body ":::page-break\nStray content.\n:::\n"))]
+      (is (= :smia.md.compile/unexpected-directive-body (:error/type d)))))
+  (testing "an empty body still compiles"
+    (is (= [[:table {:data "x.csv"}]]
+           (md->body ":::table {:data \"x.csv\"}\n:::\n")))))
+
 (deftest heading-trailing-edn-map-becomes-attributes
   (testing "a trailing bare EDN map on a heading line is pulled out as attrs"
     (is (= [[:h2 {:id :setup} "Setup"]]
