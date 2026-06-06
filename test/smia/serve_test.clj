@@ -18,6 +18,11 @@
   (is (= "text/html; charset=utf-8" (serve/content-type "index.html")))
   (is (= "text/css; charset=utf-8" (serve/content-type "styles.css")))
   (is (= "image/svg+xml" (serve/content-type "pipeline.svg")))
+  (is (= "text/javascript; charset=utf-8" (serve/content-type "search.js")))
+  (is (= "text/javascript; charset=utf-8" (serve/content-type "island.mjs")))
+  (is (= "application/xml" (serve/content-type "sitemap.xml")))
+  (is (= "image/x-icon" (serve/content-type "favicon.ico")))
+  (is (= "font/woff" (serve/content-type "body.woff")))
   (is (= "application/octet-stream" (serve/content-type "noextension"))))
 
 (deftest resolve-file-applies-the-directory-index-convention

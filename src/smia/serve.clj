@@ -31,7 +31,12 @@
    "pdf"   "application/pdf"
    "epub"  "application/epub+zip"
    "json"  "application/json"
+   "js"    "text/javascript; charset=utf-8"
+   "mjs"   "text/javascript; charset=utf-8"
+   "xml"   "application/xml"
+   "ico"   "image/x-icon"
    "txt"   "text/plain; charset=utf-8"
+   "woff"  "font/woff"
    "woff2" "font/woff2"
    "ttf"   "font/ttf"})
 
