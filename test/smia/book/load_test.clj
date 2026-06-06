@@ -228,6 +228,28 @@
     (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
       (is (= :smia.book.load/conflicting-include-keys (:error/type d))))))
 
+(deftest include-must-name-a-regular-file
+  (testing "a blank include path is rejected"
+    (let [dir (tmp-book "inc-blank")]
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"\"}\n```\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/missing-include (:error/type d))))))
+  (testing "an include path naming a directory is rejected"
+    (let [dir (tmp-book "inc-dir")]
+      (.mkdirs (io/file dir "src"))
+      (spit-chapter dir "chapters/01-x.md"
+                    "# X\n\n```clojure {:include \"src\"}\n```\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/missing-include (:error/type d))))))
+  (testing "a data path naming a directory is rejected"
+    (let [dir (tmp-book "data-dir")]
+      (.mkdirs (io/file dir "data"))
+      (spit-chapter dir "chapters/01-x.md"
+                    "# D\n\n:::table {:data \"data\"}\n:::\n")
+      (let [d (catch-data #(load/load-chapter (.getPath dir) "chapters/01-x.md"))]
+        (is (= :smia.book.load/missing-data (:error/type d)))))))
+
 (deftest include-lines-must-be-a-valid-range
   (let [dir (tmp-book "inc-lines")]
     (spit-chapter dir "src/s.clj" "l1\nl2\nl3\nl4\nl5\n")

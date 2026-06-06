@@ -234,6 +234,10 @@
    the book root (lexically or through a symlink), or a missing file, is a
    hard error."
   [book-root path]
+  (when (str/blank? path)
+    (throw (error/ex :smia.book.load/missing-include
+                     "An include's source path is blank."
+                     {:book-root book-root :include path})))
   (when (or (escaping-path? path)
             (escapes-canonically? book-root path))
     (throw (error/ex :smia.book.load/unsafe-include
@@ -242,9 +246,9 @@
                           "stay within the book.")
                      {:book-root book-root :include path})))
   (let [f (io/file book-root path)]
-    (when-not (.exists f)
+    (when-not (.isFile f)
       (throw (error/ex :smia.book.load/missing-include
-                       (str "Included source file not found: " (.getPath f))
+                       (str "Included source is not a readable file: " (.getPath f))
                        {:book-root book-root :include path})))
     (slurp f)))
 
@@ -319,6 +323,10 @@
   "Shell: slurp the data-table source at `book-root`/`path`. A path that
    escapes the book root, or a missing file, is a hard error."
   [book-root path]
+  (when (str/blank? path)
+    (throw (error/ex :smia.book.load/missing-data
+                     "A data table's source path is blank."
+                     {:book-root book-root :data path})))
   (when (or (escaping-path? path)
             (escapes-canonically? book-root path))
     (throw (error/ex :smia.book.load/unsafe-data
@@ -327,9 +335,9 @@
                           "within the book.")
                      {:book-root book-root :data path})))
   (let [f (io/file book-root path)]
-    (when-not (.exists f)
+    (when-not (.isFile f)
       (throw (error/ex :smia.book.load/missing-data
-                       (str "Data-table source file not found: " (.getPath f))
+                       (str "Data-table source is not a readable file: " (.getPath f))
                        {:book-root book-root :data path})))
     (slurp f)))
 
