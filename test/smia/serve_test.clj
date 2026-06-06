@@ -86,3 +86,15 @@
     (try
       (is (.isLoopbackAddress (.getAddress (.getAddress server))))
       (finally (serve/stop! {:server server})))))
+
+(deftest slashless-directory-url-redirects-to-the-slashed-form
+  (let [dir              (tmp-site)
+        {:keys [server]} (serve/serve! {:dir dir :port 0})
+        port             (.getPort (.getAddress server))]
+    (try
+      (let [conn (doto (.openConnection
+                        (java.net.URL. (str "http://localhost:" port "/part-1/ch")))
+                   (.setInstanceFollowRedirects false))]
+        (is (= 301 (.getResponseCode conn)))
+        (is (= "/part-1/ch/" (.getHeaderField conn "Location"))))
+      (finally (serve/stop! {:server server})))))

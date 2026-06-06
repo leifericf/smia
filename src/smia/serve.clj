@@ -73,14 +73,41 @@
           filec))
       (catch java.io.IOException _ nil))))
 
+(defn directory-redirect
+  "When raw `path` names an existing directory under `root` without a
+   trailing slash, the location it should redirect to — the raw path plus
+   `/`, so the browser resolves the page's relative links against the
+   right base. Nil otherwise."
+  [root ^String path]
+  (when-not (str/ends-with? path "/")
+    (when-let [decoded (decode-path path)]
+      (try
+        (let [rel    (str/replace decoded #"^/+" "")
+              target (io/file root rel)
+              rootc  (str (.getCanonicalFile (io/file root)) java.io.File/separator)]
+          (when (and (not (str/blank? rel))
+                     (.isDirectory target)
+                     (str/starts-with? (str (.getCanonicalFile target)) rootc))
+            (str path "/")))
+        (catch java.io.IOException _ nil)))))
+
 (defn- respond [root ^HttpExchange ex]
   (try
-    (let [f (resolve-file root (.getRawPath (.getRequestURI ex)))]
-      (if (and f (.isFile f))
+    (let [raw      (.getRawPath (.getRequestURI ex))
+          redirect (directory-redirect root raw)
+          f        (when-not redirect (resolve-file root raw))]
+      (cond
+        redirect
+        (do (.set (.getResponseHeaders ex) "Location" redirect)
+            (.sendResponseHeaders ex 301 -1))
+
+        (and f (.isFile f))
         (let [bytes (Files/readAllBytes (.toPath f))]
           (.set (.getResponseHeaders ex) "Content-Type" (content-type (.getName f)))
           (.sendResponseHeaders ex 200 (alength bytes))
           (with-open [os (.getResponseBody ex)] (.write os bytes)))
+
+        :else
         (let [body (.getBytes "404 Not Found\n" "UTF-8")]
           (.sendResponseHeaders ex 404 (alength body))
           (with-open [os (.getResponseBody ex)] (.write os body)))))
