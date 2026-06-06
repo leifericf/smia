@@ -138,3 +138,12 @@
     (let [d (catch-data #(resolve/attach-svg diagramful))]
       (is (= :smia.diagram/renderer-unavailable (:error/type d)))
       (is (= ":diagrams" (get-in d [:error/context :requires]))))))
+
+(deftest an-explicit-plantuml-engine-is-the-default-engine
+  (if diagrams-available?
+    (let [m   (manuscript-with [:chapter {:id :x :title "X"}
+                                [:diagram {:engine :plantuml :source "A -> B"}]])
+          out (resolve/attach-svg m)
+          [_ a] (first (nodes-of :diagram (:chapters out)))]
+      (is (vector? (:svg a)) "an explicit :plantuml engine renders at build time"))
+    (is true "PlantUML not on the classpath (run with -A:diagrams); skipped")))
