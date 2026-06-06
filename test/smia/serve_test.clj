@@ -98,3 +98,28 @@
         (is (= 301 (.getResponseCode conn)))
         (is (= "/part-1/ch/" (.getHeaderField conn "Location"))))
       (finally (serve/stop! {:server server})))))
+
+(deftest head-requests-answer-without-a-body-or-server-warnings
+  (let [dir              (tmp-site)
+        {:keys [server]} (serve/serve! {:dir dir :port 0})
+        port             (.getPort (.getAddress server))
+        records          (atom [])
+        logger           (java.util.logging.Logger/getLogger "com.sun.net.httpserver")
+        handler          (proxy [java.util.logging.Handler] []
+                           (publish [r] (swap! records conj r))
+                           (flush [])
+                           (close []))]
+    (.addHandler logger handler)
+    (try
+      (let [conn (doto (.openConnection
+                        (java.net.URL. (str "http://localhost:" port "/")))
+                   (.setRequestMethod "HEAD"))]
+        (is (= 200 (.getResponseCode conn)))
+        (is (= "text/html; charset=utf-8" (.getHeaderField conn "Content-Type")))
+        (is (= "" (slurp (.getInputStream conn))))
+        (is (empty? (filter #(= java.util.logging.Level/WARNING (.getLevel %))
+                            @records))
+            "the server answers HEAD without complaint"))
+      (finally
+        (.removeHandler logger handler)
+        (serve/stop! {:server server})))))

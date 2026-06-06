@@ -102,10 +102,15 @@
             (.sendResponseHeaders ex 301 -1))
 
         (and f (.isFile f))
-        (let [bytes (Files/readAllBytes (.toPath f))]
+        (let [bytes (Files/readAllBytes (.toPath f))
+              head? (= "HEAD" (.getRequestMethod ex))]
           (.set (.getResponseHeaders ex) "Content-Type" (content-type (.getName f)))
-          (.sendResponseHeaders ex 200 (alength bytes))
-          (with-open [os (.getResponseBody ex)] (.write os bytes)))
+          (if head?
+            ;; a HEAD answer carries the headers only; -1 tells the JDK
+            ;; server no body follows
+            (.sendResponseHeaders ex 200 -1)
+            (do (.sendResponseHeaders ex 200 (alength bytes))
+                (with-open [os (.getResponseBody ex)] (.write os bytes)))))
 
         :else
         (let [body (.getBytes "404 Not Found\n" "UTF-8")]
