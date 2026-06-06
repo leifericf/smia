@@ -29,12 +29,22 @@
 
 (defn- entry-bytes
   "The bytes for one entry: inline `:content`, or the `:resource` file
-   under `book-root` (nil when missing)."
+   under `book-root` (nil when missing). A resource that resolves —
+   symlinks followed — outside the book root is a hard error: the
+   assembler's lexical check cannot see a symlink pointing out."
   [{:keys [content resource]} book-root]
   (cond
     content  (.getBytes ^String content "UTF-8")
     resource (let [f (io/file book-root resource)]
                (when (.exists f)
+                 (let [root (str (.getCanonicalPath (io/file book-root))
+                                 java.io.File/separator)]
+                   (when-not (.startsWith (.getCanonicalPath f) root)
+                     (throw (error/ex :smia.epub.zip/unsafe-resource
+                                      (str "Resource " (pr-str resource)
+                                           " resolves outside the book "
+                                           "directory and is not packaged.")
+                                      {:resource resource}))))
                  (java.nio.file.Files/readAllBytes (.toPath f))))))
 
 (defn- put-entry! [^ZipOutputStream zos {:keys [path method]} ^bytes bytes]

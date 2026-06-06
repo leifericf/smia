@@ -79,3 +79,22 @@
       (is (= 1 (count (:warnings result))))
       (is (= :smia.epub.zip/missing-resource
              (:warning/type (first (:warnings result))))))))
+
+(deftest symlinked-resource-cannot-leave-the-book-root
+  (let [root   (tmp-dir "symlink")
+        secret (io/file (str root "-secret.png"))
+        out    (str (tmp-dir "symlink-out") "/book.epub")]
+    (spit secret "outside-bytes")
+    (.mkdirs (io/file root "images"))
+    (java.nio.file.Files/createSymbolicLink
+     (.toPath (io/file root "images/link.png"))
+     (.toPath secret)
+     (make-array java.nio.file.attribute.FileAttribute 0))
+    (let [d (try (zip/write! {:entries   (conj entries
+                                               {:path "OEBPS/images/link.png"
+                                                :resource "images/link.png"})
+                              :epub-path out
+                              :book-root root})
+                 nil
+                 (catch Exception e (smia.error/data e)))]
+      (is (= :smia.epub.zip/unsafe-resource (:error/type d))))))
