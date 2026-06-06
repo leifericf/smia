@@ -62,10 +62,23 @@
                          {:file (str from) :path path})))
       (io/make-parents to)
       (io/copy from to)))
-  (let [warnings
+  (let [root (str (.getCanonicalPath (io/file book-root))
+                  java.io.File/separator)
+        warnings
         (vec (keep (fn [{:keys [src]}]
                      (let [from (io/file book-root src)
                            to   (io/file out-dir src)]
+                       ;; The assembler's lexical check cannot see a symlink
+                       ;; inside the book pointing out of it; the canonical
+                       ;; path of what would actually be copied can.
+                       (when (and (.exists from)
+                                  (not (str/starts-with? (.getCanonicalPath from)
+                                                         root)))
+                         (throw (error/ex :smia.site.emit/unsafe-resource
+                                          (str "Resource " (pr-str src) " resolves "
+                                               "outside the book directory and is "
+                                               "not copied.")
+                                          {:src src})))
                        (if (.exists from)
                          (do (io/make-parents to)
                              (io/copy from to)

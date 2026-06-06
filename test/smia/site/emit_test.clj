@@ -116,3 +116,22 @@
                  nil
                  (catch Exception e (ex-data e)))]
     (is (= :smia.site.emit/missing-bundled-file (:error/type d)))))
+
+(deftest symlinked-resource-cannot-leave-the-book-root
+  (let [out    (tmp-dir "symlink-out")
+        root   (tmp-dir "symlink-root")
+        secret (io/file (str root "-secret.png"))]
+    (spit secret "outside-bytes")
+    (.mkdirs (io/file root "img"))
+    (java.nio.file.Files/createSymbolicLink
+     (.toPath (io/file root "img/link.png"))
+     (.toPath secret)
+     (make-array java.nio.file.attribute.FileAttribute 0))
+    (let [d (try (emit/emit! {:out-dir   out
+                              :book-root root
+                              :pages     {}
+                              :resources [{:src "img/link.png"}]})
+                 nil
+                 (catch Exception e (smia.error/data e)))]
+      (is (= :smia.site.emit/unsafe-resource (:error/type d)))
+      (is (not (.exists (io/file out "img/link.png")))))))
