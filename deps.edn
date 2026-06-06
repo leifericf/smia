@@ -12,6 +12,12 @@
         org.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.24.0"}
         org.commonmark/commonmark-ext-footnotes   {:mvn/version "0.24.0"}}
 
+ ;; Lets Clojure developers install Smia as a named tool straight from git:
+ ;; `clojure -Ttools install io.github.leifericf/smia '{:git/tag "..." :git/sha "..."}' :as smia`
+ ;; then `clojure -Tsmia build :book-root '"my-book"'`. The smia.api fns all
+ ;; take a single map, so they are -T-compatible as they stand.
+ :tools/usage {:ns-default smia.api}
+
  :aliases
  {:test  {:extra-paths ["test" "test/resources"]
           ;; jlatexmath, plantuml, and the ClojureScript toolchain are
@@ -65,4 +71,9 @@
 
   :eval-groovy {:extra-deps {org.apache.groovy/groovy {:mvn/version "4.0.24"}}}
   :eval-kotlin {:extra-deps {org.jetbrains.kotlin/kotlin-scripting-jsr223
-                             {:mvn/version "2.0.21"}}}}}
+                             {:mvn/version "2.0.21"}}}
+
+  ;; Packaging: `clojure -T:jar uber` builds the standalone target/smia.jar
+  ;; (named :jar because :build is the exec-fn alias for building books).
+  :jar {:deps {io.github.clojure/tools.build {:mvn/version "0.10.9"}}
+        :ns-default build}}}
