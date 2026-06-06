@@ -10,6 +10,13 @@ Smia builds a manuscript into screen and print PDFs, an EPUB, and a static
 website, all on the JVM. Apache FOP renders the PDFs as a library call, and
 the build never leaves the process.
 
+:::admonition {:kind :warning}
+Smia is young and in active development. The configuration, theme tokens,
+authoring vocabulary, and commands can change between releases without a
+deprecation cycle. Releases are dated snapshots; pin the one you build
+against, and expect to adjust your book when you move to a newer one.
+:::
+
 ## Installation
 
 Smia is one command, `smia`, backed by a single jar that bundles everything:

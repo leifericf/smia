@@ -10,6 +10,11 @@ Smia is written in Clojure and renders PDFs with
 one JVM process; a Java runtime is the only prerequisite, and the package
 managers below install one alongside Smia.
 
+> **Status:** Smia is young and in active development. The configuration,
+> theme tokens, authoring vocabulary, and commands can change between releases
+> without a deprecation cycle. Releases are dated snapshots; pin the one you
+> build against, and expect to adjust your book when you move to a newer one.
+
 **[Read the manual online](https://smia.leifericf.com)**. Smia builds and
 publishes its own manual. It walks from the quickstart to a finished, published
 book, covers every feature on the way, and its design chapter explains how Smia
