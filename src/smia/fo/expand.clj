@@ -508,7 +508,8 @@
    nil` drops it) above a rich body. Kept on one page like the other
    callout boxes."
   [author children style]
-  (let [title (get author :title "Overview")]
+  (let [title (get author :title
+                    (dictionary/localize (:language style) :overview))]
     (into [:fo/block (cond-> (assoc (get style :overview)
                                     :keep-together.within-page "always")
                        (:id author) (assoc :id (hiccup/as-id (:id author))))]
@@ -547,7 +548,8 @@
    light block with the summary as a bold lead-in above the always-visible
    body; the open/closed distinction is a site affordance only."
   [author children style]
-  (let [summary (or (:summary author) (:title author) "Details")]
+  (let [summary (or (:summary author) (:title author)
+                    (dictionary/localize (:language style) :details))]
     (into [:fo/block (cond-> (get style :details)
                        (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (cons [:fo/block {:font-weight "bold" :space-after "3pt"} summary]
@@ -585,7 +587,7 @@
    \"Chapter 2: Title\" with `:style :full`, optionally followed by
    \", on page N\" when `:page` is set. With nothing resolved, fall back to
    a bare page-number citation (the pre-numbering behavior)."
-  [author dest]
+  [author dest style]
   (let [label (:label author)
         title (:title author)
         text  (cond
@@ -594,7 +596,9 @@
                 title title)]
     (if text
       (cond-> [text]
-        (:page author) (conj ", on page " [:fo/page-number-citation {:ref-id dest}]))
+        (:page author)
+        (conj (str ", " (dictionary/localize (:language style) :on-page) " ")
+              [:fo/page-number-citation {:ref-id dest}]))
       [[:fo/page-number-citation {:ref-id dest}]])))
 
 (defn- cite [author style]
@@ -623,7 +627,7 @@
             [:fo/inline])
           (if (seq (hiccup/flatten-children children))
             (expand-all children style)
-            (composed-xref author dest)))))
+            (composed-xref author dest style)))))
 
 ;; --- the expander table ---------------------------------------------------
 

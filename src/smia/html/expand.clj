@@ -312,7 +312,8 @@
   (callout author children ctx {:class "sidebar"} "sidebar-title"))
 
 (defn- overview-block [author children ctx]
-  (let [title (get author :title "Overview")]
+  (let [title (get author :title
+                    (dictionary/localize (:language ctx) :overview))]
     (into [:aside (assoc (id-attrs author) :class "overview")]
           (concat
             (when title [[:div {:class "overview-title"} title]])
@@ -329,7 +330,8 @@
    back to `:title`). `open?` renders it expanded. With JavaScript disabled
    the browser's native disclosure still works."
   [author children ctx open?]
-  (let [summary (or (:summary author) (:title author) "Details")]
+  (let [summary (or (:summary author) (:title author)
+                    (dictionary/localize (:language ctx) :details))]
     (into [:details (cond-> (id-attrs author) open? (assoc :open "open"))]
           (cons [:summary {} summary] (expand-all children ctx)))))
 

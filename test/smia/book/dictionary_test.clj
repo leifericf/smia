@@ -66,6 +66,26 @@
                                   {:language "zz"})]
         (is (some #(= "Notat" %) (tree-seq vector? seq out)))))))
 
+(deftest generated-furniture-strings-are-localized
+  (with-redefs [dict/dictionaries
+                (assoc dict/dictionaries :zz
+                       (m1p/prepare-dictionary {:on-page  "på side"
+                                                :details  "Detaljer"
+                                                :overview "Oversikt"}))]
+    (testing "the xref page phrase"
+      (let [out (fo-expand/expand [:xref {:to :ch :label "Kapittel 2" :page true}]
+                                  {:language "zz"})]
+        (is (some #(and (string? %) (clojure.string/includes? % "på side"))
+                  (tree-seq vector? seq out)))))
+    (testing "the disclosure default summary"
+      (doseq [out [(fo-expand/expand [:details {} [:p "x"]] {:language "zz"})
+                   (html-expand/expand [:details {} [:p "x"]] {:language "zz"})]]
+        (is (some #(= "Detaljer" %) (tree-seq vector? seq out)))))
+    (testing "the overview default title"
+      (doseq [out [(fo-expand/expand [:overview {} [:p "x"]] {:language "zz"})
+                   (html-expand/expand [:overview {} [:p "x"]] {:language "zz"})]]
+        (is (some #(= "Oversikt" %) (tree-seq vector? seq out)))))))
+
 (deftest search-category-labels-are-localized
   (with-redefs [dict/dictionaries
                 (assoc dict/dictionaries :zz

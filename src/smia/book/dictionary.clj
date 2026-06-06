@@ -30,6 +30,9 @@
         ;; admonition labels
         :note "Note" :tip "Tip" :warning "Warning"
         :important "Important" :caution "Caution"
+        ;; in-flow furniture: the xref page phrase, the disclosure
+        ;; summary, and the overview panel's default title
+        :on-page "on page" :details "Details" :overview "Overview"
         ;; site chrome
         :contents "Contents" :table-of-contents "Table of contents"
         :downloads "Downloads" :search "Search" :edit-this-page "Edit this page"
