@@ -1,6 +1,7 @@
 {:book/slug       "smia-manual"
  :book/title      "The Smia Manual"
  :book/author     "The Smia authors"
+ :book/language   "en-US"
  :book/site-url   "https://smia.leifericf.com/manual"
  :book/references "references.edn"
 
@@ -23,9 +24,12 @@
                    "chapters/09-distribution.md"
                    "chapters/10-design.md"]}]
 
- :book/appendices ["chapters/11-error-catalog.md"]
+ :book/appendices ["chapters/11-error-catalog.md"
+                   "chapters/12-clojure-for-authors.md"
+                   "chapters/13-code-authoring.clj"]
 
- :book/back-matter [{:role :list-of-figures}
+ :book/back-matter [{:role :glossary :file "back/glossary.clj"}
+                    {:role :list-of-figures}
                     {:role :list-of-tables}
                     {:role :list-of-listings}
                     {:role :bibliography}

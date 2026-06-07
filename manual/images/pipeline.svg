@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="420" height="80" viewBox="0 0 420 80">
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="49.5" viewBox="0 0 420 80">
   <style>
     .box { fill: #f4f4f4; stroke: #2a52be; stroke-width: 1.5; }
     .lbl { font-family: 'Crimson Text', serif; font-size: 11px; fill: #1c1c1c; text-anchor: middle; }

@@ -1,3 +1,9 @@
-{:reproducible {:author "A. Author"  :title "On Reproducible Builds"     :year 2020}
- :typesetting  {:author "B. Writer"  :title "Foundations of Digital Typesetting" :year 2018}
- :dataoriented {:author "C. Designer" :title "Programming with Plain Data" :year 2021}}
+{:reproducible {:author "C. Lamb and S. Zacchiroli"
+                :title  "Reproducible Builds: Increasing the Integrity of Software Supply Chains"
+                :year   2022}
+ :typesetting  {:author "D. E. Knuth"
+                :title  "Digital Typography"
+                :year   1999}
+ :dataoriented {:author "Y. Sharvit"
+                :title  "Data-Oriented Programming"
+                :year   2022}}

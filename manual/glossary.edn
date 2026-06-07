@@ -1,0 +1,87 @@
+[{:term "Admonition"
+  :definition "A called-out note, tip, or warning set off from the running text."
+  :see :markdown}
+ {:term "Appendix"
+  :definition "A lettered section after the body chapters."
+  :see :book-production}
+ {:term "Author Hiccup"
+  :definition "The shared data vocabulary both front ends produce: markup written as plain vectors, maps, and strings."
+  :see :authoring}
+ {:term "Attribute"
+  :definition "A named value declared once in book.edn and referenced from any chapter."
+  :see :markdown}
+ {:term "Canon margins"
+  :definition "Page margins derived from the trim in the classical 2:3:4:6 proportion."
+  :see :theming}
+ {:term "Conditional content"
+  :definition "A block kept or dropped per edition or per declared attribute."
+  :see :markdown}
+ {:term "Cross-reference"
+  :definition "A link to an id that renders as a page number on paper and a hyperlink on screen."
+  :see :book-production}
+ {:term "Data table"
+  :definition "A table whose rows come from a CSV, TSV, or EDN file rather than the manuscript."
+  :see :markdown}
+ {:term "Determinism"
+  :definition "The guarantee that the same manuscript and theme produce identical output, byte for byte where the format allows."
+  :see :design}
+ {:term "Directive"
+  :definition "A Markdown block extension written as :::name with an EDN attribute map."
+  :see :markdown}
+ {:term "Edition"
+  :definition "One deliverable form of the book: screen PDF, print PDF, PDF/X, site, or EPUB."
+  :see :editions}
+ {:term "Escape hatch"
+  :definition "A per-format opening below the portable vocabulary: raw FO for paged output, raw HTML for the web, and their styling counterparts in the theme."
+  :see :authoring}
+ {:term "Float"
+  :definition "A numbered figure, table, or listing that cross-references and collects into a generated list."
+  :see :book-production}
+ {:term "Folio"
+  :definition "The page number in a page's running furniture."
+  :see :book-production}
+ {:term "Front end"
+  :definition "A chapter input format: Markdown read as data, or a Clojure file evaluated to author Hiccup."
+  :see :markdown}
+ {:term "Front matter"
+  :definition "Named sections before the body, numbered in roman."
+  :see :book-production}
+ {:term "Island"
+  :definition "A small optional script compiled on demand for one site affordance; every page works without it."
+  :see :theming}
+ {:term "Manuscript"
+  :definition "The book's source as data: book.edn plus the chapter files it names."
+  :see :configuration}
+ {:term "Matter"
+  :definition "A front or back section outside the numbered chapter run, such as a preface or this glossary."
+  :see :book-production}
+ {:term "Part"
+  :definition "A roman-numbered group of chapters with its own divider page."
+  :see :book-production}
+ {:term "PDF/X"
+  :definition "A press-submission PDF profile: embedded fonts, an ICC output intent, and no interactive features."
+  :see :editions}
+ {:term "Recto"
+  :definition "A right-hand page; chapters can be made to open on one."
+  :see :book-production}
+ {:term "Running head"
+  :definition "The line atop a page naming the current chapter or section, set in letterspaced capitals."
+  :see :book-production}
+ {:term "Slug"
+  :definition "The book's directory name under the build output, set by book.edn."
+  :see :configuration}
+ {:term "Smart punctuation"
+  :definition "The build-time pass that turns typewriter quotes, dashes, and ellipses into their typographic forms."
+  :see :markdown}
+ {:term "Theme token"
+  :definition "One named design decision in theme.edn, compiled into FO properties and CSS alike."
+  :see :theming}
+ {:term "Trim"
+  :definition "The page size of the paged editions, named in the theme."
+  :see :theming}
+ {:term "Validation"
+  :definition "The opt-in pass that evaluates marked code blocks and fails the build when one breaks. Each block is dispatched by language through the evaluator registry, where new language evaluators are registered."
+  :see :markdown}
+ {:term "Verso"
+  :definition "A left-hand page; an inserted blank verso stays completely empty."
+  :see :book-production}]

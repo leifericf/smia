@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="236" height="192" viewBox="0 0 236 192" font-family="Crimson Text, serif">
+  <!-- A digest spread at 0.8 units per millimeter. Margins follow the
+       canon: inner 2u, top 3u, outer 4u, bottom 6u with u = width/18. -->
+  <!-- verso page -->
+  <rect x="6" y="6" width="112" height="172.8" fill="#ffffff" stroke="#555555" stroke-width="0.8"/>
+  <!-- recto page -->
+  <rect x="118" y="6" width="112" height="172.8" fill="#ffffff" stroke="#555555" stroke-width="0.8"/>
+  <!-- spine -->
+  <line x1="118" y1="6" x2="118" y2="178.8" stroke="#999999" stroke-width="0.4"/>
+  <!-- text blocks -->
+  <rect x="30.9" y="24.67" width="74.67" height="116.8" fill="#dddddd"/>
+  <rect x="130.44" y="24.67" width="74.67" height="116.8" fill="#dddddd"/>
+  <!-- ratio labels on the recto margins -->
+  <text x="123.2" y="85" font-size="8" fill="#333333" text-anchor="middle">2</text>
+  <text x="167.8" y="18" font-size="8" fill="#333333" text-anchor="middle">3</text>
+  <text x="217.5" y="85" font-size="8" fill="#333333" text-anchor="middle">4</text>
+  <text x="167.8" y="163" font-size="8" fill="#333333" text-anchor="middle">6</text>
+  <!-- page labels -->
+  <text x="62" y="188" font-size="7" fill="#555555" text-anchor="middle">verso</text>
+  <text x="174" y="188" font-size="7" fill="#555555" text-anchor="middle">recto</text>
+</svg>

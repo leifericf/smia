@@ -6,7 +6,7 @@
 - The Clojure track: source checkout, git dependency, tool, and the programmatic API
 :::
 
-Smia has two front-ends over one engine. The **command-line interface**, the installed `smia` command, is the one for day-to-day work: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `smia.api`, takes an EDN request map and is meant for scripts and other tools. Clojure developers can reach both without installing anything; the last section of this chapter covers that track, where `clojure -M:run` stands in for `smia`.
+Smia exposes two interfaces over one engine. The **command-line interface**, the installed `smia` command, is the one for day-to-day work: it takes plain arguments, has `--help`, and reports errors as readable one-liners. The **programmatic API**, `smia.api`, takes an EDN request map and is meant for scripts and other tools. Clojure developers can reach both without installing anything; the last section of this chapter covers that track, where `clojure -M:run` stands in for `smia`.
 
 ## init
 
@@ -16,7 +16,7 @@ Scaffold a new book:
 smia init my-book
 ```
 
-The target directory is created when missing, and the slug and title are derived from its name: `my-book` becomes the slug `my-book` and the title "My Book". The scaffold is a complete, buildable manuscript — a `book.edn`, a `theme.edn`, and one Markdown chapter — so the next command can be `build`. A target directory that already has entries is refused with `:smia.book.scaffold/target-not-empty`; `init` never overwrites anything.
+The target directory is created when missing, and the slug and title are derived from its name: `my-book` becomes the slug `my-book` and the title "My Book". The scaffold is a complete, buildable manuscript: a `book.edn`, a `theme.edn`, and one Markdown chapter. The next command can be `build`. A target directory that already has entries is refused with `:smia.book.scaffold/target-not-empty`; `init` never overwrites anything.
 
 ## validate
 
@@ -135,7 +135,8 @@ The optional aliases compose the same way; the consumer declares the extra depen
 **As a Clojure CLI tool**, installed once and available in any directory:
 
 ```
-clojure -Ttools install io.github.leifericf/smia '{:git/tag "<tag>" :git/sha "<sha>"}' :as smia
+clojure -Ttools install io.github.leifericf/smia \
+  '{:git/tag "<tag>" :git/sha "<sha>"}' :as smia
 clojure -Tsmia init :target '"my-book"'
 clojure -Tsmia build :book-root '"my-book"'
 ```

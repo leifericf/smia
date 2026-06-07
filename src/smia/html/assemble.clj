@@ -443,7 +443,11 @@
   [:section {:class "footnotes" :role "doc-endnotes"}
    (into [:ol {}]
          (map (fn [{:keys [n children]}]
-                (-> (into [:li {:id (str "fn-" n) :role "doc-footnote"}]
+                ;; A plain li: doc-footnote is not a valid li role, and
+                ;; DPUB-ARIA 1.1 deprecates doc-endnote — epubcheck flags
+                ;; both. The section's doc-endnotes role carries the
+                ;; semantics.
+                (-> (into [:li {:id (str "fn-" n)}]
                           (map #(html-expand/expand % ctx) children))
                     (conj " "
                           [:a {:class "footnote-backlink" :role "doc-backlink"

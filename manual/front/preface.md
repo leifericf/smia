@@ -20,10 +20,11 @@ into the apparatus around a book's text.
 :::
 
 The manual is organized into parts. The first covers authoring, the second
-covers configuration, theming, and the build commands, and the third covers the
-structure of a long-form book. An appendix catalogs the error types. Front
-matter like this preface is numbered in roman numerals, and the body switches to
-arabic at the first chapter.
+covers configuration, theming, and the build commands, and the third covers book
+production, editions, distribution, and the design of the tool. Three appendices
+follow: the error catalog, a Clojure primer for authors, and a live chapter that
+builds its own content tables. Front matter like this preface is numbered in
+roman numerals, and the body switches to arabic at the first chapter.
 
 The manual exercises the platform that builds it, so it doubles as a regression
 test. If a feature breaks, this book stops building.

@@ -7,7 +7,7 @@
 - What triggers the types you are most likely to hit
 :::
 
-Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`, and `:error/context`. The most useful types, grouped by where they arise:
+Every failure is a structured error value (an `ex-info`) carrying `:error/type`, `:error/message`, and `:error/context`. The most useful types, grouped by where they arise:
 
 ## Request
 
@@ -30,7 +30,7 @@ Every failure is a structured `ex-info` carrying `:error/type`, `:error/message`
 - `:smia.book.config/invalid-edit-url`: `:book/edit-url` is not an absolute http(s) URL string.
 - `:smia.book.config/invalid-attributes`: `:book/attributes` is not a map of keyword to (string, number, or author Hiccup).
 - `:smia.theme.load/missing`: no `theme.edn`.
-- `:smia.theme.load/invalid-tokens`: `theme.edn` fails the token schema — a required group is absent or a token has the wrong shape. The error carries the humanized schema findings.
+- `:smia.theme.load/invalid-tokens`: `theme.edn` fails the token schema: a required group is absent or a token has the wrong shape. The error carries the humanized schema findings.
 - `:smia.theme.compile/unknown-page-size`: `:layout {:page-size …}` names a trim outside the known set (`:a4`, `:letter`, `:digest`). Token validation rejects this at load time as `:smia.theme.load/invalid-tokens`; the compile-time error guards programmatic callers.
 
 ## Authoring

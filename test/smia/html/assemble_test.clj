@@ -85,7 +85,11 @@
     (is (seq (nodes ch #(= "fn-1" (:id (second %)))))
         "the note body gets the fn-1 anchor")
     (is (contains? (hrefs ch) "#fn-1") "the noteref points at the note")
-    (is (contains? (hrefs ch) "#fnref-1") "the backlink returns to the text")))
+    (is (contains? (hrefs ch) "#fnref-1") "the backlink returns to the text")
+    (testing "each note item is a plain li"
+      ;; doc-footnote is not a valid li role and doc-endnote is deprecated;
+      ;; epubcheck flags both. The section's doc-endnotes role suffices.
+      (is (nil? (:role (second (first (nodes ch #(= "fn-1" (:id (second %))))))))))))
 
 (deftest bibliography-page-anchors-every-entry
   (let [bib (:hiccup (page "bibliography.html"))]

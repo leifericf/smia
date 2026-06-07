@@ -7,8 +7,7 @@
 :::
 
 Smia builds a manuscript into screen and print PDFs, an EPUB, and a static
-website, all on the JVM. Apache FOP renders the PDFs as a library call, and
-the build never leaves the process.
+website, all on the JVM.
 
 :::admonition {:kind :warning}
 Smia is young and in active development. The configuration, theme tokens,
@@ -41,7 +40,7 @@ scoop install smia
 Without a package manager, download `smia.jar` from the repository's
 Releases page, install a JDK (17 or later, for example Temurin), and run
 `java -jar smia.jar` wherever this manual says `smia`. jbang users can have
-both provisioned in one step with `jbang app install`.
+both provisioned in one step with `jbang app install --name smia <jar URL>`.
 
 Check the installation:
 
@@ -66,11 +65,11 @@ This writes a minimal, buildable manuscript into a new `my-book/` directory and 
 ```edn
 {:book/slug    "my-book"
  :book/title   "My Book"
- :book/author  "An Author"
- :book/chapters ["chapters/01-intro.md"]}
+ :book/author  "Your Name"
+ :book/chapters ["chapters/01-introduction.md"]}
 ```
 
-A Markdown chapter is prose with a single top-level heading for its title:
+The scaffold writes a starter `chapters/01-introduction.md` to fill that list. A Markdown chapter is prose under a single top-level heading for its title. At its simplest:
 
 ```markdown
 # Introduction

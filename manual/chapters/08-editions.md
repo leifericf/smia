@@ -8,7 +8,7 @@
 
 A build produces **editions**, deliverable forms of the same manuscript. One numbered manuscript feeds them all: numbering, cross-reference resolution, index collection, and figure, table, and listing numbering happen once, before any format-specific rendering. Every edition therefore agrees on what "Figure 3" is.
 
-Mathematical notation follows the same once-before-everything rule: each formula renders to SVG right after numbering, and the identical image is inlined into every edition — embedded in the PDFs' page flow, an inline `<svg>` in the site's HTML and the EPUB's XHTML. No edition needs JavaScript, a math font, or a network fetch to show it. PlantUML diagrams render the same way. The one exception is a Mermaid diagram, which has no pure-JVM renderer and so is drawn in the browser on the site only; the PDF and EPUB editions show its source instead (see [book production](#book-production)).
+Mathematical notation follows the same once-before-everything rule: each formula renders to SVG right after numbering, and the identical image is inlined into every edition: embedded in the PDFs' page flow, an inline `<svg>` in the site's HTML and the EPUB's XHTML. No edition needs JavaScript, a math font, or a network fetch to show it. PlantUML diagrams render the same way. The one exception is a Mermaid diagram, which has no pure-JVM renderer and so is drawn in the browser on the site only; the PDF and EPUB editions show its source instead (see [book production](#book-production)).
 
 - `:screen`: a PDF with symmetric margins for on-screen reading.
 - `:print`: a PDF with mirrored recto/verso margins and a binding gutter.
@@ -16,7 +16,24 @@ Mathematical notation follows the same once-before-everything rule: each formula
 - `:site`: a static HTML site.
 - `:epub`: an EPUB3 package for e-readers.
 
-With no `--edition`, the two PDF editions build. Select any subset by repeating the flag, or `all` for every edition the book is set up for (PDF/X joins only when `:book/print-x` is configured):
+:::figure {:id :fig-editions :caption "One numbered manuscript feeds every edition"}
+```plantuml
+left to right direction
+rectangle "one numbered\nmanuscript" as n
+rectangle ":screen" as s
+rectangle ":print" as p
+rectangle ":print-x" as px
+rectangle ":site" as w
+rectangle ":epub" as e
+n --> s
+n --> p
+n --> px
+n --> w
+n --> e
+```
+:::
+
+With no `--edition`, the two PDF editions build. Select any subset by repeating the flag, or `all` for every edition the book is set up for. PDF/X joins the set only when `book.edn` carries a `:book/print-x` map:
 
 ```bash
 smia build my-book --edition site
@@ -31,6 +48,12 @@ The `artifacts.edn` manifest lists what was built under `:build/editions`, with 
 A `:::when` block (see [the Markdown chapter](#markdown)) can hold content for some editions and not others: `:::when {:equals [:edition :epub]}` appears only in the EPUB. This is the one case that bends the once-before-everything rule. When a book has no edition-dependent content, it is numbered once and every edition agrees on "Figure 3", as above. When it does, that book is numbered per edition instead: each edition prunes its own branches first, so a figure present only in the EPUB is numbered there and absent elsewhere, and the surrounding numbers stay correct in every edition. Conditions that do not name `:edition` (a draft flag, a licensee) resolve once and keep the single-numbering guarantee.
 
 A cross-reference is resolved per edition too, so an `:xref` to a target that lives inside an edition-only branch must itself sit in a branch present in the same editions; otherwise that edition reports an unresolved cross-reference.
+
+## The PDF editions
+
+The three paged editions share the book typography described in [the theming chapter](#theming): justified and hyphenated text, indented paragraphs with flush openers, canon-derived margins, headerless chapter openers, numbered footnotes at the page foot, and, in the print layouts, truly blank inserted versos. None of it leaks into the site or the EPUB: the web's conventions are gap-separated ragged-right paragraphs, and the screen has no page to construct margins from, so the tokens behind these features are read by the PDF compiler alone.
+
+The line and page breaking underneath comes from the renderer's paragraph-at-once algorithm, which weighs every break in a paragraph together instead of greedily filling one line at a time, the approach fine typesetting systems use. Two refinements from that tradition sit beyond what the renderer can express, so Smia is honest about them rather than approximate: character protrusion (hanging punctuation slightly into the margin) and font expansion (imperceptibly flexing glyph widths to even out word spacing) are not available, and true small caps are not either, which is why running heads use letterspaced capitals. These are the engine's limits, not knobs left unexposed; if its capabilities grow, the tokens already have a home for them.
 
 ## The site edition
 
@@ -50,7 +73,7 @@ The same `theme.edn` drives the stylesheet: `:color`, `:type`, `:code`, and `:sp
 
 When `book.edn` carries a `:book/downloads` map, the site gains one more page, `downloads.html`, listing the other editions as download links; the asset flagged `:default` renders as the primary link. The page is site-only: the PDF and EPUB editions never emit it. [The distribution chapter](#distribution) walks through setting it up.
 
-Two more `book.edn` keys serve a *published* site. `:book/site-url`, the site's public address, adds a deterministic `sitemap.xml` over the canonical pages and a `robots.txt` pointing at it. `:book/redirects` maps old URL paths to target ids and writes a stub page at each old path — an instant redirect with a canonical link — so a chapter that moves leaves no dead bookmarks. Both are described in [the configuration chapter](#configuration).
+Two more `book.edn` keys serve a *published* site. `:book/site-url`, the site's public address, adds a deterministic `sitemap.xml` over the canonical pages and a `robots.txt` pointing at it. `:book/redirects` maps old URL paths to target ids and writes a stub page at each old path: an instant redirect with a canonical link, so a chapter that moves leaves no dead bookmarks. Both are described in [the configuration chapter](#configuration).
 
 Content portability follows the escape-hatch matrix in [the theming chapter](#theming): the shared sugar renders in every edition, `[:html/* …]` is reachable only in HTML editions, and `[:fo/* …]` only in PDF editions. Using one in the other is a structured error at build time, naming the offending tag.
 
@@ -61,8 +84,11 @@ Content portability follows the escape-hatch matrix in [the theming chapter](#th
 The edition carries accessibility metadata by default. Schema.org metadata is emitted with computed values: `textual` always, `visual` exactly when the book carries images, structural navigation and a table of contents declared as features, and no hazards. Every image must carry `:alt` text; an empty `:alt ""` marks a decorative image. Footnotes, noterefs, and the endnotes block carry their digital-publishing ARIA roles. A book can override any metadata slot in `book.edn`:
 
 ```edn
-:book/accessibility {:summary "Short prose description of the book's accessibility."
-                     :features ["structuralNavigation" "tableOfContents" "index"]}
+:book/accessibility
+  {:summary
+   "Short prose description of the book's accessibility."
+   :features
+   ["structuralNavigation" "tableOfContents" "index"]}
 ```
 
 Two optional `book.edn` keys feed the package metadata: `:book/identifier` (default `urn:smia:<slug>`) and `:book/language` (default `"en"`).
@@ -71,7 +97,9 @@ The package is byte-reproducible: the modification stamp and every archive entry
 
 ## The print-x edition
 
-`--edition print-x` produces the print layout as a PDF/X-4 file, the conformance level print services and presses commonly ask for. PDF/X is the print edition plus hard guarantees: every font embedded (base-14 substitutes are not allowed), an ICC output intent describing the target color space, pinned identification metadata, and no interactive features. Cross-references, citations, and table-of-contents entries render as plain text with their page citations, because PDF/X forbids link annotations; on paper the page number is the link.
+`--edition print-x` produces the print layout as a PDF/X-4 file,[^pdfx] the conformance level print services and presses commonly ask for.
+
+[^pdfx]: PDF/X-4 is standardized as ISO 15930-7. PDF/X is the print edition plus hard guarantees: every font embedded (base-14 substitutes are not allowed), an ICC output intent describing the target color space, pinned identification metadata, and no interactive features. Cross-references, citations, and table-of-contents entries render as plain text with their page citations, because PDF/X forbids link annotations; on paper the page number is the link.
 
 The edition is gated on a `:book/print-x` map in `book.edn` naming the fonts to embed and the output intent:
 

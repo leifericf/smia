@@ -84,7 +84,8 @@ jobs:
           root=build/release/site-root
           mkdir -p "$root/manual"
           cp -R build/release/smia-manual/site/. "$root/manual/"
-          echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" > "$root/CNAME"
+          domain="${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}"
+          echo "$domain" > "$root/CNAME"
           # The bare domain redirects into the manual; replace with a landing page later.
           cat > "$root/index.html" <<'HTML'
           <!DOCTYPE html>

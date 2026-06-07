@@ -36,6 +36,26 @@ Apache FOP turns XSL-FO into PDF, once per PDF edition.
 
 The middle three steps, assemble through serialize, are **pure functions** over plain Clojure data. The only effects are reading inputs at the start and FOP writing bytes at the end.
 
+The deflist above names the PDF path. Under the hood the trunk is shared: every chapter becomes author Hiccup, attributes and conditionals resolve, everything numbers once, and math and diagrams render to SVG a single time. Only then does the build fan out into a backend per edition, as [](#fig-build-pipeline) draws:
+
+:::figure {:id :fig-build-pipeline :caption "The build under the hood: one shared trunk, one backend per edition"}
+```plantuml
+skinparam defaultFontSize 10
+skinparam Padding 1
+rectangle "chapters (.md and .clj)\ncompile to author Hiccup" as hiccup
+rectangle "attributes, conditionals,\nnumbering, index" as resolve
+rectangle "math + diagram\nSVG, once" as svg
+rectangle "PDF editions:\nassemble, expand,\nserialize, FOP" as fop
+rectangle "site and EPUB:\nassemble, expand,\nemit, package" as web
+hiccup --> resolve
+resolve --> svg
+svg --> fop
+svg --> web
+```
+:::
+
+Everything left of the fan-out happens exactly once per build, which is why every edition agrees on what "Figure 3" is.
+
 ## Data all the way down
 
 The manuscript, the theme, and the XSL-FO document are all ordinary Clojure data structures. XSL-FO is XML, and Hiccup is a generic XML-tree literal, so an FO element is a vector:
@@ -48,9 +68,9 @@ The manuscript, the theme, and the XSL-FO document are all ordinary Clojure data
 
 Because the FO tree is data, it can be assembled, transformed, and inspected with the same tools as any other Clojure value.
 
-The vocabulary itself is data too. The Markdown front-end compiles each block and inline construct through a registry — a map from a node's kind to a function — rather than a fixed `case`, so the set of directives (`:::figure`, `:::sidebar`) and inline markers (`` `…`{=cite} ``) is open: a construct is one map entry. Each output format expands the resulting tags through the same kind of table, and a single test pins the two in step.
+The vocabulary itself is data too. The Markdown front end compiles each block and inline construct through a registry: a map from a node's kind to a function, rather than a fixed `case`, so the set of directives (`:::figure`, `:::sidebar`) and inline markers (`` `…`{=cite} ``) is open: a construct is one map entry. Each output format expands the resulting tags through the same kind of table, and a single test pins the two in step.
 
-The same idea localizes the apparatus. Every string smia generates — the float and structure labels, the generated section titles, the admonition labels, the site chrome — is looked up by a stable key in a dictionary keyed by `:book/language`, with English as the shipped baseline and the fallback. A language is a map of overrides; the lookup threads through the numbering, assembly, and expansion passes, so one knob localizes the furniture in every edition while the manuscript's content stays exactly as written.
+The same idea localizes the apparatus. Every string Smia generates: the float and structure labels, the generated section titles, the admonition labels, and the site chrome, is looked up by a stable key in a dictionary keyed by `:book/language`, with English as the shipped baseline and the fallback. A language is a map of overrides; the lookup threads through the numbering, assembly, and expansion passes, so one knob localizes the furniture in every edition while the manuscript's content stays exactly as written.
 
 ## A superset per format
 
@@ -78,11 +98,11 @@ The next generation escaped by leaving FO behind. [Asciidoctor PDF](https://gith
 
 Smia's reading of this history is that the pain was never the formatting model; it was the toolchain around it. So Smia keeps the engine and discards the toolchain. There is no XSLT and no intermediate document on disk: the FO is generated programmatically from the same tree every edition shares, theming is the token map from [the theming chapter](#theming), and the formatter runs inside the one build process.
 
-The specification's history shapes the bet as well. The W3C stopped at an [XSL-FO 2.0 working draft in January 2012](https://www.w3.org/TR/xslfo20/), and the [working group has closed](https://www.w3.org/XML/XPPL/); [XSL 1.1](https://www.w3.org/TR/xsl11/) is the final Recommendation. A frozen specification is a liability for an authoring format and something else for an internal representation: a finished, stable compile target, whose living dependency is the formatter rather than the spec. The FO backend also sits behind the same pure-transform seam as the HTML editions, so the architecture is not married to one formatter; a different page engine, should one earn the place, would be a backend beside it rather than a rewrite beneath it.
+The specification's history shapes the bet as well. The W3C stopped at an [XSL-FO 2.0 working draft in January 2012](https://www.w3.org/TR/xslfo20/), and the [working group has closed](https://www.w3.org/XML/XPPL/); [XSL 1.1](https://www.w3.org/TR/xsl11/) is the final Recommendation. A frozen specification is a liability for an authoring format and an asset for an internal representation: a finished, stable compile target, whose living dependency is the formatter rather than the spec. The FO backend also sits behind the same pure-transform seam as the HTML editions, so the architecture is not married to one formatter; a different page engine, should one earn the place, would be a backend beside it rather than a rewrite beneath it.
 
 ## Determinism
 
-Identical inputs should produce equivalent output. Smia serializes FO without pretty-printing, so `white-space="pre"` survives, emits attributes in sorted order, and pins FOP's document metadata. Two builds of the same manuscript agree on pages, text, and bookmarks.
+Identical inputs produce equivalent output. Smia serializes FO without pretty-printing, so `white-space="pre"` survives, emits attributes in sorted order, and pins FOP's document metadata. Two builds of the same manuscript agree on pages, text, and bookmarks.
 
 ## Styling without CSS
 
@@ -90,7 +110,7 @@ XSL-FO has no CSS cascade: every block carries its own properties. Styling is th
 
 ## No JavaScript required
 
-The site edition treats JavaScript the way print treats it: the reading experience cannot depend on it. A default build ships none at all. Every scripted feature is an opt-in island layered as progressive enhancement over a page that already works: search over a plain form with a static fallback, the dark toggle and reader preferences over a stylesheet that already follows the system setting, keyboard shortcuts over visible controls. The same discipline holds for layout: the sidebar's narrow-screen contents fold is a native details element the browser opens and closes itself, not a scripted menu. Each island is ClojureScript, and the build compiles its bundle on demand the first site build that needs it. The compiler is an ordinary Maven dependency, bundled in the packaged jar and behind the optional `:cljs` alias on the Clojure CLI track, so nothing compiled is committed, building a book runs no Node and no JavaScript toolchain, and the build stays a single JVM process.
+The site edition treats JavaScript the way print treats it: the reading experience cannot depend on it. A default build ships none at all. Every scripted feature is an opt-in island layered as progressive enhancement over a page that already works: search over a plain form with a static fallback, the dark toggle and reader preferences over a stylesheet that already follows the system setting, keyboard shortcuts over visible controls. The same discipline holds for layout: the sidebar's narrow-screen contents fold is a native details element the browser opens and closes itself, not a scripted menu. Each island is ClojureScript, and the build compiles its bundle on demand the first site build that needs it. The compiler is an ordinary Maven dependency, bundled in the packaged jar and behind the optional `:cljs` alias on the Clojure CLI track. Nothing compiled is committed; building a book runs no Node and no JavaScript toolchain, and the build stays a single JVM process.
 
 ## Packaging
 

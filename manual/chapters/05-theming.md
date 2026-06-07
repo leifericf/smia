@@ -10,7 +10,7 @@ Styling comes from design **tokens** rather than stylesheet strings. FOP is not 
 
 ## theme.edn
 
-Define the theme once in `theme.edn` at the book root, beside `book.edn`. The split is simple: `book.edn` is the manuscript, `theme.edn` is the appearance. Tokens are grouped into `:color`, `:type`, `:spacing`, and `:layout`:
+Define the theme once in `theme.edn` at the book root, beside `book.edn`. The split: `book.edn` is the manuscript, `theme.edn` is the appearance. Tokens are grouped into `:color`, `:type`, `:spacing`, and `:layout`:
 
 ```edn
 {:color  {:text "#1c1c1c" :link "#2a52be"}
@@ -26,6 +26,50 @@ Code listings size with `:type {:code-size "9pt"}`, the point size of block code
 Syntax highlighting is two more tokens. Set `:type {:highlight true}` to enable it, and override the palette with a `:code` group mapping token kinds to colors: `:keyword`, `:string`, `:comment`, `:number`, and `:literal`.
 
 Smart punctuation is also a `:type` token. It is on by default; `:type {:smart-punctuation false}` keeps typewriter punctuation as typed. [The Markdown chapter](#markdown) describes what it rewrites.
+
+## Book typography
+
+The PDF editions set their pages the way books have been set since long before software: justified, hyphenated text; running paragraphs marked by a first-line indent rather than a gap, with the first paragraph after a heading set flush; page margins constructed from the trim in the classical 2:3:4:6 proportion, smallest at the binding and largest at the foot; heading space counted in whole and half lines of the body leading. All of it is on by default and all of it is tokens, so a book that wants the web's conventions instead can have them back one token at a time.
+
+`:type` carries the text-level controls:
+
+```edn
+:type {:justify true            ;; false for ragged-right
+       :hyphenate true          ;; false to never break words
+       :hyphenation-ladder 2    ;; max consecutive hyphenated lines
+       :widows 2 :orphans 2     ;; min lines of a paragraph per page
+       :running-head {:letter-spacing "0.08em"}}
+```
+
+Hyphenation needs to know the book's language to pick its patterns, so set `:book/language` in `book.edn` ([the configuration chapter](#configuration)). The `:running-head` map restyles the letterspaced-capitals head per property.
+
+`:spacing` decides how paragraphs and headings claim vertical space:
+
+```edn
+:spacing {:paragraph-style :indent  ;; :space for gap-separated paragraphs
+          :indent "1em"             ;; the first-line indent
+          :heading-rhythm {:h2 [1.5 0.5]}}
+```
+
+With the default `:indent` style, running paragraphs indent their first line and the gap between them collapses; a paragraph opening a run, after a heading, a list, or a figure, sets flush (no first-line indent). `:space` restores the gap-and-no-indent web convention. `:heading-rhythm` maps a heading level to its `[space-before space-after]` in multiples of the body leading, merged over the defaults.
+
+`:layout` carries the page geometry. With no margin keys the margins derive from the trim: inner, top, outer, and bottom in the ratio 2:3:4:6, sized so the text block covers two thirds of the page width, a construction early printers drew with a straightedge.[^canon] Any explicit margin key wins for that key alone, `:text-coverage` tunes the derivation, and `:chapter-drop` sets the white space above a chapter's opening heading:
+
+[^canon]: Jan Tschichold reconstructed the canon in his essays on book form, building on J. A. van de Graaf's analysis of how late medieval books divided the page.
+
+```edn
+:layout {:page-size :digest
+         :text-coverage 2/3
+         :chapter-drop "72pt"}
+```
+
+[](#fig-canon) draws the construction on the digest trim. One unit is a ninth of half the page width; the inner margin takes two, the top three, the outer four, and the foot six, so the two text blocks sit high and toward the spine, and the facing pages mirror:
+
+:::figure {:id :fig-canon :caption "The canon construction: margins in the ratio 2:3:4:6"}
+![A two-page spread with mirrored text blocks and margins labeled 2, 3, 4, and 6](images/canon-spread.svg)
+:::
+
+This manual's own `theme.edn` declares no margins; the pages you are reading in the PDF editions are the derived canon, exactly the figure's geometry. Everything in this section is paged-output styling: the site and the EPUB read none of these tokens, keep their gap-separated ragged-right paragraphs, and are byte-identical with or without them.
 
 ## Styling escape hatches
 
@@ -50,7 +94,7 @@ When the tokens cannot express a styling need, `theme.edn` takes two optional ov
       [".hero"   {:padding "2em"}]]
 ```
 
-A rule may also be an at-rule wrapper holding plain rules one level deep — a media query for the site, a print rule:
+A rule may also be an at-rule wrapper holding plain rules one level deep, such as a media query for the site or a print rule:
 
 ```edn
 :css [["@media (max-width: 40em)"
@@ -76,7 +120,7 @@ Two layouts ship today:
 - `:plain`, the default: one centered reading column with a contents link and prev/next navigation at the foot of each page. A book that sets no `:site` group gets it.
 - `:sidebar`: a two-column layout with a table-of-contents rail beside the reading column, the current page marked. The page you are reading online uses it. The rail styles its entries as quiet text rather than underlined links, groups the chapters under small part labels, and accents the current page. Because the rail already lists every page, the home page is a plain title card rather than a second copy of the contents.
 
-Both layouts are pure HTML and CSS with no JavaScript, and both render the same manuscript: switching is a one-line change to `theme.edn`, and nothing in the chapters moves. On a narrow screen the rail folds into a compact, closed Contents disclosure at the top of the page — a native details element, still no JavaScript — and the margin chevrons yield to the labeled prev/next at the foot, so nothing overflows a phone screen. In both, the navigation chrome reads as quiet text, leaving the underline a signal for links in the prose, and every control draws a visible focus ring for keyboard readers. The reading column sets its width fluidly, and the few hover transitions collapse to nothing for a reader whose system asks for reduced motion.
+Both layouts are pure HTML and CSS with no JavaScript, and both render the same manuscript: switching is a one-line change to `theme.edn`, and nothing in the chapters moves. On a narrow screen the rail folds into a compact, closed Contents disclosure at the top of the page, a native details element with still no JavaScript, and the margin chevrons yield to the labeled prev/next at the foot, so nothing overflows a phone screen. In both, the navigation chrome reads as quiet text, leaving the underline a signal for links in the prose, and every control draws a visible focus ring for keyboard readers. The reading column sets its width fluidly, and the few hover transitions collapse to nothing for a reader whose system asks for reduced motion.
 
 Layouts are a set keyed by name. A value outside the known set fails the build with `:smia.site.layout/unknown-layout`, naming the layout it did not recognize.
 
@@ -89,9 +133,9 @@ A second `:site` token turns on reader search:
        :search true}
 ```
 
-With it, every page carries a search box. As the reader types, a small script suggests matches grouped by what they are — chapters, sections, figures, tables, listings, index terms — straight from the book's own apparatus. The index is a static `search-index.json` the build writes beside the pages; nothing runs on a server, and the index is as deterministic as every other artifact.
+With it, every page carries a search box. As the reader types, a small script suggests matches grouped by what they are (chapters, sections, figures, tables, listings, index terms) straight from the book's own apparatus. The index is a static `search-index.json` the build writes beside the pages; nothing runs on a server, and the index is as deterministic as every other artifact.
 
-The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The script is a ClojureScript island the build compiles on demand, on the JVM behind the optional `:cljs` alias ([the commands chapter](#commands)) — no JavaScript toolchain is involved. The default remains off — a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
+The box is progressive enhancement, not a requirement: it is a plain form, and with JavaScript disabled (or the script unreachable) submitting it lands on a static `search/` page listing the book by category, every page still one click away. The script is a ClojureScript island the build compiles on demand, on the JVM behind the optional `:cljs` alias ([the commands chapter](#commands)), with no JavaScript toolchain involved. The default remains off: a book that does not opt in ships a site with no JavaScript at all. The page you are reading has it on; the manual's own `theme.edn` is the example above.
 
 ## Dark mode
 
@@ -101,9 +145,9 @@ A third `:site` token adds a dark color scheme to the site:
 :site {:dark true}
 ```
 
-The site stylesheet defines its colors as CSS custom properties, and the build appends an `@media (prefers-color-scheme: dark)` block that redefines them, so the page honors the reader's operating-system setting with no toggle and no JavaScript. Because every color is a variable, the dark scheme flips the whole palette at once — headings, chapter labels, captions, sidebar, and syntax colors included, not just the page background.
+The site stylesheet defines its colors as CSS custom properties, and the build appends an `@media (prefers-color-scheme: dark)` block that redefines them, so the page honors the reader's operating-system setting with no toggle and no JavaScript. Because every color is a variable, the dark scheme flips the whole palette at once, not just the page background: headings, chapter labels, captions, sidebar, and syntax colors are all included.
 
-A computed dark palette is the default, including a brighter syntax-highlight palette and lighter code line numbers so listings stay readable on the dark code background. Override any of its colors — `:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel`, `:panel-2`, `:card` — with a `:dark` token group, and recolor syntax highlighting for the dark scheme under `:dark {:code …}`:
+A computed dark palette is the default, including a brighter syntax-highlight palette and lighter code line numbers so listings stay readable on the dark code background. Override any of its colors (`:text`, `:background`, `:link`, `:muted`, `:rule`, `:code-background`, `:panel`, `:panel-2`, `:card`) with a `:dark` token group, and recolor syntax highlighting for the dark scheme under `:dark {:code …}`:
 
 ```edn
 :site {:dark true}
@@ -111,7 +155,7 @@ A computed dark palette is the default, including a brighter syntax-highlight pa
        :code {:keyword "#ff7b72" :string "#a5d6ff"}}
 ```
 
-Build-time SVG — math and diagrams — renders identical bytes into every edition, so it cannot be recolored for the dark scheme. The site instead inverts its lightness in CSS while keeping its hue, so a black-on-transparent diagram reads as light strokes on the dark page and a colored diagram stays recognizable. This is a site dark-scheme effect only; the SVG itself is untouched.
+Build-time SVG, both math and diagrams, renders identical bytes into every edition, so it cannot be recolored for the dark scheme. The site instead inverts its lightness in CSS while keeping its hue, so a black-on-transparent diagram reads as light strokes on the dark page and a colored diagram stays recognizable. This is a site dark-scheme effect only; the SVG itself is untouched.
 
 The custom-property layer is the site's alone; the EPUB keeps a literal stylesheet, since e-readers do their own theming and older ones support custom properties unevenly. A book that does not opt in emits exactly the same stylesheet as before.
 
@@ -123,7 +167,7 @@ The default follows the operating system. To add a button that lets the reader o
 :site {:dark {:toggle true}}
 ```
 
-This adds a small ClojureScript island, compiled on demand and shipped on the page. It records the reader's choice in the browser's `localStorage` and reflects it on the page, so an explicit choice overrides the system setting and survives across pages and visits. The script loads ahead of first paint, so a stored choice applies with no flash of the wrong scheme. The page is still hosted as plain static files — nothing runs on a server.
+This adds a small ClojureScript island, compiled on demand and shipped on the page. It records the reader's choice in the browser's `localStorage` and reflects it on the page, so an explicit choice overrides the system setting and survives across pages and visits. The script loads ahead of first paint, so a stored choice applies with no flash of the wrong scheme. The page is still hosted as plain static files, with nothing running on a server.
 
 With JavaScript disabled the button stays hidden and nothing breaks: the operating-system setting still governs through the media query, exactly as `:dark true` alone behaves. The toggle is the only part of dark mode that uses JavaScript; the color scheme itself never needs it. Palette overrides under the `:dark` token group apply to both the system scheme and the explicit choice.
 
@@ -166,7 +210,7 @@ Page navigation takes the arrow keys and the vim-style letters, so it works the 
 
 ## Mermaid diagrams
 
-A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small island script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled — point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.
+A `:site {:mermaid true}` token turns on client-rendered Mermaid diagrams (a `mermaid` fence, see [book production](#book-production)). Each diagram is emitted as a `<pre class="mermaid">` block and a small island script renders it in the browser; with JavaScript disabled, the source shows. The Mermaid library is not bundled. Point the build at one with `:site {:mermaid {:src "…"}}`, a URL to a Mermaid build that the page loads ahead of the island. The PDF and EPUB editions always show the diagram's source instead, so reach for a `plantuml` fence when a diagram must be drawn in every edition. The default is off, and a book that does not opt in ships no Mermaid script.
 
 ## Fonts
 

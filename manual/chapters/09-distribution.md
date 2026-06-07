@@ -18,7 +18,7 @@ goes.
 
 The five editions fall into two roles. The **site** edition is for reading in a
 browser, so it goes to a web host. The **screen**, **print**, **print-x**, and
-**epub** editions are files to download and keep, so they attach to a tagged
+**EPUB** editions are files to download and keep, so they attach to a tagged
 release. The site carries a Downloads page that links to those release files,
 which gives a reader a single chain to follow:
 
@@ -76,13 +76,14 @@ uses date tags rather than version numbers; the tag is the day you publish.
 ```yaml {:id :lst-release-trigger :file ".github/workflows/release.yml" :caption "Triggering on a YYYY-MM-DD tag"}
 on:
   push:
-    tags: ['20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]']   # YYYY-MM-DD (glob, not regex)
+    # YYYY-MM-DD (glob, not regex)
+    tags: ['20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]']
 ```
 
 On such a push the workflow builds all five editions into one output root, then
 does three things with them:
 
-- attaches the screen, print, print-x, and epub files to a **GitHub Release**
+- attaches the screen, print, print-x, and EPUB files to a **GitHub Release**
   for the tag (`softprops/action-gh-release`);
 - uploads the site directory as a **Pages artifact** and deploys it
   (`actions/upload-pages-artifact` then `actions/deploy-pages`);
@@ -90,7 +91,9 @@ does three things with them:
   page can never link to a missing file.
 
 The build step is the same `build` command you run locally; the workflow has no
-private knowledge of the book:
+private knowledge of the book. The CI runner provides a Java runtime but not
+the installed `smia` binary, so the workflow invokes Clojure directly to build
+Smia from source before running it:
 
 ```bash
 clojure -M:run:cljs:math:diagrams build manual \
@@ -128,7 +131,8 @@ repository configuration:
     root=build/release/site-root
     mkdir -p "$root/manual"
     cp -R build/release/smia-manual/site/. "$root/manual/"
-    echo "${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}" > "$root/CNAME"
+    domain="${{ vars.PAGES_CUSTOM_DOMAIN || 'smia.leifericf.com' }}"
+    echo "$domain" > "$root/CNAME"
 ```
 
 At the bare domain root the workflow drops a one-line redirect into `/manual/`.
@@ -140,7 +144,7 @@ is a one-line change: stage the site as the artifact root rather than under
 With the public address in `book.edn` as `:book/site-url` (this manual sets
 `"https://smia.leifericf.com/manual"`), the built site already contains a
 `sitemap.xml` listing every canonical page and a `robots.txt` pointing search
-engines at it — nothing to add in the workflow. When a published chapter later
+engines at it; nothing to add in the workflow. When a published chapter later
 moves, `:book/redirects` keeps its old URL alive; both keys are described in
 [the configuration chapter](#configuration).
 
@@ -155,6 +159,6 @@ Three things are configured once, in the repository, outside the manuscript:
   to your own domain.
 - Push the first date tag to trigger the first publish.
 
-From then on, publishing a new edition of the book is one push of a dated tag.
+From then on, publishing a new edition of the book is one push of a date tag.
 The manuscript itself carries everything else: the chapters, `book.edn`, the
 theme, and the `:book/downloads` block.

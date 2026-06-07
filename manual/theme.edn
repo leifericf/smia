@@ -22,8 +22,9 @@
            :comment "#888888"
            :number  "#aa5500"
            :literal "#7700aa"}
- :spacing {:paragraph "6pt"
-           :block     "8pt"}
+ ;; No :paragraph token: the PDF editions set book paragraphs — a
+ ;; first-line indent with no gap, the run opener flush.
+ :spacing {:block "8pt"}
  ;; The online manual dogfoods the sidebar site layout (a sticky table of
  ;; contents beside the reading column), the opt-in search island, dark
  ;; mode, and the reader-preferences controls (width, text size, contrast,

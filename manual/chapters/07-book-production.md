@@ -13,9 +13,9 @@ listings, cross-references that read "Figure 1" rather than a bare page number,
 running heads, an index, and a bibliography. Smia produces all of these from
 data, and this chapter both explains and exercises them.
 
-:::epigraph {:attribution "C. Designer"}
-Programs that manipulate plain data are easier to reason about than programs that
-manipulate objects with hidden state.
+:::epigraph {:attribution "Alan J. Perlis, Epigrams on Programming (1982)"}
+It is better to have 100 functions operate on one data structure than 10
+functions on 10 data structures.
 :::
 
 The quotation above is an `:::epigraph`, set off from the running text, with
@@ -49,14 +49,21 @@ emit a navigation section listing every numbered float of that kind, in document
 order, with a page reference. The lists at the back of this manual are exactly
 these. Give any of them a `:title` to override the default heading. Any other
 keyword is a custom role: give it a `:file` and the section renders under a
-title-cased version of its name, or a `:title` of your choosing.
+title-cased version of its name, or a `:title` of your choosing. The glossary
+at the back of this manual is one: a `:glossary` role pointing at a small
+`.clj` file that renders `glossary.edn` as a two-column term list, every
+entry carrying a page reference. The index locates every occurrence of a
+term; the glossary defines it and points at the chapter that treats it.
 
 Parts are numbered with roman numerals, chapters with arabic, and appendices
 with letters. `:book/numbering` overrides any of these per kind with `:roman`,
 `:arabic`, `:letter`, or `false` to turn numbering off, for example
 `{:chapters :roman}`. Sections are unnumbered by default; `{:sections true}`
-adds decimal section numbers. In the print layout,
-`{:start-chapters-on :recto}` opens every chapter on a right-hand page. See
+adds decimal section numbers. Footnotes number per chapter by default;
+`{:footnotes false}` marks every note with an asterisk instead. In the print
+layout, `{:start-chapters-on :recto}` opens every chapter on a right-hand
+page, and the inserted verso is left completely blank, with no running head and
+no folio, as bound books have always done. See
 [the configuration chapter](#configuration) for the full key reference.
 
 ## Figures and captions
@@ -73,9 +80,9 @@ In Hiccup the same figure is `[:figure {:id :fig-pipeline :caption "…"} [:img 
 
 ### Diagrams from text
 
-A figure need not be a pre-drawn image. A fence whose info string is `plantuml` holds diagram source, rendered to SVG at build time, in process, with a pure-Java layout engine — no external drawing tool. It composes with `:::figure` for numbering, and the figure's caption doubles as the diagram's alt text. [](#fig-frontends) is text in this chapter's source:
+A figure need not be a pre-drawn image. A fence whose info string is `plantuml` holds diagram source, rendered to SVG at build time, in process, with a pure-Java layout engine and no external drawing tool. It composes with `:::figure` for numbering, and the figure's caption doubles as the diagram's alt text. [](#fig-frontends) is text in this chapter's source:
 
-:::figure {:id :fig-frontends :caption "The two chapter front-ends meet in author Hiccup"}
+:::figure {:id :fig-frontends :caption "The two chapter front ends meet in author Hiccup"}
 ```plantuml
 rectangle "chapter.md" as md
 rectangle "chapter.clj" as clj
@@ -93,7 +100,7 @@ A second diagram syntax, a `mermaid` fence, is rendered in the reader's browser 
 
 :::admonition {:kind :note}
 A diagram with overlaid callouts, leader lines pointing at parts of an image,
-should be authored as a single pre-rendered image; the page model cannot
+belongs in a single pre-rendered image; the page model cannot
 position free-floating marks over arbitrary coordinates. To explain a diagram's
 parts, pair the figure with a description list or an annotated listing beneath
 it, which carry their own numbered references.
@@ -119,7 +126,7 @@ listed in [](#tbl-roles):
 A fenced code block whose info map carries a `:file` gets a filename header bar;
 a `:caption` makes it a numbered listing you can cross-reference. Source is
 syntax-highlighted when the theme enables it, and `:line-numbers true` adds a
-gutter. A `:fold` attribute makes a long listing collapsible on the site — it
+gutter. A `:fold` attribute makes a long listing collapsible on the site, where it
 becomes a native `<details>` disclosure that folds away with no JavaScript, and
 `:fold "label"` sets the summary text; print and EPUB always show the full
 listing. [](#lst-build) builds a book from the command line:
@@ -133,8 +140,8 @@ smia build my-book \
 Highlighting is a pure, in-process tokenizer, so builds stay deterministic. The
 tokenizer is built from a small library of lexical fragments and a handful of
 language-family factories, so a language is usually a reserved-word set plus a
-family. It ships for the eight curated tokenizers — Clojure, Java, Kotlin,
-Groovy, JavaScript, Python, SQL, and shell scripts (`bash`) — alongside a wider
+family. It ships for the eight curated tokenizers (Clojure, Java, Kotlin,
+Groovy, JavaScript, Python, SQL, and shell scripts in `bash`) alongside a wider
 set keyed by family:
 
 - **C-family** (`//` and `/* */`): `c`, `cpp`, `csharp`, `go`, `rust`, `scala`, `swift`, `dart`, `objc`, `php`, `solidity`, `zig`, `d`, `protobuf`, and `typescript` (with template literals).
@@ -181,20 +188,39 @@ by author:
 ```
 
 Cite an entry inline with `` `key`{=cite} ``, which links to the
-generated bibliography, for example `typesetting`{=cite} on digital
+generated bibliography. Mark a term for the index with `` `term`{=index} ``;
+Smia collects every mark into an alphabetical index with page references.
+The two markers sit adjacent when a citation also deserves an index entry,
+for example `typesetting`{=cite} on digital
 typesetting`Typesetting`{=index} or `dataoriented`{=cite} on data-oriented
-design`Data-oriented design`{=index}. Mark a term for the index with
-`` `term`{=index} ``; Smia collects every mark into an alphabetical index
-with page references. Cross-references`Cross-references`{=index} resolve the same
+design`Data-oriented design`{=index}. Cross-references`Cross-references`{=index} resolve the same
 way whether they point at a chapter, a section like [](#structure-demo), a
 figure, a table, or a listing. In Hiccup, an `:xref` with `:style :full`
 renders the full label and title, "Chapter 2: Title", in the PDF editions.
+
+## Footnotes
+
+A footnote[^placement] sits at the foot of the page that references it, in
+the PDF editions, beneath a short separator rule; on the site and in the
+EPUB, where there is no page foot, each chapter's notes collect at the
+chapter's end instead. The marker is a superscript number that restarts at 1
+in every chapter, in every edition, so the same note carries the same number
+on paper and on screen. The Markdown syntax is `text[^1]` with a `[^1]:`
+definition; in Hiccup it is `[:footnote …]`.
+
+[^placement]: This note is doing its own demonstration: in the PDF it hangs
+under its number at the foot of this page, and online it sits at the end of
+the chapter, linked both ways.
 
 ## Running heads
 
 Every page carries a running head and a page-number folio. The defaults: a
 verso page shows the chapter title, a recto page the current section, and
-the symmetric screen layout the chapter title on every page.
+the symmetric screen layout the chapter title on every page. The head is set
+in letterspaced capitals, the closest the renderer comes to the classical
+small-caps treatment (see [the theming chapter](#theming) to restyle it),
+and a chapter's opening page suppresses it while keeping the folio, since the
+chapter heading already says where you are.
 `:book/running-heads` overrides any slot. Keys are the page parities,
 `:verso` and `:recto` for the print layout and `:screen` for the symmetric
 ones; each maps `:before` (the head) and `:after` (the foot) to one of
