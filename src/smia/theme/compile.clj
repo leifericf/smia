@@ -31,8 +31,9 @@
 (defn compile-theme
   "Compile validated `tokens` and a page `layout` (`:screen` or
    `:print`) into `{:layout :style :master-reference :masters
-   :link-color :rule-color :muted-color}`. The palette colors are
-   surfaced for the assembled furniture (title page, TOC, rules)."
+   :link-color :rule-color :muted-color :chapter-drop}`. The palette
+   colors are surfaced for the assembled furniture (title page, TOC,
+   rules)."
   [tokens layout]
   (let [color (:color tokens)]
     {:layout           layout
@@ -46,7 +47,11 @@
      :muted-color      (get color :muted "#666666")
      :master-reference "book"
      :masters          (masters layout (:layout tokens))
-     :running-regions  (running-regions layout)}))
+     :running-regions  (running-regions layout)
+     ;; The chapter drop: white space above a chapter opening's heading.
+     ;; Deeper than a web heading would sit — the classical cue that a
+     ;; major division starts here.
+     :chapter-drop     (get-in tokens [:layout :chapter-drop] "72pt")}))
 
 ;; --- private helpers -------------------------------------------------------
 
@@ -139,8 +144,15 @@
    [:fo/region-after  (cond-> {:extent footer} after-name  (assoc :region-name after-name))]])
 
 (defn- masters
-  "Page-master fragments for the page `layout`, all reachable through
-   the `master-reference` \"book\"."
+  "Page-master fragments for the page `layout`, all reachable through the
+   `master-reference` \"book\". Beyond the parity (or symmetric) body
+   masters, every layout carries a `page-position=\"first\"` master per
+   parity whose page has no before-region at all — a chapter opener cannot
+   show a running head, while its after-region reuses the parity footer
+   name so the folio stays. `:print` adds a body-only master selected for
+   parity-inserted blank pages (`blank-or-not-blank`), so a forced verso
+   renders truly empty. The alternatives are listed most specific first,
+   in a fixed order, for deterministic FO."
   [layout geometry]
   (let [{:keys [width height]} (page-dims geometry)
         mt      (get geometry :margin-top "22mm")
@@ -148,29 +160,42 @@
         inside  (get geometry :margin-inside "26mm")
         outside (get geometry :margin-outside "20mm")
         header  (get geometry :header-extent "12mm")
-        footer  (get geometry :footer-extent "12mm")]
+        footer  (get geometry :footer-extent "12mm")
+        page    {:page-width width :page-height height
+                 :margin-top mt :margin-bottom mb}
+        body    [:fo/region-body {:margin-top header :margin-bottom footer}]
+        alt     (fn [ref conditions]
+                  [:fo/conditional-page-master-reference
+                   (assoc conditions :master-reference ref)])]
     (if (= layout :print)
-      [(into [:fo/simple-page-master
-              {:master-name "book-recto" :page-width width :page-height height
-               :margin-top mt :margin-bottom mb
-               :margin-left inside :margin-right outside}]
-             (regions header footer "head-recto" "foot-recto"))
-       (into [:fo/simple-page-master
-              {:master-name "book-verso" :page-width width :page-height height
-               :margin-top mt :margin-bottom mb
-               :margin-left outside :margin-right inside}]
-             (regions header footer "head-verso" "foot-verso"))
-       [:fo/page-sequence-master {:master-name "book"}
-        [:fo/repeatable-page-master-alternatives
-         [:fo/conditional-page-master-reference
-          {:master-reference "book-recto" :odd-or-even "odd"}]
-         [:fo/conditional-page-master-reference
-          {:master-reference "book-verso" :odd-or-even "even"}]]]]
-      [(into [:fo/simple-page-master
-              {:master-name "book" :page-width width :page-height height
-               :margin-top mt :margin-bottom mb
-               :margin-left outside :margin-right outside}]
-             (regions header footer nil nil))])))
+      (let [recto (assoc page :margin-left inside :margin-right outside)
+            verso (assoc page :margin-left outside :margin-right inside)]
+        [(into [:fo/simple-page-master (assoc recto :master-name "book-recto")]
+               (regions header footer "head-recto" "foot-recto"))
+         (into [:fo/simple-page-master (assoc verso :master-name "book-verso")]
+               (regions header footer "head-verso" "foot-verso"))
+         [:fo/simple-page-master (assoc recto :master-name "book-first-recto")
+          body [:fo/region-after {:extent footer :region-name "foot-recto"}]]
+         [:fo/simple-page-master (assoc verso :master-name "book-first-verso")
+          body [:fo/region-after {:extent footer :region-name "foot-verso"}]]
+         [:fo/simple-page-master (assoc verso :master-name "book-blank")
+          body]
+         [:fo/page-sequence-master {:master-name "book"}
+          [:fo/repeatable-page-master-alternatives
+           (alt "book-blank"       {:blank-or-not-blank "blank"})
+           (alt "book-first-recto" {:page-position "first" :odd-or-even "odd"})
+           (alt "book-first-verso" {:page-position "first" :odd-or-even "even"})
+           (alt "book-recto"       {:odd-or-even "odd"})
+           (alt "book-verso"       {:odd-or-even "even"})]]])
+      (let [sym (assoc page :margin-left outside :margin-right outside)]
+        [(into [:fo/simple-page-master (assoc sym :master-name "book-page")]
+               (regions header footer nil nil))
+         [:fo/simple-page-master (assoc sym :master-name "book-first")
+          body [:fo/region-after {:extent footer}]]
+         [:fo/page-sequence-master {:master-name "book"}
+          [:fo/repeatable-page-master-alternatives
+           (alt "book-first" {:page-position "first"})
+           (alt "book-page"  {})]]]))))
 
 (defn- running-regions
   "Describe the header/footer regions for a layout: which `:flow-name` a

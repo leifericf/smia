@@ -263,6 +263,21 @@
   (let [out (assemble/assemble manuscript the-theme)]
     (is (not (.contains (text-of (footer out "foot-recto")) "Licensed to")))))
 
+;; --- chapter drop ------------------------------------------------------------
+
+(deftest chapter-headings-take-the-themed-drop
+  (let [heading (fn [theme]
+                  (->> (find-all :fo/block (assemble/assemble manuscript theme))
+                       (filter #(= "intro" (:id (second %))))
+                       first))]
+    (testing "the canon default drops deeper than a web heading"
+      (is (= "72pt" (:space-before (second (heading the-theme))))))
+    (testing "a :layout :chapter-drop token tunes it"
+      (let [themed (theme/compile-theme
+                     {:color {} :type {} :spacing {}
+                      :layout {:chapter-drop "60pt"}} :print)]
+        (is (= "60pt" (:space-before (second (heading themed)))))))))
+
 ;; --- footnote separator ----------------------------------------------------
 
 (defn- separators [out]

@@ -39,12 +39,13 @@
       (is (= :smia.theme.compile/unknown-page-size (:error/type d)))
       (is (= :a5 (:page-size (:error/context d)))))))
 
-(deftest screen-layout-has-one-symmetric-master
+(deftest screen-layout-is-symmetric
   (let [{:keys [masters master-reference]} (theme/compile-theme tokens :screen)
         spm (filter #(= :fo/simple-page-master (first %)) masters)]
     (is (= "book" master-reference))
-    (is (= 1 (count spm)))
-    (let [attrs (second (first spm))]
+    (is (= 2 (count spm)) "the body master and the chapter-opener master")
+    (doseq [m spm
+            :let [attrs (second m)]]
       (is (= "18mm" (:margin-left attrs)))
       (is (= "18mm" (:margin-right attrs)))
       (is (= "8.5in" (:page-width attrs)) "letter trim size from tokens"))))
@@ -143,6 +144,73 @@
                             (assoc-in sparse [:spacing :paragraph] "3pt") :print)]
       (is (= "3pt" (-> style :p :space-after)))
       (is (= "1em" (-> style :p :text-indent))))))
+
+;; --- chapter-opener and blank-page masters -----------------------------------
+
+(defn- spm-by-name [masters]
+  (into {} (for [m masters
+                 :when (= :fo/simple-page-master (first m))]
+             [(:master-name (second m)) m])))
+
+(defn- alternative-refs [masters]
+  (let [psm  (first (filter #(= :fo/page-sequence-master (first %)) masters))
+        alts (rest (last psm))]
+    (mapv second alts)))
+
+(deftest print-page-masters-select-blank-then-first-then-parity
+  (let [refs (alternative-refs (:masters (theme/compile-theme sparse :print)))]
+    (is (= ["book-blank" "book-first-recto" "book-first-verso"
+            "book-recto" "book-verso"]
+           (mapv :master-reference refs))
+        "most specific first, in a fixed order")
+    (is (= "blank" (:blank-or-not-blank (first refs))))
+    (is (= "first" (:page-position (nth refs 1))))
+    (is (= "odd" (:odd-or-even (nth refs 1))))
+    (is (= "even" (:odd-or-even (nth refs 2))))))
+
+(deftest first-page-masters-drop-the-header-but-keep-the-folio
+  (let [by-name (spm-by-name (:masters (theme/compile-theme sparse :print)))
+        regions (fn [m] (set (map first (drop 2 m))))]
+    (testing "a chapter opener has no before-region to feed"
+      (is (not (contains? (regions (by-name "book-first-recto"))
+                          :fo/region-before)))
+      (is (not (contains? (regions (by-name "book-first-verso"))
+                          :fo/region-before))))
+    (testing "its after-region reuses the parity footer name"
+      (let [after (fn [m] (first (filter #(= :fo/region-after (first %))
+                                         (drop 2 m))))]
+        (is (= "foot-recto" (:region-name (second (after (by-name "book-first-recto"))))))
+        (is (= "foot-verso" (:region-name (second (after (by-name "book-first-verso"))))))))
+    (testing "the opener keeps the regular page geometry"
+      (is (= (:margin-left (second (by-name "book-recto")))
+             (:margin-left (second (by-name "book-first-recto"))))))))
+
+(deftest blank-verso-master-has-only-a-body-region
+  (let [by-name (spm-by-name (:masters (theme/compile-theme sparse :print)))
+        blank   (by-name "book-blank")]
+    (is (some? blank))
+    (is (= [:fo/region-body] (mapv first (drop 2 blank)))
+        "nothing to feed: an inserted verso renders truly empty")
+    (testing "the blank page carries verso geometry"
+      (is (= (:margin-left (second (by-name "book-verso")))
+             (:margin-left (second blank)))))))
+
+(deftest screen-gains-a-first-page-alternative
+  (let [{:keys [masters master-reference]} (theme/compile-theme sparse :screen)
+        refs (alternative-refs masters)]
+    (is (= "book" master-reference))
+    (is (= ["book-first" "book-page"] (mapv :master-reference refs)))
+    (is (= "first" (:page-position (first refs))))
+    (testing "no blank master: screen has no parity-inserted versos"
+      (is (nil? (some :blank-or-not-blank refs))))))
+
+;; --- chapter drop -------------------------------------------------------------
+
+(deftest chapter-drop-is-themed-with-a-canon-default
+  (is (= "72pt" (:chapter-drop (theme/compile-theme sparse :print))))
+  (is (= "50mm" (:chapter-drop (theme/compile-theme
+                                 (assoc-in sparse [:layout :chapter-drop] "50mm")
+                                 :print)))))
 
 (deftest defaults-apply-when-tokens-are-sparse
   (let [{:keys [style masters]} (theme/compile-theme

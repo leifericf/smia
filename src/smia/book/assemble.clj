@@ -382,13 +382,16 @@
                      :padding-bottom "4pt" :space-after "12pt"} "Contents"]]
         (map #(toc-entry % (:theme ctx)) (toc-entries prepared))))))
 
-(defn- chapter-heading [{:keys [id title label]} style rule-color muted-color]
+(defn- chapter-heading [{:keys [id title label]} {:keys [style rule-color muted-color
+                                                         chapter-drop]}]
   ;; The running-head marker carries the bare title; the visible heading
   ;; shows the numbered label (e.g. "Chapter 1") above it when present.
+  ;; The themed chapter drop sets the heading below the trim — the
+  ;; classical opening-page cue.
   (into [:fo/block (merge (get style :h1)
                           {:id            (name id)
                            :break-before  "page"
-                           :space-before  "36pt"
+                           :space-before  (or chapter-drop "36pt")
                            :space-before.conditionality "retain"
                            :space-after   "18pt"
                            :border-bottom (str "1pt solid " rule-color)
@@ -406,10 +409,10 @@
    carries the per-section page-numbering (roman front matter, the arabic
    reset on the first body section, recto parity)."
   [{:keys [body] :as parsed} ctx page-attrs]
-  (let [{:keys [style rule-color muted-color]} (:theme ctx)
+  (let [{:keys [style rule-color]} (:theme ctx)
         body-style (:body style)]
     (page-sequence page-attrs ctx true body-style
-                   (cons (chapter-heading parsed style rule-color muted-color) body)
+                   (cons (chapter-heading parsed (:theme ctx)) body)
                    [(footnote-separator rule-color)])))
 
 (defn- part-sequence
