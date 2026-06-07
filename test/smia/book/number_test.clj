@@ -113,6 +113,20 @@
     (is (= [1 2] (footnote-ns out :a)))
     (is (= [1] (footnote-ns out :b)) "the counter restarts each chapter")))
 
+(deftest footnotes-in-headings-share-the-chapter-counter
+  ;; the HTML editions number every note in document order, headings
+  ;; included; the stamped :n must agree so the same note carries the
+  ;; same number in every edition
+  (let [out (assign {:sections [(chapter-section :a "A"
+                                                 [:h2 {:id :s} "H" [:footnote "in heading"]]
+                                                 [:p "y" [:footnote "in text"]])]})]
+    (is (= [1 2] (footnote-ns out :a))))
+  (testing "inside a numbered section heading too"
+    (let [out (assign {:numbering (assoc structure/default-numbering :sections true)
+                       :sections [(chapter-section :a "A"
+                                                   [:h2 {:id :s} "H" [:footnote "n"]])]})]
+      (is (= [1] (footnote-ns out :a))))))
+
 (deftest footnotes-number-in-matter-sections-too
   (let [out (assign {:sections [{:kind :matter :matter :front :role :preface
                                  :content [:chapter {:id :pre :title "Preface"}

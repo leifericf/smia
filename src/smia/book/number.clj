@@ -214,7 +214,14 @@
   (let [{:keys [policy chapter-number]} ctx]
     (cond
       (heading? node)
-      (let [a (attrs-of node)]
+      ;; A heading's children are walked like any body content — they can
+      ;; carry footnotes and index marks, and the counters must agree with
+      ;; the HTML editions, which number in document order.
+      (let [a          (attrs-of node)
+            [acc kids] (walk-seq ctx acc (children-of node))
+            rebuilt    (if a
+                         (into [(first node) a] kids)
+                         (into [(first node)] kids))]
         (if-let [id (:id a)]
           (let [title (node-text node)]
             (if (and (:sections policy) chapter-number (= :h2 (first node)))
@@ -224,10 +231,10 @@
                             (assoc :sec sec)
                             (register (name id)
                                       {:kind :section :number n :title title}))]
-                [acc (into [(first node) a (str n " ")] (children-of node))])
+                [acc (into [(first node) a (str n " ")] kids)])
               [(register acc (name id) {:kind :section :title title})
-               node]))
-          [acc node]))
+               rebuilt]))
+          [acc rebuilt]))
 
       (and (vector? node) (= :index (first node)))
       (mark-index ctx acc node)
