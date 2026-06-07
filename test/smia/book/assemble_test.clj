@@ -103,7 +103,9 @@
   (testing "no language means no attributes"
     (is (= {} (assemble/bcp47->fo nil)))
     (is (= {} (assemble/bcp47->fo "")))
-    (is (= {} (assemble/bcp47->fo "  ")))))
+    (is (= {} (assemble/bcp47->fo "  "))))
+  (testing "a blank language subtag yields no attributes"
+    (is (= {} (assemble/bcp47->fo "-US")))))
 
 (deftest the-root-carries-the-book-language
   (let [attrs (second (assemble/assemble (assoc manuscript :language "en-US")

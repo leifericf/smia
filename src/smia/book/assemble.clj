@@ -31,8 +31,10 @@
     {}
     (let [[lang & subtags] (str/split tag #"-")
           region (some #(when (re-matches #"[A-Za-z]{2}" %) %) subtags)]
-      (cond-> {:language (str/lower-case lang)}
-        region (assoc :country (str/upper-case region))))))
+      (if (str/blank? lang)
+        {}
+        (cond-> {:language (str/lower-case lang)}
+          region (assoc :country (str/upper-case region)))))))
 
 ;; --- assembly -------------------------------------------------------------
 

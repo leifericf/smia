@@ -22,7 +22,7 @@
 (declare read-edn check-required-keys non-empty-string-seq? invalid-type!
          check-types check-slug check-body-present check-unambiguous-body check-chapters
          valid-part? check-parts valid-matter? check-matter check-appendices
-         check-numbering check-no-duplicate-files check-files-exist
+         check-numbering check-language check-no-duplicate-files check-files-exist
          valid-download-asset? check-downloads check-redirects check-site-url
          check-edit-url check-attributes unknown-key-warnings compute-warnings)
 
@@ -46,6 +46,7 @@
   (check-matter config path :book/back-matter)
   (check-appendices config path)
   (check-numbering config path)
+  (check-language config path)
   (check-downloads config path)
   (check-redirects config path)
   (check-site-url config path)
@@ -295,6 +296,18 @@
                               " must be a relative site path with no .. "
                               "segments.")
                          {:path path :redirect old}))))))
+
+(defn- check-language
+  "`:book/language` (optional) must be a string BCP-47 tag — it feeds the
+   EPUB package metadata, the localized apparatus, and the PDF hyphenation
+   language, all of which expect text."
+  [config path]
+  (when (contains? config :book/language)
+    (let [l (:book/language config)]
+      (when-not (string? l)
+        (invalid-type! path :book/language l
+                       (str ":book/language must be a string BCP-47 tag, "
+                            "like \"en\" or \"en-US\"."))))))
 
 (defn- check-site-url
   "`:book/site-url` (optional) must be an absolute http(s) URL — the

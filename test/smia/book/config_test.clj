@@ -116,6 +116,16 @@
                    "book.edn"))]
         (is (= :smia.book.config/invalid-numbering (:error/type d)))))))
 
+(deftest language-must-be-a-string
+  (let [base {:book/slug "x" :book/title "t" :book/chapters ["a.md"]}]
+    (is (vector? (config/validate (assoc base :book/language "en-US")
+                                  "book.edn")))
+    (doseq [bad [:en 42 ["en"]]]
+      (let [d (catch-data #(config/validate (assoc base :book/language bad)
+                                            "book.edn"))]
+        (is (= :smia.book.config/invalid-type (:error/type d))
+            (str (pr-str bad) " must be rejected"))))))
+
 (deftest misspelled-book-key-warns
   (testing "An unrecognized :book/* key is almost certainly a typo"
     (let [ws (config/validate {:book/slug "x" :book/title "t"
