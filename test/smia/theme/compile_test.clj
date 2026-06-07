@@ -312,6 +312,17 @@
     (testing "other levels keep the canon multiples"
       (is (= "15.4pt" (-> style :h3 :space-before))))))
 
+(deftest malformed-heading-rhythm-is-a-structured-error
+  (doseq [bad ["big" [1] [1 2 3] ["a" "b"] nil]]
+    (let [d (try (theme/compile-theme
+                   (assoc-in sparse [:spacing :heading-rhythm] {:h2 bad})
+                   :print)
+                 nil
+                 (catch Exception e (ex-data e)))]
+      (is (= :smia.theme.compile/invalid-rhythm (:error/type d))
+          (str (pr-str bad) " must be rejected"))
+      (is (= :h2 (:level (:error/context d)))))))
+
 (deftest widows-and-orphans-default-to-two
   (let [{:keys [style]} (theme/compile-theme sparse :print)]
     (is (= "2" (-> style :p :widows)))

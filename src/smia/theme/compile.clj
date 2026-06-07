@@ -26,7 +26,8 @@
    :number  "#aa5500" :literal "#7700aa"})
 
 (declare style-from-tokens fo-overrides page-dims regions masters
-         running-regions canon-margins heading-rhythm leading-pt fmt-pt)
+         running-regions canon-margins heading-rhythm checked-rhythm
+         leading-pt fmt-pt)
 
 (defn compile-theme
   "Compile validated `tokens` and a page `layout` (`:screen` or
@@ -100,7 +101,8 @@
                                    (get spacing :paragraph
                                         (if indent? "0pt" "6pt")))
                       indent? (assoc :text-indent (get spacing :indent "1em")))
-        rhythm      (merge heading-rhythm (get spacing :heading-rhythm))
+        rhythm      (merge heading-rhythm
+                           (checked-rhythm (get spacing :heading-rhythm)))
         lead        (leading-pt type)]
     (-> expand/default-style
         (assoc :body {:font-family body-family
@@ -194,6 +196,20 @@
    level via `:spacing {:heading-rhythm {...}}`."
   {:h1 [2.0 1.0] :h2 [1.5 0.5] :h3 [1.0 0.5]
    :h4 [1.0 0.25] :h5 [0.75 0.25] :h6 [0.75 0.25]})
+
+(defn- checked-rhythm
+  "Validate a theme's `:heading-rhythm` override: each level must map to a
+   `[before after]` pair of numbers. A malformed entry is a structured
+   error naming the level, not a downstream cast failure."
+  [rhythm]
+  (doseq [[level v] rhythm]
+    (when-not (and (vector? v) (= 2 (count v)) (every? number? v))
+      (throw (error/ex :smia.theme.compile/invalid-rhythm
+                       (str ":heading-rhythm entry " (pr-str level)
+                            " must be a [before after] pair of numbers "
+                            "(leading multiples), got: " (pr-str v))
+                       {:level level :value v}))))
+  rhythm)
 
 (defn canon-margins
   "The classical page construction: margins inner:top:outer:bottom in the
