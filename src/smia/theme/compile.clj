@@ -25,7 +25,7 @@
   {:keyword "#0033cc" :string "#008800" :comment "#888888"
    :number  "#aa5500" :literal "#7700aa"})
 
-(declare style-from-tokens fo-overrides page-dims regions masters
+(declare style-from-tokens fo-overrides seed-p-first page-dims regions masters
          running-regions canon-margins heading-rhythm checked-rhythm
          checked-count leading-pt fmt-pt)
 
@@ -39,7 +39,7 @@
   (let [color (:color tokens)]
     {:layout           layout
      :style            (-> (style-from-tokens tokens)
-                           (fo-overrides (:fo tokens))
+                           (fo-overrides (seed-p-first (:fo tokens)))
                            (assoc :highlight?   (get-in tokens [:type :highlight] false)
                                   :code-colors  (merge default-code-colors
                                                        (:code tokens))))
@@ -69,6 +69,17 @@
    hatch in `theme.css`."
   [style overrides]
   (reduce-kv (fn [s tag props] (update s tag merge props)) style overrides))
+
+(defn- seed-p-first
+  "A `:p` override styles every paragraph: `:p-first` is the expansion
+   walk's split of `:p` (the run opener), not a separate authoring
+   concept. Copy the `:p` overrides onto `:p-first` — except
+   `:text-indent`, the property that distinguishes them — with an
+   explicit `:p-first` override winning per property."
+  [overrides]
+  (if-let [p (:p overrides)]
+    (update overrides :p-first #(merge (dissoc p :text-indent) %))
+    overrides))
 
 (defn- style-from-tokens
   "Override the renderer defaults with token-driven typography."

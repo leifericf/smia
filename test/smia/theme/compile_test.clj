@@ -10,6 +10,8 @@
    :spacing {:paragraph "8pt"}
    :layout  {:page-size :letter :margin-inside "30mm" :margin-outside "18mm"}})
 
+(def ^:private sparse {:color {} :type {} :spacing {} :layout {}})
+
 (deftest tokens-drive-the-style
   (let [{:keys [style]} (theme/compile-theme tokens :screen)]
     (testing "body typography comes from tokens"
@@ -63,6 +65,26 @@
     (testing "a page-sequence-master selects them by odd/even"
       (is (some #(= :fo/page-sequence-master (first %)) masters)))))
 
+(deftest fo-paragraph-override-reaches-run-openers
+  ;; :p-first is an internal split of :p, not a separate authoring
+  ;; concept — styling "paragraphs" must style all of them
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc sparse :fo {:p {:color "#004080"}}) :print)]
+    (is (= "#004080" (-> style :p :color)))
+    (is (= "#004080" (-> style :p-first :color))))
+  (testing "an explicit :p-first override wins per property"
+    (let [{:keys [style]} (theme/compile-theme
+                            (assoc sparse :fo {:p {:color "#004080"}
+                                               :p-first {:color "#804000"}})
+                            :print)]
+      (is (= "#004080" (-> style :p :color)))
+      (is (= "#804000" (-> style :p-first :color)))))
+  (testing "the opener keeps its flush indent under a :p indent override"
+    (let [{:keys [style]} (theme/compile-theme
+                            (assoc sparse :fo {:p {:text-indent "2em"}}) :print)]
+      (is (= "2em" (-> style :p :text-indent)))
+      (is (= "0" (-> style :p-first :text-indent))))))
+
 (deftest fo-override-group-merges-over-the-compiled-style
   (let [{:keys [style]} (theme/compile-theme
                           (assoc tokens :fo {:h1 {:space-before "99pt"}
@@ -76,8 +98,6 @@
       (is (= "8pt" (-> style :p :space-after))))))
 
 ;; --- justified, hyphenated body text ---------------------------------------
-
-(def ^:private sparse {:color {} :type {} :spacing {} :layout {}})
 
 (deftest body-text-is-justified-and-hyphenated-by-default
   (let [{:keys [style]} (theme/compile-theme sparse :print)]
