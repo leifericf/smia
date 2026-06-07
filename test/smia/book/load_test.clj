@@ -37,6 +37,23 @@
               [:p "a"] [:p "b"] [:p "c"]]
              (load/load-chapter (.getPath dir) "chapters/01.clj"))))))
 
+(deftest clojure-chapters-resolve-includes-and-data-tables
+  ;; the vocabulary is shared: a [:pre {:include ..}] or [:table {:data ..}]
+  ;; resolves the same whichever front end produced it
+  (let [dir (tmp-book "clj-resolve")]
+    (spit-chapter dir "src/sample.txt" "the real source\n")
+    (spit-chapter dir "data/rows.csv" "a,b\n1,2\n")
+    (spit-chapter dir "chapters/01.clj"
+                  (pr-str [:chapter {:id :gen :title "Gen"}
+                           [:pre {:include "src/sample.txt"}]
+                           [:table {:data "data/rows.csv" :header true}]]))
+    (let [[_ _ pre table] (load/load-chapter (.getPath dir) "chapters/01.clj")]
+      (testing "the include pulls the file's text"
+        (is (= "the real source\n" (last pre))))
+      (testing "the data table is built from the file's rows"
+        (is (= :table (first table)))
+        (is (some #(= [:td "2"] %) (tree-seq vector? seq table)))))))
+
 (deftest loads-chapters-in-order
   (let [dir (tmp-book "order")]
     (spit-chapter dir "chapters/01.clj" "[:chapter {:id :a :title \"A\"}]")

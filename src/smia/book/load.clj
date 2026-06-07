@@ -51,7 +51,7 @@
                         {:book-root book-root :path rel-path})))
      (if (str/ends-with? (str/lower-case rel-path) ".md")
        (load-markdown-chapter book-root rel-path f opts)
-       (load-clojure-chapter f)))))
+       (load-clojure-chapter book-root f)))))
 
 (defn load-chapters
   "Load `rel-paths` (relative to `book-root`) in order, returning a vector
@@ -432,8 +432,11 @@
                            {:path (.getPath f) :cause (.getMessage e)})))))))
 
 (defn- load-clojure-chapter
-  "Evaluate a `.clj` chapter file; its last form's value is the chapter."
-  [^java.io.File f]
+  "Evaluate a `.clj` chapter file; its last form's value is the chapter.
+   Includes and data tables resolve afterwards, exactly as for Markdown —
+   the author vocabulary is shared, so `[:pre {:include …}]` and
+   `[:table {:data …}]` mean the same thing from either front end."
+  [book-root ^java.io.File f]
   (let [form (try
                (load-file (.getPath f))
                (catch Exception e
@@ -441,7 +444,9 @@
                                   (str "Failed to evaluate chapter " (.getPath f)
                                        ": " (.getMessage e))
                                   {:path (.getPath f) :cause (.getMessage e)}))))]
-    (check-chapter-shape form (.getPath f))))
+    (->> (check-chapter-shape form (.getPath f))
+         (resolve-includes book-root)
+         (resolve-data-tables book-root))))
 
 (defn- duplicate-ids
   "Chapter `:id`s that occur more than once, sorted."
