@@ -138,8 +138,10 @@
                            s rhythm)))))
 
 (def ^:private mm-per-unit
-  "Millimeters per supported length unit."
-  {"mm" 1.0 "cm" 10.0 "in" 25.4 "pt" (/ 25.4 72.0)})
+  "Millimeters per supported length unit. px is the CSS reference pixel
+   (96 per inch) — themes shared with the site legitimately size type
+   in it, and FOP accepts it."
+  {"mm" 1.0 "cm" 10.0 "in" 25.4 "pt" (/ 25.4 72.0) "px" (/ 25.4 96.0)})
 
 (defn- parse-mm
   "Parse a length string (\"140mm\", \"8.5in\") to millimeters. An unknown
@@ -173,13 +175,16 @@
   (/ (parse-mm s) (get mm-per-unit "pt")))
 
 (defn- leading-pt
-  "The body leading in points: the base size times a unitless line-height
-   ratio, or the line-height directly when it carries a unit. The vertical
-   rhythm (heading spaces) is set in multiples of this."
+  "The body leading in points: the base size times a unitless (or
+   percentage) line-height ratio, or the line-height directly when it
+   carries a length unit. The vertical rhythm (heading spaces) is set in
+   multiples of this."
   [type]
-  (let [lh (str (get type :line-height "1.4"))]
-    (if-let [[_ n] (re-matches #"\s*([0-9]*\.?[0-9]+)\s*" lh)]
-      (* (parse-pt (str (get type :base-size "11pt"))) (Double/parseDouble n))
+  (let [lh   (str (get type :line-height "1.4"))
+        base #(parse-pt (str (get type :base-size "11pt")))]
+    (if-let [[_ n pct] (re-matches #"\s*([0-9]*\.?[0-9]+)\s*(%?)\s*" lh)]
+      (* (base) (cond-> (Double/parseDouble n)
+                  (= "%" pct) (/ 100.0)))
       (parse-pt lh))))
 
 (def heading-rhythm

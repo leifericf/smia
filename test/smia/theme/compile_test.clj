@@ -288,6 +288,20 @@
                             :print)]
       (is (= "27.0pt" (-> style :h2 :space-before)) "1.5 x 18pt"))))
 
+(deftest css-flavored-type-tokens-keep-the-rhythm
+  (testing "a px base size is a valid CSS length the site shares"
+    ;; 16px = 12pt, x 1.4 = 16.8pt leading; h2 sits at 1.5 leadings
+    (let [{:keys [style]} (theme/compile-theme
+                            (assoc-in sparse [:type :base-size] "16px")
+                            :print)]
+      (is (= "25.2pt" (-> style :h2 :space-before)))))
+  (testing "a percentage line-height is a ratio of the base size"
+    ;; 11pt x 140% = 15.4pt leading, as with 1.4
+    (let [{:keys [style]} (theme/compile-theme
+                            (assoc-in sparse [:type :line-height] "140%")
+                            :print)]
+      (is (= "23.1pt" (-> style :h2 :space-before))))))
+
 (deftest heading-rhythm-token-overrides-multiples-per-level
   (let [{:keys [style]} (theme/compile-theme
                           (assoc-in sparse [:spacing :heading-rhythm]
