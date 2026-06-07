@@ -108,6 +108,18 @@
                           (assoc-in sparse [:type :hyphenation-ladder] 3) :print)]
     (is (= "3" (-> style :p :hyphenation-ladder-count)))))
 
+(deftest pagination-count-tokens-must-be-positive-integers
+  (doseq [[token bad] [[:hyphenation-ladder "lots"]
+                       [:hyphenation-ladder 0]
+                       [:widows 2.5]
+                       [:orphans -1]]]
+    (let [d (try (theme/compile-theme (assoc-in sparse [:type token] bad) :print)
+                 nil
+                 (catch Exception e (ex-data e)))]
+      (is (= :smia.theme.compile/invalid-count (:error/type d))
+          (str token " " (pr-str bad) " must be rejected"))
+      (is (= token (:token (:error/context d)))))))
+
 ;; --- paragraph style (indent vs space) --------------------------------------
 
 (deftest indent-paragraphs-are-the-default

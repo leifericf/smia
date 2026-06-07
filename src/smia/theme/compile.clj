@@ -27,7 +27,7 @@
 
 (declare style-from-tokens fo-overrides page-dims regions masters
          running-regions canon-margins heading-rhythm checked-rhythm
-         leading-pt fmt-pt)
+         checked-count leading-pt fmt-pt)
 
 (defn compile-theme
   "Compile validated `tokens` and a page `layout` (`:screen` or
@@ -88,9 +88,10 @@
         body-text   {:text-align (if (get type :justify true) "justify" "start")
                      :hyphenate  (str (boolean (get type :hyphenate true)))
                      :hyphenation-ladder-count
-                     (str (get type :hyphenation-ladder 2))
-                     :widows     (str (get type :widows 2))
-                     :orphans    (str (get type :orphans 2))}
+                     (checked-count :hyphenation-ladder
+                                    (get type :hyphenation-ladder 2))
+                     :widows     (checked-count :widows (get type :widows 2))
+                     :orphans    (checked-count :orphans (get type :orphans 2))}
         ;; Book paragraphs (the :indent default): a first-line indent on
         ;; running paragraphs and no inter-paragraph gap; the run opener
         ;; (:p-first, picked by the expansion walk) sets flush. :space
@@ -196,6 +197,19 @@
    level via `:spacing {:heading-rhythm {...}}`."
   {:h1 [2.0 1.0] :h2 [1.5 0.5] :h3 [1.0 0.5]
    :h4 [1.0 0.25] :h5 [0.75 0.25] :h6 [0.75 0.25]})
+
+(defn- checked-count
+  "Validate a count-valued type token (`:hyphenation-ladder`, `:widows`,
+   `:orphans`) as a positive integer and render it as the FO property
+   string. A bad value is a structured error naming the token, not a
+   render failure deep inside FOP."
+  [token v]
+  (when-not (and (integer? v) (pos? v))
+    (throw (error/ex :smia.theme.compile/invalid-count
+                     (str ":type " token " must be a positive integer, got: "
+                          (pr-str v))
+                     {:token token :value v})))
+  (str v))
 
 (defn- checked-rhythm
   "Validate a theme's `:heading-rhythm` override: each level must map to a
