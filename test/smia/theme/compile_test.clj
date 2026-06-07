@@ -204,6 +204,66 @@
     (testing "no blank master: screen has no parity-inserted versos"
       (is (nil? (some :blank-or-not-blank refs))))))
 
+;; --- canon page geometry (2:3:4:6) -------------------------------------------
+
+(deftest canon-margins-derive-2-3-4-6-from-the-trim
+  (testing "digest: the Van de Graaf construction at 2/3 coverage"
+    (is (= {:margin-inside    "15.6mm"
+            :margin-top       "23.3mm"
+            :margin-outside   "31.1mm"
+            :margin-bottom    "46.7mm"
+            :margin-symmetric "23.3mm"}
+           (theme/canon-margins "140mm" 2/3))))
+  (testing "a4"
+    (is (= {:margin-inside    "23.3mm"
+            :margin-top       "35.0mm"
+            :margin-outside   "46.7mm"
+            :margin-bottom    "70.0mm"
+            :margin-symmetric "35.0mm"}
+           (theme/canon-margins "210mm" 2/3))))
+  (testing "inch trims convert"
+    (is (= "36.0mm" (:margin-top (theme/canon-margins "8.5in" 2/3))))))
+
+(deftest canon-margin-errors-are-structured
+  (testing "an unknown unit"
+    (let [d (try (theme/canon-margins "140vw" 2/3) nil
+                 (catch Exception e (ex-data e)))]
+      (is (= :smia.theme.compile/invalid-length (:error/type d)))))
+  (testing "a coverage outside (0, 1)"
+    (let [d (try (theme/canon-margins "140mm" 1.2) nil
+                 (catch Exception e (ex-data e)))]
+      (is (= :smia.theme.compile/invalid-coverage (:error/type d))))))
+
+(deftest print-masters-fall-back-to-canon-margins-per-key
+  (let [{:keys [masters]} (theme/compile-theme sparse :print)
+        recto (second (get (spm-by-name masters) "book-recto"))]
+    (is (= "23.3mm" (:margin-left recto)) "inside = 2 units")
+    (is (= "46.7mm" (:margin-right recto)) "outside = 4 units")
+    (is (= "35.0mm" (:margin-top recto)) "top = 3 units")
+    (is (= "70.0mm" (:margin-bottom recto)) "bottom = 6 units"))
+  (testing "one explicit key wins; the rest stay canon"
+    (let [{:keys [masters]} (theme/compile-theme
+                              (assoc-in sparse [:layout :margin-top] "20mm")
+                              :print)
+          recto (second (get (spm-by-name masters) "book-recto"))]
+      (is (= "20mm" (:margin-top recto)))
+      (is (= "23.3mm" (:margin-left recto))))))
+
+(deftest screen-canon-sides-are-symmetric-at-the-same-coverage
+  (let [{:keys [masters]} (theme/compile-theme sparse :screen)
+        page (second (get (spm-by-name masters) "book-page"))]
+    (is (= "35.0mm" (:margin-left page)) "(1 - coverage)/2 per side = 3 units")
+    (is (= "35.0mm" (:margin-right page)))
+    (is (= "70.0mm" (:margin-bottom page)))))
+
+(deftest text-coverage-token-tunes-the-canon
+  (let [{:keys [masters]} (theme/compile-theme
+                            (assoc-in sparse [:layout :text-coverage] 0.7)
+                            :print)
+        recto (second (get (spm-by-name masters) "book-recto"))]
+    (is (= "21.0mm" (:margin-left recto)))
+    (is (= "63.0mm" (:margin-bottom recto)))))
+
 ;; --- chapter drop -------------------------------------------------------------
 
 (deftest chapter-drop-is-themed-with-a-canon-default

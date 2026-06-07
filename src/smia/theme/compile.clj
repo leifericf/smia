@@ -120,6 +120,54 @@
                                    :color        muted})
         (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
 
+(def ^:private mm-per-unit
+  "Millimeters per supported length unit."
+  {"mm" 1.0 "cm" 10.0 "in" 25.4 "pt" (/ 25.4 72.0)})
+
+(defn- parse-mm
+  "Parse a length string (\"140mm\", \"8.5in\") to millimeters. An unknown
+   unit is a structured error, mirroring `page-dims` for unknown trims."
+  [s]
+  (let [[_ n unit] (re-matches #"\s*([0-9]*\.?[0-9]+)\s*([a-zA-Z]+)\s*" (str s))
+        factor     (get mm-per-unit unit)]
+    (when-not (and n factor)
+      (throw (error/ex :smia.theme.compile/invalid-length
+                       (str "Cannot parse length " (pr-str s)
+                            "; expected a number with one of the units "
+                            (pr-str (vec (sort (keys mm-per-unit)))) ".")
+                       {:length s :known-units (vec (sort (keys mm-per-unit)))})))
+    (* (Double/parseDouble n) factor)))
+
+(defn- fmt-mm
+  "A deterministic fixed-decimal mm string, locale-independent."
+  [x]
+  (str (String/format java.util.Locale/ROOT "%.1f" (object-array [(double x)]))
+       "mm"))
+
+(defn canon-margins
+  "The classical page construction: margins inner:top:outer:bottom in the
+   ratio 2:3:4:6, solved from the trim `width` so the text block covers
+   `coverage` of the page width. The default 2/3 coverage reproduces the
+   Van de Graaf construction on a 2:3 page (inner = width/9). Returns
+   deterministic fixed-decimal mm strings, plus `:margin-symmetric`
+   (3 units) — the side margin a symmetric (screen) page needs for the
+   same coverage. Pure; structured errors on an unknown unit or a
+   coverage outside (0, 1)."
+  [width coverage]
+  (when-not (and (number? coverage) (< 0.0 (double coverage) 1.0))
+    (throw (error/ex :smia.theme.compile/invalid-coverage
+                     (str ":text-coverage must be a number between 0 and 1 "
+                          "(exclusive), got: " (pr-str coverage))
+                     {:coverage coverage})))
+  (let [w (parse-mm width)
+        u (/ (* (- 1.0 (double coverage)) w) 6.0)
+        f (fn [k] (fmt-mm (* k u)))]
+    {:margin-inside    (f 2)
+     :margin-top       (f 3)
+     :margin-outside   (f 4)
+     :margin-bottom    (f 6)
+     :margin-symmetric (f 3)}))
+
 (defn- page-dims
   "The trim dimensions for the layout's `:page-size` (default `:a4`).
    An unknown name is a structured error, not a silent A4 — the schema
@@ -155,10 +203,14 @@
    in a fixed order, for deterministic FO."
   [layout geometry]
   (let [{:keys [width height]} (page-dims geometry)
-        mt      (get geometry :margin-top "22mm")
-        mb      (get geometry :margin-bottom "22mm")
-        inside  (get geometry :margin-inside "26mm")
-        outside (get geometry :margin-outside "20mm")
+        ;; Margins default to the classical canon, derived from the trim;
+        ;; an explicit margin key in the theme wins for that key alone.
+        canon   (canon-margins width (get geometry :text-coverage 2/3))
+        mt      (get geometry :margin-top (:margin-top canon))
+        mb      (get geometry :margin-bottom (:margin-bottom canon))
+        inside  (get geometry :margin-inside (:margin-inside canon))
+        outside (get geometry :margin-outside (:margin-outside canon))
+        side    (get geometry :margin-outside (:margin-symmetric canon))
         header  (get geometry :header-extent "12mm")
         footer  (get geometry :footer-extent "12mm")
         page    {:page-width width :page-height height
@@ -187,7 +239,7 @@
            (alt "book-first-verso" {:page-position "first" :odd-or-even "even"})
            (alt "book-recto"       {:odd-or-even "odd"})
            (alt "book-verso"       {:odd-or-even "even"})]]])
-      (let [sym (assoc page :margin-left outside :margin-right outside)]
+      (let [sym (assoc page :margin-left side :margin-right side)]
         [(into [:fo/simple-page-master (assoc sym :master-name "book-page")]
                (regions header footer nil nil))
          [:fo/simple-page-master (assoc sym :master-name "book-first")

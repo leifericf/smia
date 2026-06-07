@@ -35,11 +35,9 @@
            :dark     true
            :reader   true
            :keyboard true}
+ ;; No explicit margins: the page geometry falls back to the classical
+ ;; canon, derived from the trim (inner:top:outer:bottom = 2:3:4:6).
  :layout  {:page-size      :digest
-           :margin-top     "24mm"
-           :margin-bottom  "24mm"
-           :margin-inside  "26mm"
-           :margin-outside "20mm"
            :header-extent  "12mm"
            :footer-extent  "12mm"}
  ;; PDF furniture set in faces the tokens do not reach. These point at a
