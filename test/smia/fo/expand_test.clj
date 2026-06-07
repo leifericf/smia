@@ -138,6 +138,27 @@
   (is (= (ex [:p "hello"]) (ex [:p-first "hello"]))
       "base-14 styling keeps the gap-paragraph look for both"))
 
+;; --- footnotes ---------------------------------------------------------------
+
+(deftest numbered-footnote-renders-its-ordinal
+  (let [[tag noteref body] (ex [:footnote {:n 3} "the note"])]
+    (is (= :fo/footnote tag))
+    (testing "the in-text noteref is the superscript ordinal"
+      (is (= "3" (last noteref)))
+      (is (= "super" (:baseline-shift (second noteref)))))
+    (testing "the note body hangs its text under a matching label"
+      (let [[_ attrs label & text] (second body)]
+        (is (= "9pt" (:font-size attrs)))
+        (is (str/starts-with? (:text-indent attrs) "-")
+            "a negative text-indent hangs the first line's label")
+        (is (= "3 " (last label)))
+        (is (= ["the note"] (vec text)))))))
+
+(deftest unnumbered-footnote-falls-back-to-a-symbol-marker
+  (let [[_ noteref body] (ex [:footnote "the note"])]
+    (is (= "*" (last noteref)))
+    (is (= "* " (last (nth (second body) 2))))))
+
 (deftest pre-validation-attrs-are-inert-to-expansion
   ;; The Markdown front-end tags code blocks with :lang/:test/:include for
   ;; the opt-in validation pass; those attrs must not affect rendering.

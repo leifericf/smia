@@ -96,6 +96,36 @@
     (is (nil? (:number (get reg "intro"))))
     (is (nil? (:label (second (content-for out :intro)))))))
 
+(defn- footnote-ns
+  "The stamped `:n` of every footnote in the chapter with `id`, in order."
+  [out id]
+  (->> (content-for out id)
+       (tree-seq vector? seq)
+       (filter #(and (vector? %) (= :footnote (first %))))
+       (map #(:n (second %)))))
+
+(deftest footnotes-number-arabic-per-chapter
+  (let [out (assign {:sections [(chapter-section :a "A"
+                                                 [:p "x" [:footnote "one"]]
+                                                 [:p "y" [:footnote "two"]])
+                                (chapter-section :b "B"
+                                                 [:p "z" [:footnote "three"]])]})]
+    (is (= [1 2] (footnote-ns out :a)))
+    (is (= [1] (footnote-ns out :b)) "the counter restarts each chapter")))
+
+(deftest footnotes-number-in-matter-sections-too
+  (let [out (assign {:sections [{:kind :matter :matter :front :role :preface
+                                 :content [:chapter {:id :pre :title "Preface"}
+                                           [:p "x" [:footnote "one"]]]}]})]
+    (is (= [1] (footnote-ns out :pre)))))
+
+(deftest disabling-footnote-numbering-leaves-notes-unstamped
+  (let [out (assign {:numbering (assoc structure/default-numbering :footnotes false)
+                     :sections [(chapter-section :a "A"
+                                                 [:p "x" [:footnote "one"]])]})]
+    (is (= [nil] (footnote-ns out :a))
+        "the expander falls back to its symbol marker")))
+
 (deftest decimal-sections-number-within-the-chapter
   (let [out (assign {:numbering (assoc structure/default-numbering :sections true)
                      :sections [(chapter-section :intro "Introduction"

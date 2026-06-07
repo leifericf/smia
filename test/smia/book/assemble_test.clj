@@ -43,7 +43,8 @@
 (deftest table-of-contents-has-leader-and-citation-per-chapter
   (let [out (assemble/assemble manuscript the-theme)
         citations (find-all :fo/page-number-citation out)
-        leaders   (find-all :fo/leader out)]
+        leaders   (filter #(= "dots" (:leader-pattern (second %)))
+                          (find-all :fo/leader out))]
     (is (<= 2 (count leaders)) "a dotted leader per TOC entry")
     (is (some #(= "intro" (:ref-id (second %))) citations))
     (is (some #(= "config" (:ref-id (second %))) citations))
@@ -207,7 +208,8 @@
 (deftest print-has-distinct-recto-and-verso-running-content
   (let [out   (assemble/assemble manuscript the-theme)
         flows (set (map #(:flow-name (second %)) (find-all :fo/static-content out)))]
-    (is (= #{"head-recto" "head-verso" "foot-recto" "foot-verso"} flows)
+    (is (= #{"head-recto" "head-verso" "foot-recto" "foot-verso"
+             "xsl-footnote-separator"} flows)
         "print emits separate header/footer content per page parity")
     (testing "verso shows the chapter, recto shows the section, both number the page"
       (let [sc (fn [name] (first (filter #(= name (:flow-name (second %)))
@@ -222,7 +224,8 @@
   (let [screen (theme/compile-theme {:color {} :type {} :spacing {} :layout {}} :screen)
         out    (assemble/assemble manuscript screen)
         flows  (set (map #(:flow-name (second %)) (find-all :fo/static-content out)))]
-    (is (= #{"xsl-region-before" "xsl-region-after"} flows))))
+    (is (= #{"xsl-region-before" "xsl-region-after" "xsl-footnote-separator"}
+           flows))))
 
 (deftest running-heads-config-overrides-the-defaults
   (let [out (assemble/assemble (assoc manuscript :running-heads
@@ -259,6 +262,27 @@
 (deftest no-licensee-leaves-the-footer-unstamped
   (let [out (assemble/assemble manuscript the-theme)]
     (is (not (.contains (text-of (footer out "foot-recto")) "Licensed to")))))
+
+;; --- footnote separator ----------------------------------------------------
+
+(defn- separators [out]
+  (filter #(= "xsl-footnote-separator" (:flow-name (second %)))
+          (find-all :fo/static-content out)))
+
+(deftest body-sequences-carry-the-footnote-separator
+  (let [out (assemble/assemble manuscript the-theme)]
+    (is (= 2 (count (separators out)))
+        "one per chapter; the title/TOC furniture carries none")
+    (testing "the separator is a short rule"
+      (is (seq (find-all :fo/leader (first (separators out))))))))
+
+(deftest part-dividers-and-furniture-carry-no-footnote-separator
+  (let [out  (assemble/assemble structured the-theme)
+        seqs (page-sequences out)]
+    ;; preface, 3 chapters, appendix, bibliography — not the furniture
+    ;; sequence or the 2 part dividers
+    (is (= 6 (count (separators out))))
+    (is (= 9 (count seqs)))))
 
 ;; --- multi-level table of contents and nested outline --------------------
 

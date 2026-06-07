@@ -102,6 +102,18 @@
                 #(config/validate
                    (assoc base :book/numbering {:start-chapters-on :verso})
                    "book.edn"))]
+        (is (= :smia.book.config/invalid-numbering (:error/type d)))))
+    (testing ":footnotes takes :arabic or false"
+      (is (vector? (config/validate
+                     (assoc base :book/numbering {:footnotes :arabic})
+                     "book.edn")))
+      (is (vector? (config/validate
+                     (assoc base :book/numbering {:footnotes false})
+                     "book.edn")))
+      (let [d (catch-data
+                #(config/validate
+                   (assoc base :book/numbering {:footnotes :roman})
+                   "book.edn"))]
         (is (= :smia.book.config/invalid-numbering (:error/type d)))))))
 
 (deftest misspelled-book-key-warns

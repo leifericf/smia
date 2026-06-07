@@ -192,6 +192,7 @@
      :chapters          styles
      :appendices        styles
      :sections          styles
+     :footnotes         #{:arabic false}
      :start-chapters-on #{:recto :any}}))
 
 (defn- check-numbering

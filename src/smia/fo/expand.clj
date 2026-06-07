@@ -180,7 +180,11 @@
                      :padding-left "2pt" :padding-right "2pt"}
    :annotation-list {:provisional-distance-between-starts "20pt"
                      :provisional-label-separation "6pt"
-                     :font-size "9.5pt" :space-before "4pt" :space-after "6pt"}})
+                     :font-size "9.5pt" :space-before "4pt" :space-after "6pt"}
+   ;; The note body hangs its text under the marker: the negative
+   ;; text-indent pulls the first line (the label) back to the margin.
+   :footnote     {:font-size "9pt" :start-indent "9pt" :text-indent "-9pt"}
+   :footnote-ref {:baseline-shift "super" :font-size "8pt"}})
 
 ;; --- shared builders ------------------------------------------------------
 
@@ -626,13 +630,19 @@
                      {:src src})))
   src)
 
-(defn- footnote [_author children style]
-  [:fo/footnote
-   [:fo/inline {:baseline-shift "super" :font-size "8pt"} "*"]
-   [:fo/footnote-body
-    (into [:fo/block {:font-size "9pt"}]
-          (cons [:fo/inline {:baseline-shift "super" :font-size "8pt"} "* "]
-                (expand-all children style)))]])
+(defn- footnote
+  "A footnote: the in-text noteref carries the per-chapter ordinal the
+   numbering pass stamped as `:n`; without one (the pure base-14 path, or
+   `:book/numbering {:footnotes false}`) it falls back to a `*`. The note
+   body hangs its text under a matching label."
+  [author children style]
+  (let [marker (if-let [n (:n author)] (str n) "*")]
+    [:fo/footnote
+     [:fo/inline (get style :footnote-ref) marker]
+     [:fo/footnote-body
+      (into [:fo/block (get style :footnote)]
+            (cons [:fo/inline (get style :footnote-ref) (str marker " ")]
+                  (expand-all children style)))]]))
 
 (defn- composed-xref
   "Build the inline content of a childless cross-reference from the

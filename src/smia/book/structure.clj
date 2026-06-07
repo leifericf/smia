@@ -23,13 +23,15 @@
    [smia.book.dictionary :as dictionary]))
 
 (def default-numbering
-  "Default numbering policy. Parts, chapters, and appendices are
-   auto-numbered; sections are not. `:start-chapters-on :recto` inserts a
-   blank page so a chapter opens on a right-hand page (print only)."
+  "Default numbering policy. Parts, chapters, appendices, and footnotes
+   (arabic, restarting each chapter) are auto-numbered; sections are not.
+   `:start-chapters-on :recto` inserts a blank page so a chapter opens on
+   a right-hand page (print only)."
   {:parts            :roman
    :chapters         :arabic
    :appendices       :letter
    :sections         false
+   :footnotes        :arabic
    :start-chapters-on :any})
 
 (declare matter-spec front-sections back-sections part-sections

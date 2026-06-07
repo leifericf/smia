@@ -180,6 +180,19 @@
                   (not author-id) (assoc :id id))]
                kids)]))
 
+(defn- number-footnote
+  "Stamp a footnote with its per-chapter ordinal `:n` when the policy
+   numbers footnotes (the default); the counter lives in the transient
+   `:fn` key beside `:sec`. With `:footnotes false` the note is left
+   unstamped and the expanders fall back to their symbol marker."
+  [ctx acc node]
+  (let [a          (or (attrs-of node) {})
+        [acc kids] (walk-seq ctx acc (children-of node))]
+    (if (get-in ctx [:policy :footnotes])
+      (let [n (inc (:fn acc 0))]
+        [(assoc acc :fn n) (into [:footnote (assoc a :n n)] kids)])
+      [acc (into [:footnote a] kids)])))
+
 (defn- mark-index
   "Stamp an `:index` mark with a unique anchor id, collecting `term -> [ids]`
    in `acc`."
@@ -219,6 +232,9 @@
       (and (vector? node) (= :index (first node)))
       (mark-index ctx acc node)
 
+      (and (vector? node) (= :footnote (first node)))
+      (number-footnote ctx acc node)
+
       (and (vector? node) (numberable-kind node))
       (number-float ctx acc node (numberable-kind node))
 
@@ -228,12 +244,12 @@
 (defn- number-body
   "Walk a chapter `body` threading `acc`, numbering its sections within
    `chapter-number` (nil to disable) under `policy`. Returns `[acc' body']`.
-   The per-chapter section counter lives in a transient `:sec` key that does
-   not escape this call."
+   The per-chapter section (`:sec`) and footnote (`:fn`) counters live in
+   transient keys that do not escape this call."
   [acc body policy chapter-number]
   (let [ctx          {:policy policy :chapter-number chapter-number}
-        [acc body']  (walk-seq ctx (assoc acc :sec 0) body)]
-    [(dissoc acc :sec) body']))
+        [acc body']  (walk-seq ctx (assoc acc :sec 0 :fn 0) body)]
+    [(dissoc acc :sec :fn) body']))
 
 ;; --- structural sections --------------------------------------------------
 

@@ -345,15 +345,28 @@
                 (into [:fo/static-content {:flow-name name}] blocks))))
           running-regions)))
 
+(defn- footnote-separator
+  "The rule between a page's text and its footnotes: a short thin lead in
+   the theme's rule color. FOP shows it only on pages that carry a note."
+  [rule-color]
+  [:fo/static-content {:flow-name "xsl-footnote-separator"}
+   [:fo/block {:space-after "4pt"}
+    [:fo/leader {:leader-pattern "rule" :leader-length "25%"
+                 :rule-thickness "0.5pt" :color rule-color}]]])
+
 (defn- page-sequence
   "Build a `fo:page-sequence`: its page attrs, the running static content
-   (headers + footers, or footers only), and the body flow."
-  [page-attrs ctx headers? body-style flow-children]
-  (into [:fo/page-sequence (merge {:master-reference (:master-ref ctx)} page-attrs)]
-        (concat
-          (static-contents (assoc ctx :headers? headers?))
-          [(into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
-                 flow-children)])))
+   (headers + footers, or footers only), optional extra static content
+   (the footnote separator), and the body flow."
+  ([page-attrs ctx headers? body-style flow-children]
+   (page-sequence page-attrs ctx headers? body-style flow-children nil))
+  ([page-attrs ctx headers? body-style flow-children extra-statics]
+   (into [:fo/page-sequence (merge {:master-reference (:master-ref ctx)} page-attrs)]
+         (concat
+           (static-contents (assoc ctx :headers? headers?))
+           extra-statics
+           [(into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
+                  flow-children)]))))
 
 (defn- toc-furniture [title author prepared ctx]
   (let [{:keys [style rule-color muted-color]} (:theme ctx)
@@ -396,7 +409,8 @@
   (let [{:keys [style rule-color muted-color]} (:theme ctx)
         body-style (:body style)]
     (page-sequence page-attrs ctx true body-style
-                   (cons (chapter-heading parsed style rule-color muted-color) body))))
+                   (cons (chapter-heading parsed style rule-color muted-color) body)
+                   [(footnote-separator rule-color)])))
 
 (defn- part-sequence
   "A part-divider page-sequence: the part title, centered and large, on its

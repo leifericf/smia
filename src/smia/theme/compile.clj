@@ -96,6 +96,7 @@
         (update :li merge body-text)
         (update :dd merge body-text)
         (update :blockquote merge body-text)
+        (update :footnote merge body-text)
         (update :h1 merge {:font-family head-family :color text
                            :font-size   (get type :h1-size "20pt")})
         (update :h2 merge {:font-family head-family :color text
