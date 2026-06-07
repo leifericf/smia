@@ -70,11 +70,36 @@
 
 ;; --- node parsing ---------------------------------------------------------
 
-(defn- expand-all [children style]
+(def ^:private flush-after?
+  "Block-level tags that end a paragraph run: a `:p` following one of these
+   (or opening its parent) is the run's first paragraph and sets flush, in
+   the classical style where only a paragraph after another paragraph takes
+   the first-line indent. Inline tags and strings are not displayed
+   material, so they leave the run intact."
+  #{:h1 :h2 :h3 :h4 :h5 :h6 :ul :ol :dl :pre :blockquote :hr :table
+    :figure :admonition :sidebar :overview :example :details :open
+    :epigraph :page-break :keep-together :img :diagram})
+
+(defn- expand-all
+  "Expand `children` left-to-right, rewriting the first `:p` of each
+   paragraph run to `:p-first` (styled flush under an indent-mode theme;
+   identical to `:p` otherwise). The expander table stays a pure tag->fn
+   map — the sibling awareness lives only in this walk."
+  [children style]
   (->> (hiccup/flatten-children children)
-       (map #(expand % style))
-       (remove nil?)
-       vec))
+       (reduce (fn [[out prev] node]
+                 (let [tag      (when (vector? node) (first node))
+                       node     (if (and (= :p tag) (not= :p prev))
+                                  (assoc node 0 :p-first)
+                                  node)
+                       expanded (expand node style)
+                       prev     (cond
+                                  (#{:p :p-first} tag) :p
+                                  (flush-after? tag)   :other
+                                  :else                prev)]
+                   [(cond-> out (some? expanded) (conj expanded)) prev]))
+               [[] nil])
+       first))
 
 (defn- links?
   "Should references render as live links? On unless the style says
@@ -91,6 +116,11 @@
    a theme-derived style."
   {:body       {:font-family "serif" :font-size "11pt" :line-height "1.35"}
    :p          {:space-after "6pt"}
+   ;; The first paragraph of a run (after a heading or displayed material).
+   ;; Identical here — the distinction matters only to an indent-mode theme,
+   ;; which styles :p with a first-line indent and :p-first flush.
+   :p-first    {:space-after "6pt"}
+   :li         {:space-after "6pt"}
    :h1         {:font-size "20pt" :font-weight "bold" :space-before "18pt"
                 :space-after "8pt" :keep-with-next.within-page "always"}
    :h2         {:font-size "16pt" :font-weight "bold" :space-before "14pt"
@@ -659,6 +689,7 @@
    book layer can introspect or extend it."
   (let [head (fn [tag] (fn [a c s] (styled-block tag a c s {})))]
     {:p          (fn [a c s] (styled-block :p a c s {}))
+     :p-first    (fn [a c s] (styled-block :p-first a c s {}))
      :h1         (head :h1)
      :h2         (fn [a c s] (heading-with-marker :h2 "section-title" a c s))
      :h3         (head :h3)
@@ -669,7 +700,7 @@
                                (listing-block a c s)
                                (render-code a c s nil)))
      :blockquote (fn [a c s] (styled-block :blockquote a c s {}))
-     :li         (fn [a c s] (styled-block :p a c s {}))
+     :li         (fn [a c s] (styled-block :li a c s {}))
      :hr         (fn [_ _ s] [:fo/block (get s :hr)])
      :strong     (fn [_ c s] (styled-inline {:font-weight "bold"} c s))
      :em         (fn [_ c s] (styled-inline {:font-style "italic"} c s))

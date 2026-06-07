@@ -14,7 +14,7 @@
 
 (def sugar-tags
   "Bare keywords the vocabulary recognizes (HTML sugar + book extensions)."
-  #{:p :h1 :h2 :h3 :h4 :h5 :h6
+  #{:p :p-first :h1 :h2 :h3 :h4 :h5 :h6
     :ul :ol :li
     :dl :dt :dd
     :strong :em :code :span :pre :a :br

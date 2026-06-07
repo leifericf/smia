@@ -75,14 +75,24 @@
         body-text   {:text-align (if (get type :justify true) "justify" "start")
                      :hyphenate  (str (boolean (get type :hyphenate true)))
                      :hyphenation-ladder-count
-                     (str (get type :hyphenation-ladder 2))}]
+                     (str (get type :hyphenation-ladder 2))}
+        ;; Book paragraphs (the :indent default): a first-line indent on
+        ;; running paragraphs and no inter-paragraph gap; the run opener
+        ;; (:p-first, picked by the expansion walk) sets flush. :space
+        ;; restores the gap-separated web convention.
+        indent?     (= :indent (get spacing :paragraph-style :indent))
+        para-style  (cond-> (assoc body-text
+                                   :space-after
+                                   (get spacing :paragraph
+                                        (if indent? "0pt" "6pt")))
+                      indent? (assoc :text-indent (get spacing :indent "1em")))]
     (-> expand/default-style
         (assoc :body {:font-family body-family
                       :font-size   (get type :base-size "11pt")
                       :line-height (get type :line-height "1.4")
                       :color       text})
-        (update :p merge body-text
-                {:space-after (get spacing :paragraph "6pt")})
+        (update :p merge para-style)
+        (update :p-first merge (assoc para-style :text-indent "0"))
         (update :li merge body-text)
         (update :dd merge body-text)
         (update :blockquote merge body-text)

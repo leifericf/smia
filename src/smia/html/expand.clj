@@ -410,6 +410,9 @@
    exact key set of `fo.expand/expanders` (pinned by the vocabulary
    parity test)."
   {:p          (passthrough :p)
+   ;; The PDF expansion distinguishes a paragraph run's flush opener; on
+   ;; the web every paragraph is gap-separated, so it is a plain :p here.
+   :p-first    (passthrough :p)
    :h1         (passthrough :h1)
    :h2         (passthrough :h2)
    :h3         (passthrough :h3)

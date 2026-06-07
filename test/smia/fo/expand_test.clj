@@ -79,6 +79,65 @@
     (let [[_ _ summary] (ex [:open [:p "x"]])]
       (is (= [:fo/block {:font-weight "bold" :space-after "3pt"} "Details"] summary)))))
 
+;; --- book-style paragraphs (:p-first) ---------------------------------------
+
+(def ^:private indent-style
+  "A themed style in indent mode: running paragraphs carry a first-line
+   indent, the opening paragraph of a run sets flush."
+  (assoc expand/default-style
+         :p       {:text-indent "1em" :space-after "0pt"}
+         :p-first {:text-indent "0" :space-after "0pt"}))
+
+(defn- para-blocks
+  "The expanded paragraph blocks of `out`, as `[text-indent text]` pairs."
+  [out]
+  (->> (tree-seq vector? seq out)
+       (filter #(and (vector? %) (= :fo/block (first %)) (map? (second %))
+                     (string? (last %))
+                     (contains? (second %) :text-indent)))
+       (map (fn [b] [(:text-indent (second b)) (last b)]))))
+
+(deftest first-paragraph-of-a-run-sets-flush
+  (let [out (expand/expand [:fo/block [:p "one"] [:p "two"] [:p "three"]]
+                           indent-style)]
+    (is (= [["0" "one"] ["1em" "two"] ["1em" "three"]] (para-blocks out))
+        "the opener is flush; running paragraphs indent")))
+
+(deftest paragraph-after-displayed-material-sets-flush
+  (let [out (expand/expand [:fo/block
+                            [:h2 {:id :s} "Section"]
+                            [:p "after heading"]
+                            [:p "running"]
+                            [:ul [:li "item"]]
+                            [:p "after list"]]
+                           indent-style)]
+    (is (= [["0" "after heading"] ["1em" "running"] ["0" "after list"]]
+           (para-blocks out)))))
+
+(deftest inline-siblings-do-not-break-a-paragraph-run
+  (let [out (expand/expand [:fo/block [:p "one"] [:strong "stray"] [:p "two"]]
+                           indent-style)]
+    (is (= [["0" "one"] ["1em" "two"]] (para-blocks out))
+        "an inline between paragraphs is not displayed material")))
+
+(deftest list-items-stay-flush-under-indent-mode
+  (testing "items inside a list never inherit the paragraph indent"
+    (let [out (expand/expand [:ul [:li "item one"] [:li "item two"]]
+                             indent-style)]
+      (is (empty? (para-blocks out)))))
+  (testing "a stray :li takes the :li style, not the :p style"
+    (let [out (expand/expand [:li "loose"] indent-style)]
+      (is (nil? (:text-indent (second out)))))))
+
+(deftest paragraphs-in-blockquotes-follow-the-same-rule
+  (let [out (expand/expand [:blockquote [:p "first"] [:p "second"]]
+                           indent-style)]
+    (is (= [["0" "first"] ["1em" "second"]] (para-blocks out)))))
+
+(deftest p-first-expands-with-default-style-too
+  (is (= (ex [:p "hello"]) (ex [:p-first "hello"]))
+      "base-14 styling keeps the gap-paragraph look for both"))
+
 (deftest pre-validation-attrs-are-inert-to-expansion
   ;; The Markdown front-end tags code blocks with :lang/:test/:include for
   ;; the opt-in validation pass; those attrs must not affect rendering.

@@ -107,6 +107,43 @@
                           (assoc-in sparse [:type :hyphenation-ladder] 3) :print)]
     (is (= "3" (-> style :p :hyphenation-ladder-count)))))
 
+;; --- paragraph style (indent vs space) --------------------------------------
+
+(deftest indent-paragraphs-are-the-default
+  (let [{:keys [style]} (theme/compile-theme sparse :print)]
+    (testing "running paragraphs indent and drop the gap"
+      (is (= "1em" (-> style :p :text-indent)))
+      (is (= "0pt" (-> style :p :space-after))))
+    (testing "the run opener sets flush but keeps the body text properties"
+      (is (= "0" (-> style :p-first :text-indent)))
+      (is (= "0pt" (-> style :p-first :space-after)))
+      (is (= "justify" (-> style :p-first :text-align)))
+      (is (= "true" (-> style :p-first :hyphenate))))
+    (testing "list items never indent"
+      (is (nil? (-> style :li :text-indent))))))
+
+(deftest indent-width-token-sets-the-indent
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:spacing :indent] "14pt") :print)]
+    (is (= "14pt" (-> style :p :text-indent)))
+    (is (= "0" (-> style :p-first :text-indent)))))
+
+(deftest space-paragraph-style-restores-the-gap
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:spacing :paragraph-style] :space)
+                          :print)]
+    (is (nil? (-> style :p :text-indent)))
+    (is (= "6pt" (-> style :p :space-after)))
+    (is (= "6pt" (-> style :p-first :space-after))
+        "with gap paragraphs the opener renders like any other")))
+
+(deftest explicit-paragraph-spacing-wins-in-either-mode
+  (testing "indent mode honors an explicit gap"
+    (let [{:keys [style]} (theme/compile-theme
+                            (assoc-in sparse [:spacing :paragraph] "3pt") :print)]
+      (is (= "3pt" (-> style :p :space-after)))
+      (is (= "1em" (-> style :p :text-indent))))))
+
 (deftest defaults-apply-when-tokens-are-sparse
   (let [{:keys [style masters]} (theme/compile-theme
                                   {:color {} :type {} :spacing {} :layout {}}
