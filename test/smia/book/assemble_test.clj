@@ -89,6 +89,36 @@
       (is (str/includes? xml "internal-destination=\"config\"")
           "the xref expanded to a link to the config chapter"))))
 
+;; --- language on the root --------------------------------------------------
+
+(deftest bcp47-splits-into-fo-language-and-country
+  (is (= {:language "en" :country "US"} (assemble/bcp47->fo "en-US")))
+  (is (= {:language "en"} (assemble/bcp47->fo "en")))
+  (testing "case is normalized to FO's expectations"
+    (is (= {:language "nb" :country "NO"} (assemble/bcp47->fo "NB-no"))))
+  (testing "a script subtag is not mistaken for a country"
+    (is (= {:language "zh"} (assemble/bcp47->fo "zh-Hans")))
+    (is (= {:language "zh" :country "CN"} (assemble/bcp47->fo "zh-Hans-CN"))))
+  (testing "no language means no attributes"
+    (is (= {} (assemble/bcp47->fo nil)))
+    (is (= {} (assemble/bcp47->fo "")))
+    (is (= {} (assemble/bcp47->fo "  ")))))
+
+(deftest the-root-carries-the-book-language
+  (let [attrs (second (assemble/assemble (assoc manuscript :language "en-US")
+                                         the-theme))]
+    (is (= "en" (:language attrs)))
+    (is (= "US" (:country attrs))))
+  (testing "a bare language tag sets no country"
+    (let [attrs (second (assemble/assemble (assoc manuscript :language "fr")
+                                           the-theme))]
+      (is (= "fr" (:language attrs)))
+      (is (not (contains? attrs :country)))))
+  (testing "no book language leaves the root unchanged"
+    (let [attrs (second (assemble/assemble manuscript the-theme))]
+      (is (not (contains? attrs :language)))
+      (is (not (contains? attrs :country))))))
+
 ;; --- typed document structure (parts, matter, appendices) -----------------
 
 (defn- chapter [id title & body]

@@ -18,6 +18,22 @@
 (declare book-sections bookmark-tree toc-furniture section-sequences
          default-running-heads)
 
+;; --- language -------------------------------------------------------------
+
+(defn bcp47->fo
+  "Split a BCP-47 tag (the book's `:book/language`) into the 2-letter
+   `language`/`country` attributes FO wants on the root, normalizing case.
+   The country is the first 2-letter subtag after the language, so a script
+   subtag (`zh-Hans`) is not mistaken for one. No language, no attributes —
+   the FO output stays byte-identical for a language-less book."
+  [tag]
+  (if (or (nil? tag) (str/blank? tag))
+    {}
+    (let [[lang & subtags] (str/split tag #"-")
+          region (some #(when (re-matches #"[A-Za-z]{2}" %) %) subtags)]
+      (cond-> {:language (str/lower-case lang)}
+        region (assoc :country (str/upper-case region))))))
+
 ;; --- assembly -------------------------------------------------------------
 
 (defn assemble
@@ -45,9 +61,10 @@
                                                (:running-heads book))
                     :licensee      (:licensee book)}
         body-style (get style :body)]
-    (into [:fo/root {:font-family (:font-family body-style)
-                     :font-size   (:font-size body-style)
-                     :line-height (:line-height body-style)}]
+    (into [:fo/root (merge {:font-family (:font-family body-style)
+                            :font-size   (:font-size body-style)
+                            :line-height (:line-height body-style)}
+                           (bcp47->fo (:language book)))]
           (concat
             [(into [:fo/layout-master-set] masters)]
             [(bookmark-tree prepared)]

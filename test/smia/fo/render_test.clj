@@ -89,6 +89,30 @@
                        :smia.fo.render/render-failed}
                      (:error/type d))))))
 
+(deftest ^:integration hyphenation-patterns-ride-the-classpath
+  ;; The hyphenation-pattern jar is a core dependency; a narrow justified
+  ;; column in a language-tagged document must hyphenate without FOP
+  ;; emitting a missing-pattern event.
+  (let [fo  (ser/serialize
+              [:fo/root {:language "en"}
+               [:fo/layout-master-set
+                [:fo/simple-page-master {:master-name "page"
+                                         :page-height "297mm"
+                                         :page-width  "60mm"
+                                         :margin      "5mm"}
+                 [:fo/region-body]]]
+               [:fo/page-sequence {:master-reference "page"}
+                [:fo/flow {:flow-name "xsl-region-body"}
+                 [:fo/block {:text-align "justify" :hyphenate "true"}
+                  "Internationalization and characterization considerations
+                   demand uncompromisingly sophisticated hyphenation."]]]])
+        out (ByteArrayOutputStream.)
+        res (render/render-pdf! fo out {})]
+    (is (str/starts-with? (String. (.toByteArray out) 0 5) "%PDF-"))
+    (is (not-any? #(str/includes? (str/lower-case (str %)) "hyphen")
+                  (:warnings res))
+        "no missing-hyphenation-pattern warning")))
+
 (deftest ^:integration warnings-are-returned-not-thrown
   ;; A valid document should render without errors; warnings (if any) come
   ;; back in the result rather than aborting the build.

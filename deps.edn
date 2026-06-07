@@ -8,6 +8,10 @@
         metosin/malli              {:mvn/version "0.16.4"}
         no.cjohansen/m1p           {:mvn/version "2026.01.1"}
         org.apache.xmlgraphics/fop {:mvn/version "2.11"}
+        ;; Hyphenation patterns for FOP's line breaker. FOP picks them up
+        ;; by classpath presence alone; the fo:root language/country
+        ;; attributes (from :book/language) select the pattern set.
+        net.sf.offo/fop-hyph       {:mvn/version "2.0"}
         org.commonmark/commonmark  {:mvn/version "0.24.0"}
         org.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.24.0"}
         org.commonmark/commonmark-ext-footnotes   {:mvn/version "0.24.0"}}
