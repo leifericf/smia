@@ -304,14 +304,19 @@
     :book-title book-title
     nil))
 
-(defn- region-block [slot parity inline muted-color rule-color]
+(defn- region-block
+  "The block inside a running region. A header (`:before`) takes the
+   theme's running-head style — letterspaced capitals by default — over
+   the base furniture; the footer (the folio) stays plain."
+  [slot parity inline {:keys [muted-color rule-color running-head]}]
   (let [align (if (= slot :after)
                 "center"
                 (case parity :recto "right" :verso "left" "center"))]
     (into [:fo/block (cond-> {:text-align align :font-size "9pt" :color muted-color}
                        (= slot :before)
-                       (assoc :border-bottom (str "0.25pt solid " rule-color)
-                              :padding-bottom "3pt" :space-before "4pt"))]
+                       (-> (merge running-head)
+                           (assoc :border-bottom (str "0.25pt solid " rule-color)
+                                  :padding-bottom "3pt" :space-before "4pt")))]
           [inline])))
 
 (defn- licensee-block
@@ -330,15 +335,14 @@
    `headers?` false (front matter, part dividers) only footers are emitted.
    When a `licensee` is set, each footer also carries the licensee notice."
   [{:keys [theme running-heads book-title headers? licensee]}]
-  (let [{:keys [running-regions muted-color rule-color]} theme]
+  (let [{:keys [running-regions muted-color]} theme]
     (keep (fn [{:keys [slot name parity]}]
             (let [cfg-slot (when (or headers? (= slot :after))
                              (get-in running-heads [(parity-key parity) slot]))
                   inline   (slot->inline cfg-slot book-title)
                   blocks   (cond-> []
                              inline
-                             (conj (region-block slot parity inline
-                                                 muted-color rule-color))
+                             (conj (region-block slot parity inline theme))
                              (and (= slot :after) licensee)
                              (conj (licensee-block licensee muted-color)))]
               (when (seq blocks)

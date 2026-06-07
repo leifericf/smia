@@ -272,6 +272,60 @@
                                  (assoc-in sparse [:layout :chapter-drop] "50mm")
                                  :print)))))
 
+;; --- vertical rhythm ----------------------------------------------------------
+
+(deftest heading-spaces-are-multiples-of-the-body-leading
+  ;; default leading: 11pt base x 1.4 line-height = 15.4pt
+  (let [{:keys [style]} (theme/compile-theme sparse :print)]
+    (is (= "30.8pt" (-> style :h1 :space-before)) "2 leadings")
+    (is (= "23.1pt" (-> style :h2 :space-before)) "1.5 leadings")
+    (is (= "7.7pt"  (-> style :h2 :space-after))  "half a leading")
+    (is (= "15.4pt" (-> style :h3 :space-before)) "one leading"))
+  (testing "the rhythm follows the type tokens"
+    (let [{:keys [style]} (theme/compile-theme
+                            (update sparse :type assoc
+                                    :base-size "12pt" :line-height "1.5")
+                            :print)]
+      (is (= "27.0pt" (-> style :h2 :space-before)) "1.5 x 18pt"))))
+
+(deftest heading-rhythm-token-overrides-multiples-per-level
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:spacing :heading-rhythm]
+                                    {:h2 [2 1]})
+                          :print)]
+    (is (= "30.8pt" (-> style :h2 :space-before)))
+    (is (= "15.4pt" (-> style :h2 :space-after)))
+    (testing "other levels keep the canon multiples"
+      (is (= "15.4pt" (-> style :h3 :space-before))))))
+
+(deftest widows-and-orphans-default-to-two
+  (let [{:keys [style]} (theme/compile-theme sparse :print)]
+    (is (= "2" (-> style :p :widows)))
+    (is (= "2" (-> style :p :orphans)))
+    (is (= "2" (-> style :p-first :widows)) "the run opener paginates alike"))
+  (testing "the :type tokens tune them"
+    (let [{:keys [style]} (theme/compile-theme
+                            (update sparse :type assoc :widows 3 :orphans 3)
+                            :print)]
+      (is (= "3" (-> style :p :widows)))
+      (is (= "3" (-> style :p :orphans))))))
+
+;; --- running-head furniture ----------------------------------------------------
+
+(deftest running-heads-are-uppercase-and-letterspaced
+  ;; FOP has no font-variant small-caps; uppercase with letter tracking is
+  ;; the closest classical running-head treatment it can render.
+  (let [theme (theme/compile-theme sparse :print)]
+    (is (= "uppercase" (-> theme :running-head :text-transform)))
+    (is (= "0.08em" (-> theme :running-head :letter-spacing))))
+  (testing "a :type :running-head map overrides per property"
+    (let [theme (theme/compile-theme
+                  (assoc-in sparse [:type :running-head]
+                            {:letter-spacing "0.1em"})
+                  :print)]
+      (is (= "0.1em" (-> theme :running-head :letter-spacing)))
+      (is (= "uppercase" (-> theme :running-head :text-transform))))))
+
 (deftest defaults-apply-when-tokens-are-sparse
   (let [{:keys [style masters]} (theme/compile-theme
                                   {:color {} :type {} :spacing {} :layout {}}

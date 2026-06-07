@@ -26,7 +26,7 @@
    :number  "#aa5500" :literal "#7700aa"})
 
 (declare style-from-tokens fo-overrides page-dims regions masters
-         running-regions)
+         running-regions canon-margins heading-rhythm leading-pt fmt-pt)
 
 (defn compile-theme
   "Compile validated `tokens` and a page `layout` (`:screen` or
@@ -51,7 +51,14 @@
      ;; The chapter drop: white space above a chapter opening's heading.
      ;; Deeper than a web heading would sit — the classical cue that a
      ;; major division starts here.
-     :chapter-drop     (get-in tokens [:layout :chapter-drop] "72pt")}))
+     :chapter-drop     (get-in tokens [:layout :chapter-drop] "72pt")
+     ;; Running heads in letterspaced capitals. The classical treatment is
+     ;; letterspaced small caps, but FOP supports no font-variant (nor
+     ;; OpenType smcp), so uppercase with tracking is the closest it can
+     ;; render. Override per property via :type {:running-head {...}}.
+     :running-head     (merge {:text-transform "uppercase"
+                               :letter-spacing "0.08em"}
+                              (get-in tokens [:type :running-head]))}))
 
 ;; --- private helpers -------------------------------------------------------
 
@@ -80,7 +87,9 @@
         body-text   {:text-align (if (get type :justify true) "justify" "start")
                      :hyphenate  (str (boolean (get type :hyphenate true)))
                      :hyphenation-ladder-count
-                     (str (get type :hyphenation-ladder 2))}
+                     (str (get type :hyphenation-ladder 2))
+                     :widows     (str (get type :widows 2))
+                     :orphans    (str (get type :orphans 2))}
         ;; Book paragraphs (the :indent default): a first-line indent on
         ;; running paragraphs and no inter-paragraph gap; the run opener
         ;; (:p-first, picked by the expansion walk) sets flush. :space
@@ -90,7 +99,9 @@
                                    :space-after
                                    (get spacing :paragraph
                                         (if indent? "0pt" "6pt")))
-                      indent? (assoc :text-indent (get spacing :indent "1em")))]
+                      indent? (assoc :text-indent (get spacing :indent "1em")))
+        rhythm      (merge heading-rhythm (get spacing :heading-rhythm))
+        lead        (leading-pt type)]
     (-> expand/default-style
         (assoc :body {:font-family body-family
                       :font-size   (get type :base-size "11pt")
@@ -118,7 +129,13 @@
                                    :padding-left "10pt"
                                    :start-indent "0pt"
                                    :color        muted})
-        (update :hr merge {:border-top (str "0.5pt solid " rule)}))))
+        (update :hr merge {:border-top (str "0.5pt solid " rule)})
+        ;; Heading spaces in leading multiples keep the vertical rhythm.
+        (as-> s (reduce-kv (fn [m tag [before after]]
+                             (update m tag merge
+                                     {:space-before (fmt-pt (* before lead))
+                                      :space-after  (fmt-pt (* after lead))}))
+                           s rhythm)))))
 
 (def ^:private mm-per-unit
   "Millimeters per supported length unit."
@@ -143,6 +160,35 @@
   [x]
   (str (String/format java.util.Locale/ROOT "%.1f" (object-array [(double x)]))
        "mm"))
+
+(defn- fmt-pt
+  "A deterministic fixed-decimal pt string, locale-independent."
+  [x]
+  (str (String/format java.util.Locale/ROOT "%.1f" (object-array [(double x)]))
+       "pt"))
+
+(defn- parse-pt
+  "Parse a length string to points."
+  [s]
+  (/ (parse-mm s) (get mm-per-unit "pt")))
+
+(defn- leading-pt
+  "The body leading in points: the base size times a unitless line-height
+   ratio, or the line-height directly when it carries a unit. The vertical
+   rhythm (heading spaces) is set in multiples of this."
+  [type]
+  (let [lh (str (get type :line-height "1.4"))]
+    (if-let [[_ n] (re-matches #"\s*([0-9]*\.?[0-9]+)\s*" lh)]
+      (* (parse-pt (str (get type :base-size "11pt"))) (Double/parseDouble n))
+      (parse-pt lh))))
+
+(def heading-rhythm
+  "Heading `[space-before space-after]` per level, in multiples of the
+   body leading — vertical space stays a whole-number-ish count of lines,
+   so text on facing pages sits on the same rhythm. A theme overrides per
+   level via `:spacing {:heading-rhythm {...}}`."
+  {:h1 [2.0 1.0] :h2 [1.5 0.5] :h3 [1.0 0.5]
+   :h4 [1.0 0.25] :h5 [0.75 0.25] :h6 [0.75 0.25]})
 
 (defn canon-margins
   "The classical page construction: margins inner:top:outer:bottom in the

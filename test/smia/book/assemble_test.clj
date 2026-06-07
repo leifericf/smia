@@ -240,6 +240,17 @@
   (first (filter #(= name (:flow-name (second %)))
                  (find-all :fo/static-content out))))
 
+(deftest running-heads-carry-the-themed-furniture-style
+  (let [out  (assemble/assemble manuscript the-theme)
+        head (footer out "head-recto")
+        block (first (find-all :fo/block head))]
+    (is (= "uppercase" (:text-transform (second block))))
+    (is (= "0.08em" (:letter-spacing (second block))))
+    (testing "the folio stays plain"
+      (let [foot-block (first (find-all :fo/block (footer out "foot-recto")))]
+        (is (nil? (:text-transform (second foot-block))))
+        (is (nil? (:letter-spacing (second foot-block))))))))
+
 (defn- text-of [tree]
   (apply str (filter string? (tree-seq vector? seq tree))))
 
