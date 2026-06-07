@@ -67,13 +67,25 @@
         muted       (get color :muted "#666666")
         rule        (get color :rule "#999999")
         link        (get color :link "#1a0dab")
-        code-bg     (get color :code-background "#f4f4f4")]
+        code-bg     (get color :code-background "#f4f4f4")
+        ;; Justified, hyphenated body text is the book default (the canon);
+        ;; the base-14 library style stays ragged, so these live here, on
+        ;; the themed path only. Hyphenation needs a :book/language on the
+        ;; root to select its pattern set.
+        body-text   {:text-align (if (get type :justify true) "justify" "start")
+                     :hyphenate  (str (boolean (get type :hyphenate true)))
+                     :hyphenation-ladder-count
+                     (str (get type :hyphenation-ladder 2))}]
     (-> expand/default-style
         (assoc :body {:font-family body-family
                       :font-size   (get type :base-size "11pt")
                       :line-height (get type :line-height "1.4")
                       :color       text})
-        (update :p merge {:space-after (get spacing :paragraph "6pt")})
+        (update :p merge body-text
+                {:space-after (get spacing :paragraph "6pt")})
+        (update :li merge body-text)
+        (update :dd merge body-text)
+        (update :blockquote merge body-text)
         (update :h1 merge {:font-family head-family :color text
                            :font-size   (get type :h1-size "20pt")})
         (update :h2 merge {:font-family head-family :color text

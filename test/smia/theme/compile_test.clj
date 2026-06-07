@@ -74,6 +74,39 @@
       (is (= "28pt" (-> style :h1 :font-size)))
       (is (= "8pt" (-> style :p :space-after))))))
 
+;; --- justified, hyphenated body text ---------------------------------------
+
+(def ^:private sparse {:color {} :type {} :spacing {} :layout {}})
+
+(deftest body-text-is-justified-and-hyphenated-by-default
+  (let [{:keys [style]} (theme/compile-theme sparse :print)]
+    (doseq [tag [:p :li :dd :blockquote]]
+      (testing (str tag " carries the canon text properties")
+        (is (= "justify" (-> style tag :text-align)))
+        (is (= "true" (-> style tag :hyphenate)))
+        (is (= "2" (-> style tag :hyphenation-ladder-count)))))
+    (testing "headings keep their own alignment"
+      (is (nil? (-> style :h1 :text-align)))
+      (is (nil? (-> style :h2 :text-align))))))
+
+(deftest justify-token-turns-justification-off
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:type :justify] false) :print)]
+    (is (= "start" (-> style :p :text-align)))
+    (is (= "true" (-> style :p :hyphenate))
+        "ragged-right text still hyphenates unless told otherwise")))
+
+(deftest hyphenate-token-turns-hyphenation-off
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:type :hyphenate] false) :print)]
+    (is (= "false" (-> style :p :hyphenate)))
+    (is (= "justify" (-> style :p :text-align)))))
+
+(deftest hyphenation-ladder-token-tunes-consecutive-hyphens
+  (let [{:keys [style]} (theme/compile-theme
+                          (assoc-in sparse [:type :hyphenation-ladder] 3) :print)]
+    (is (= "3" (-> style :p :hyphenation-ladder-count)))))
+
 (deftest defaults-apply-when-tokens-are-sparse
   (let [{:keys [style masters]} (theme/compile-theme
                                   {:color {} :type {} :spacing {} :layout {}}
