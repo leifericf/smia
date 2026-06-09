@@ -89,6 +89,7 @@
          chapters (vec (keep :content loaded))]
      (check-no-duplicate-ids chapters)
      {:title         (:book/title config)
+      :subtitle      (:book/subtitle config)
       :author        (:book/author config)
       :language      (:book/language config)
       :numbering     numbering

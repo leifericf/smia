@@ -529,9 +529,11 @@
   "The home page's title block. When `cover?` (the chrome carries the
    contents elsewhere, so the landing is a title card and nothing else), it
    gains the `cover` class the stylesheet centers into a full-height cover."
-  [{:keys [title author]} cover?]
+  [{:keys [title subtitle author]} cover?]
   (into [:header {:class (str "book-header" (when cover? " cover"))} [:h1 {} title]]
-        (when author [[:p {:class "book-author"} author]])))
+        (concat
+          (when subtitle [[:p {:class "book-subtitle"} subtitle]])
+          (when author [[:p {:class "book-author"} author]]))))
 
 (defn- toc-nav
   "The table-of-contents nav. `href-to` relativizes each entry's

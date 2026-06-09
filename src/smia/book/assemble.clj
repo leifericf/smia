@@ -46,7 +46,7 @@
    (`{:title :author :numbering :sections …}`). Chapter bodies remain
    authored sugar for the later expansion pass."
   [book theme]
-  (let [{:keys [title author]} book
+  (let [{:keys [title subtitle author]} book
         {:keys [style master-reference masters layout]} theme
         numbering  (or (:numbering book) structure/default-numbering)
         prepared   (book-sections book)
@@ -70,7 +70,7 @@
           (concat
             [(into [:fo/layout-master-set] masters)]
             [(bookmark-tree prepared)]
-            [(toc-furniture title author prepared ctx)]
+            [(toc-furniture title subtitle author prepared ctx)]
             (section-sequences prepared ctx)))))
 
 ;; --- chapter parsing ------------------------------------------------------
@@ -278,11 +278,14 @@
                 :leader-length.maximum  "100%"}]
    [:fo/page-number-citation {:ref-id id}]])
 
-(defn- title-page [title author head-family muted-color]
+(defn- title-page [title subtitle author head-family muted-color]
   [:fo/block {:text-align "center" :space-before "108pt"
               :space-before.conditionality "retain"}
    [:fo/block {:font-family head-family :font-size "36pt" :font-weight "bold"
                :space-after "12pt"} title]
+   (when subtitle
+     [:fo/block {:font-family head-family :font-size "16pt" :font-style "italic"
+                 :color muted-color :space-after "18pt"} subtitle])
    (when author
      [:fo/block {:font-size "13pt" :color muted-color} author])])
 
@@ -374,14 +377,14 @@
            [(into [:fo/flow (merge {:flow-name "xsl-region-body"} body-style)]
                   flow-children)]))))
 
-(defn- toc-furniture [title author prepared ctx]
+(defn- toc-furniture [title subtitle author prepared ctx]
   (let [{:keys [style rule-color muted-color]} (:theme ctx)
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])]
     (page-sequence
       {:format "i"} ctx false body-style
       (concat
-        [(title-page title author head-family muted-color)]
+        [(title-page title subtitle author head-family muted-color)]
         [[:fo/block {:font-family head-family :font-size "18pt"
                      :font-weight "bold" :break-before "page"
                      :border-bottom (str "0.5pt solid " rule-color)
