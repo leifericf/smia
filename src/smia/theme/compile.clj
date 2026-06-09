@@ -128,12 +128,17 @@
         (update :li merge body-text)
         (update :dd merge body-text)
         (update :blockquote merge body-text)
-        ;; Footnotes hang long citation URLs that justification cannot break
-        ;; cleanly, so a single unbreakable URL stretches the inter-word
-        ;; spacing of the lines around it. Ragged-right (the conventional
-        ;; setting for notes) keeps the body text justified but spares the
-        ;; notes that gap-toothed look. Hyphenation still applies.
-        (update :footnote merge (assoc body-text :text-align "start"))
+        ;; Footnotes hang long citation URLs. Two settings keep those tidy.
+        ;; Ragged-right (text-align start, the conventional setting for notes)
+        ;; spares them the gap-toothed stretching justification forces around
+        ;; an unbreakable URL. hyphenate="false" then stops FOP from breaking
+        ;; a URL with an inserted hyphen (…clojure-inter- / views/), which it
+        ;; will do under line pressure even across word joiners; block-level
+        ;; hyphenation is the one control FOP honors reliably. A ragged note
+        ;; needs no hyphenation anyway, and the URL still wraps at its own
+        ;; delimiters (the zero-width breaks `break-long-urls` inserts).
+        (update :footnote merge (assoc body-text :text-align "start"
+                                       :hyphenate "false"))
         (update :h1 merge {:font-family head-family :color text
                            :font-size   (get type :h1-size "20pt")})
         (update :h2 merge {:font-family head-family :color text

@@ -25,12 +25,29 @@
 
 (declare expand-all expanders default-style)
 
-;; --- long-URL line breaking -----------------------------------------------
+;; --- breaking and hyphenation of code and URLs ----------------------------
+;;
+;; Long monospace tokens and URLs are the two things FOP mishandles in
+;; justified text. Left alone it hyphenates them like prose, inserting a
+;; hyphen that corrupts an identifier or a URL (clojure-inter- / views/).
+;; Forbid that and they become unbreakable boxes that stretch the line they
+;; sit at the end of. The remedy is the same for both: word joiners (U+2060)
+;; inside each letter run forbid hyphenation, and a zero-width space (U+200B)
+;; at every clean boundary - a delimiter or a camelCase hump - gives FOP a
+;; place to wrap with no hyphen. Both marks are invisible and live only in
+;; display text; an href comes from attrs, so live links stay intact.
+
+(defn- no-hyphenate
+  "Join each letter run of `s` with word joiners (U+2060) so FOP cannot find
+   a hyphenation point inside it. FOP resolves hyphenation per block and
+   ignores `hyphenate=\"false\"` on an `fo:inline`, so this is the only thing
+   that reliably stops a code identifier or URL from being hyphenated."
+  [s]
+  (str/replace s #"\p{L}{2,}" #(str/join "\u2060" %)))
 
 (def ^:private url-token-re
   "A bare URL or www-host run in body text. Footnote citations carry these
-   as plain strings (CommonMark here does not autolink), and a long one is a
-   single unbreakable box that forces justification to stretch its line."
+   as plain strings (CommonMark here does not autolink)."
   #"(?i)(?:https?://|www\.)\S+")
 
 (def ^:private url-break-after-re
@@ -38,30 +55,40 @@
   #"([/.?#&=_~%+-])")
 
 (defn- break-long-urls
-  "Insert zero-width break opportunities (U+200B) after the delimiter
-   characters of any URL-like run in `s`, so a long URL wraps at sensible
-   points instead of overflowing or stretching its line. The breaks are
-   invisible and touch display text only — an href comes from attrs, never
-   from this string, so live links stay intact. Non-URL text returns as-is,
-   guarded by a cheap substring check so prose pays nothing."
+  "Make any URL-like run in `s` wrap at its delimiters and never hyphenate.
+   Non-URL text returns as-is, guarded by a cheap substring check so prose
+   pays nothing."
   [s]
   (if (or (str/includes? s "://") (str/includes? s "www."))
     (str/replace s url-token-re
-                 (fn [tok] (str/replace tok url-break-after-re "$1\u200b")))
+                 (fn [tok] (-> tok
+                               (str/replace url-break-after-re "$1\u200b")
+                               no-hyphenate)))
     s))
 
-;; --- inline-code hyphenation suppression ----------------------------------
+(def ^:private code-break-after-re
+  "Internal separators in code after which a line break reads cleanly. A
+   leading sigil (@, :, #) is deliberately excluded so it never dangles at a
+   line end; camelCase humps cover those tokens instead."
+  #"([/._-])")
+
+(def ^:private camel-hump-re
+  "A camelCase/PascalCase hump: a lowercase letter or digit then an uppercase
+   letter, e.g. the `hV` in `@PathVariable`."
+  #"([\p{Ll}\p{Nd}])(\p{Lu})")
 
 (defn- protect-code
-  "Suppress hyphenation inside an inline-code string. FOP resolves
-   hyphenation at the block level and ignores `hyphenate=\"false\"` on an
-   `fo:inline`, so a code identifier in a justified paragraph is otherwise
-   hyphenated like prose (`clojure.spec.alpha` -> `clo-jure\u2026`). A word joiner
-   (U+2060, zero-width no-break) between the letters of each run stops FOP
-   from finding a hyphenation point, while the token's own hyphens, dots, and
-   slashes stay as the only places it may break."
+  "Make an inline-code string break cleanly and never hyphenate. A zero-width
+   space after each separator and at each camelCase hump gives FOP a place to
+   wrap a long identifier (`@PathVariable` becomes `@Path` / `Variable`) with
+   no hyphen; word joiners inside each run forbid hyphenation (see
+   `no-hyphenate`). Without a wrap point such a token is an unbreakable box
+   that stretches the justified line it ends."
   [s]
-  (str/replace s #"\p{L}{2,}" #(str/join "\u2060" %)))
+  (-> s
+      (str/replace code-break-after-re "$1\u200b")
+      (str/replace camel-hump-re "$1\u200b$2")
+      no-hyphenate))
 
 ;; --- the public transform -------------------------------------------------
 

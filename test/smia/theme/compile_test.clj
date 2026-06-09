@@ -148,7 +148,10 @@
     (testing "code and monospace elements never hyphenate"
       (doseq [tag [:code :pre :file-bar]]
         (is (= "false" (-> style tag :hyphenate))
-            (str tag " is a code/monospace special case"))))))
+            (str tag " is a code/monospace special case"))))
+    (testing "footnotes are ragged-right and never hyphenate (URLs stay whole)"
+      (is (= "start" (-> style :footnote :text-align)))
+      (is (= "false" (-> style :footnote :hyphenate))))))
 
 (deftest pagination-count-tokens-must-be-positive-integers
   (doseq [[token bad] [[:hyphenation-ladder "lots"]

@@ -748,27 +748,32 @@
     (is (ex [:table [:tr [:td {:align "right" :colspan 2} "x"]]]))))
 
 (deftest inline-code-is-protected-from-hyphenation
-  (let [wj "\u2060"
-        [tag attrs text] (ex [:code "clojure.spec.alpha"])]
-    (is (= :fo/inline tag))
-    (is (= "monospace" (:font-family attrs)))
+  (let [wj    "\u2060"                                   ; word joiner: forbids hyphenation
+        zw    "\u200b"                                   ; zero-width space: a clean break point
+        strip #(-> % (str/replace wj "") (str/replace zw ""))]
     (testing "letter runs are word-joined so FOP cannot hyphenate them"
-      (is (str/includes? text wj))
-      (is (str/includes? text (str "c" wj "l" wj "o" wj "j" wj "u" wj "r" wj "e"))
-          "the run 'clojure' is joined letter by letter"))
-    (testing "the joiners are invisible: stripping them recovers the code"
-      (is (= "clojure.spec.alpha" (str/replace text wj ""))))
-    (testing "dots and other separators are left as the only break points"
-      (is (not (str/includes? text (str "." wj))) "no joiner straddles the dot"))))
+      (let [[tag attrs text] (ex [:code "clojure.spec.alpha"])]
+        (is (= :fo/inline tag))
+        (is (= "monospace" (:font-family attrs)))
+        (is (str/includes? text (str "c" wj "l" wj "o" wj "j" wj "u" wj "r" wj "e"))
+            "the run 'clojure' is joined letter by letter")
+        (is (str/includes? text (str "." zw)) "a break point follows each dot")
+        (is (= "clojure.spec.alpha" (strip text))
+            "the invisible marks strip back to the original code")))
+    (testing "a camelCase identifier breaks at the hump, never mid-word"
+      (let [[_ _ text] (ex [:code "@PathVariable"])]
+        (is (str/includes? text (str "h" zw "V")) "a break falls at the Path|Variable hump")
+        (is (= "@PathVariable" (strip text)))))))
 
 (deftest long-urls-get-zero-width-break-opportunities
-  (let [zwsp "\u200b"]
+  (let [zwsp  "\u200b"
+        strip #(-> % (str/replace zwsp "") (str/replace "\u2060" ""))]
     (testing "a bare URL in text gains break points after its delimiters"
       (let [text "see https://steve-yegge.blogspot.com/2006/03/x.html here"
             out  (ex text)]
         (is (str/includes? out zwsp) "a break opportunity was inserted")
-        (is (= text (str/replace out zwsp ""))
-            "stripping the breaks recovers the original text exactly")
+        (is (= text (strip out))
+            "stripping the breaks and joiners recovers the original text exactly")
         (is (str/includes? out (str "." zwsp)) "a break falls after a dot")
         (is (str/includes? out (str "/" zwsp)) "a break falls after a slash")
         (is (str/includes? out (str "-" zwsp)) "a break falls after a hyphen")))
