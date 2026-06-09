@@ -90,6 +90,7 @@
      (check-no-duplicate-ids chapters)
      {:title         (:book/title config)
       :subtitle      (:book/subtitle config)
+      :credit        (:book/credit config)
       :author        (:book/author config)
       :language      (:book/language config)
       :numbering     numbering

@@ -51,6 +51,7 @@
    [:book/slug :string]
    [:book/title :string]
    [:book/subtitle {:optional true} :string]
+   [:book/credit {:optional true} :string]
    [:book/author {:optional true} :string]
    [:book/language {:optional true} :string]
    [:book/identifier {:optional true} :string]
