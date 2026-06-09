@@ -727,10 +727,10 @@
                                              :font-size "0.75em"} c s))
      :br         (fn [_ _ _] [:fo/block])
      :a          (fn [a c s] (if (links? s)
-                               (styled-inline
-                                {:external-destination (str "url('" (:href a) "')")
-                                 :color "#1a0dab" :text-decoration "underline"}
-                                c s)
+                               (into [:fo/basic-link
+                                      {:external-destination (str "url('" (:href a) "')")
+                                       :color "#1a0dab" :text-decoration "underline"}]
+                                     (expand-all c s))
                                (styled-inline {} c s)))
      :img        (fn [a _ _] [:fo/external-graphic
                               (cond-> {:src (str "url('" (checked-image-src (:src a)) "')")}
