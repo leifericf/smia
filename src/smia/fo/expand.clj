@@ -25,6 +25,31 @@
 
 (declare expand-all expanders default-style)
 
+;; --- long-URL line breaking -----------------------------------------------
+
+(def ^:private url-token-re
+  "A bare URL or www-host run in body text. Footnote citations carry these
+   as plain strings (CommonMark here does not autolink), and a long one is a
+   single unbreakable box that forces justification to stretch its line."
+  #"(?i)(?:https?://|www\.)\S+")
+
+(def ^:private url-break-after-re
+  "URL delimiter characters after which a mid-URL line break reads cleanly."
+  #"([/.?#&=_~%+-])")
+
+(defn- break-long-urls
+  "Insert zero-width break opportunities (U+200B) after the delimiter
+   characters of any URL-like run in `s`, so a long URL wraps at sensible
+   points instead of overflowing or stretching its line. The breaks are
+   invisible and touch display text only — an href comes from attrs, never
+   from this string, so live links stay intact. Non-URL text returns as-is,
+   guarded by a cheap substring check so prose pays nothing."
+  [s]
+  (if (or (str/includes? s "://") (str/includes? s "www."))
+    (str/replace s url-token-re
+                 (fn [tok] (str/replace tok url-break-after-re "$1\u200b")))
+    s))
+
 ;; --- the public transform -------------------------------------------------
 
 (defn expand
@@ -36,7 +61,7 @@
   ([node style]
    (cond
      (nil? node)    nil
-     (string? node) node
+     (string? node) (break-long-urls node)
      (number? node) node
      (vector? node)
      (let [[tag attrs children] (hiccup/parse-node node)]

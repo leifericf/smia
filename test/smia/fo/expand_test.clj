@@ -740,3 +740,28 @@
             (str (pr-str attrs) " is rejected")))))
   (testing "valid alignment and spans still expand"
     (is (ex [:table [:tr [:td {:align "right" :colspan 2} "x"]]]))))
+
+(deftest long-urls-get-zero-width-break-opportunities
+  (let [zwsp "\u200b"]
+    (testing "a bare URL in text gains break points after its delimiters"
+      (let [text "see https://steve-yegge.blogspot.com/2006/03/x.html here"
+            out  (ex text)]
+        (is (str/includes? out zwsp) "a break opportunity was inserted")
+        (is (= text (str/replace out zwsp ""))
+            "stripping the breaks recovers the original text exactly")
+        (is (str/includes? out (str "." zwsp)) "a break falls after a dot")
+        (is (str/includes? out (str "/" zwsp)) "a break falls after a slash")
+        (is (str/includes? out (str "-" zwsp)) "a break falls after a hyphen")))
+    (testing "the surrounding prose words are never broken"
+      (let [out (ex "production https://example.com/a-b done")]
+        (is (not (str/includes? out (str "produc" zwsp))))
+        (is (not (str/includes? out (str "done" zwsp))))))
+    (testing "plain prose with no URL is returned untouched"
+      (is (= "no urls here, a/b and 3.14 stay whole."
+             (ex "no urls here, a/b and 3.14 stay whole."))))
+    (testing "an href destination is never rewritten, only display text"
+      (let [out  (ex [:a {:href "https://example.com/very-long-path"} "link"])
+            dest (:external-destination (second out))]
+        (is (= "url('https://example.com/very-long-path')" dest)
+            "the link target stays a clean, breakless URL")
+        (is (not (str/includes? dest zwsp)))))))

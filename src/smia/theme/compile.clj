@@ -128,7 +128,12 @@
         (update :li merge body-text)
         (update :dd merge body-text)
         (update :blockquote merge body-text)
-        (update :footnote merge body-text)
+        ;; Footnotes hang long citation URLs that justification cannot break
+        ;; cleanly, so a single unbreakable URL stretches the inter-word
+        ;; spacing of the lines around it. Ragged-right (the conventional
+        ;; setting for notes) keeps the body text justified but spares the
+        ;; notes that gap-toothed look. Hyphenation still applies.
+        (update :footnote merge (assoc body-text :text-align "start"))
         (update :h1 merge {:font-family head-family :color text
                            :font-size   (get type :h1-size "20pt")})
         (update :h2 merge {:font-family head-family :color text
