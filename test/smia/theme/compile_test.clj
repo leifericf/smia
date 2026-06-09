@@ -33,6 +33,19 @@
     (let [themed (assoc-in tokens [:type :code-size] "8pt")]
       (is (= "8pt" (-> (theme/compile-theme themed :screen) :style :pre :font-size))))))
 
+(deftest listing-defaults-are-surfaced-on-the-style
+  (testing "line numbers default on and the keep-whole threshold defaults to 25"
+    (let [{:keys [style]} (theme/compile-theme tokens :screen)]
+      (is (= true (:line-numbers? style)))
+      (is (= 25 (:listing-keep-lines style)))))
+  (testing ":type tokens override both"
+    (let [themed (-> tokens
+                     (assoc-in [:type :line-numbers] false)
+                     (assoc-in [:type :listing-keep-lines] 40))
+          {:keys [style]} (theme/compile-theme themed :screen)]
+      (is (= false (:line-numbers? style)))
+      (is (= 40 (:listing-keep-lines style))))))
+
 (deftest unknown-page-size-is-an-error
   (testing "an unknown trim name must not silently fall back to A4"
     (let [bad (assoc-in tokens [:layout :page-size] :a5)

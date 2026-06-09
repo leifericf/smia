@@ -408,7 +408,7 @@
     (is (some #(= "Listing 1. " (last %)) (filter vector? (tree-seq vector? seq out))))
     (testing "a plain code block (no file/caption) is unchanged"
       (is (= [:fo/block (get expand/default-style :pre) "code"]
-             (ex [:pre "code"]))))))
+             (ex [:pre {:line-numbers false} "code"]))))))
 
 (deftest annotated-listing-marks-lines-and-emits-a-bound-list
   (let [out (ex [:pre {:lang :clojure :id :ex :caption "Core"
@@ -460,7 +460,7 @@
         "the keyword 'defn' is colored")
     (testing "highlighting off leaves a single plain string child"
       (is (= [:fo/block (get expand/default-style :pre) "(defn f \"s\")"]
-             (expand/expand [:pre {:lang :clojure} "(defn f \"s\")"]
+             (expand/expand [:pre {:lang :clojure :line-numbers false} "(defn f \"s\")"]
                             expand/default-style))))))
 
 (deftest line-numbers-add-a-gutter
@@ -471,6 +471,55 @@
                   (map last))]
     (is (some #(str/starts-with? (str %) "1") nums))
     (is (some #(str/starts-with? (str %) "3") nums))))
+
+(deftest line-numbers-are-on-by-default
+  ;; The gutter is the continuity cue when a listing splits across a page,
+  ;; so every listing carries it unless the listing or the theme opts out.
+  (testing "a listing with no :line-numbers key renders the gutter"
+    (let [out  (expand/expand [:pre {:lang :clojure} "a\nb\nc"]
+                              expand/default-style)
+          nums (->> (tree-seq vector? seq out)
+                    (filter #(and (vector? %) (= :fo/inline (first %))))
+                    (map last))]
+      (is (some #(str/starts-with? (str %) "1") nums))
+      (is (some #(str/starts-with? (str %) "3") nums))))
+  (testing "{:line-numbers false} on the listing suppresses the gutter"
+    (is (= [:fo/block (get expand/default-style :pre) "a\nb\nc"]
+           (expand/expand [:pre {:lang :clojure :line-numbers false} "a\nb\nc"]
+                          expand/default-style))))
+  (testing "a theme default of :line-numbers? false opts out globally"
+    (let [style (assoc expand/default-style :line-numbers? false)]
+      (is (= [:fo/block (get style :pre) "a\nb\nc"]
+             (expand/expand [:pre {:lang :clojure} "a\nb\nc"] style)))))
+  (testing "an explicit :line-numbers true overrides a theme opt-out"
+    (let [style (assoc expand/default-style :line-numbers? false)
+          out   (expand/expand [:pre {:lang :clojure :line-numbers true} "a\nb"]
+                               style)]
+      (is (some #(and (vector? %) (= :fo/inline (first %)))
+                (tree-seq vector? seq out))))))
+
+(deftest long-listings-may-break-across-pages
+  ;; A short listing is kept whole; a listing past the line threshold drops
+  ;; the keep-together so FOP can split it (the gutter keeps it legible).
+  (let [short-code (str/join "\n" (repeat 5 "(+ 1 2)"))
+        long-code  (str/join "\n" (repeat 30 "(+ 1 2)"))]
+    (testing "a short listing (<= threshold) is kept together on one page"
+      (let [out (ex [:pre {:lang :clojure :file "core.clj"} short-code])]
+        (is (= "always" (:keep-together.within-page (second out))))))
+    (testing "a long listing (> threshold) is not forced onto one page"
+      (let [out (ex [:pre {:lang :clojure :file "core.clj"} long-code])]
+        (is (nil? (:keep-together.within-page (second out))))))
+    (testing "the threshold is themeable via :listing-keep-lines"
+      (let [style (assoc expand/default-style :listing-keep-lines 3)
+            out   (expand/expand [:pre {:lang :clojure :file "core.clj"} short-code]
+                                 style)]
+        (is (nil? (:keep-together.within-page (second out))))))))
+
+(deftest table-repeats-its-header-across-page-breaks
+  (let [out (ex [:table [:thead [:tr [:th "A"]]] [:tbody [:tr [:td "x"]]]])
+        tbl (some #(when (and (vector? %) (= :fo/table (first %))) %)
+                  (tree-seq vector? seq out))]
+    (is (= "false" (:table-omit-header-at-break (second tbl))))))
 
 (deftest captioned-table-wraps-with-a-caption
   (let [out (ex [:table {:id :grid :label "Table 1" :caption "A grid"}
@@ -601,7 +650,7 @@
                             (tree-seq vector? seq (expand/expand node linkless)))))))))
 
 (deftest code-block-preserves-pre-whitespace-through-serialization
-  (let [xml (ser/serialize (ex [:pre "(defn f [x]\n  x)"])
+  (let [xml (ser/serialize (ex [:pre {:line-numbers false} "(defn f [x]\n  x)"])
                            {:xml-declaration? false})]
     (is (str/includes? xml "white-space=\"pre\""))
     (is (str/includes? xml "(defn f [x]\n  x)"))))

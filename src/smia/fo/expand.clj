@@ -108,6 +108,16 @@
   [style]
   (not (false? (:links? style))))
 
+(defn- line-numbers?
+  "Should this listing carry a line-number gutter? An explicit per-listing
+   `:line-numbers` wins; otherwise the theme default (`:line-numbers?` on
+   the style); otherwise on. The gutter is the continuity cue when a
+   listing splits across a page break."
+  [author style]
+  (if (contains? author :line-numbers)
+    (boolean (:line-numbers author))
+    (not (false? (:line-numbers? style)))))
+
 ;; --- default (base-14) style ----------------------------------------------
 
 (def default-style
@@ -161,7 +171,11 @@
                 :space-before "8pt" :space-after "8pt"}
    :details    {:border-left "1pt solid #cccccc" :padding "6pt 10pt"
                 :space-before "8pt" :space-after "8pt"}
+   ;; A table that spans a page break repeats its column header on the
+   ;; continuation page (FOP's default, stated to guard against a theme
+   ;; override and to signal the table continues).
    :table      {:table-layout "fixed" :width "100%" :border-collapse "collapse"
+                :table-omit-header-at-break "false"
                 :space-before "6pt" :space-after "8pt"}
    :table-cell {:border "0.5pt solid #cccccc" :padding "4pt"}
    :figure     {:space-before "10pt" :space-after "10pt" :text-align "center"}
@@ -488,9 +502,9 @@
    blocks; otherwise the code is one block. `by-line` (line -> {:n :note},
    or nil) supplies the annotation marks."
   [author children style by-line]
-  (if (or (:line-numbers author) (seq by-line))
+  (if (or (line-numbers? author style) (seq by-line))
     (code-lines-block author (str/split (hiccup/code-text children) #"\n" -1) style
-                      (boolean (:line-numbers author))
+                      (line-numbers? author style)
                       (reduce-kv (fn [m line {:keys [n]}] (assoc m line n)) {}
                                  (or by-line {})))
     (code-block author children style)))
@@ -514,14 +528,18 @@
    numbered caption. The wrapper carries the `:id` and is kept together."
   [author children style]
   (let [annotations (:annotations author)
+        line-count  (count (str/split (hiccup/code-text children) #"\n" -1))
         by-line     (when (seq annotations)
                       (hiccup/annotations->by-line
                         :smia.fo.expand/invalid-annotation
                         annotations
-                        (count (str/split (hiccup/code-text children) #"\n" -1))
-                        (hiccup/as-id (:id author))))]
-    (into [:fo/block (cond-> (assoc (get style :listing)
-                                    :keep-together.within-page "always")
+                        line-count
+                        (hiccup/as-id (:id author))))
+        ;; A short listing is kept whole on one page; a longer one drops the
+        ;; keep-together so FOP can split it, with the gutter as the cue.
+        keep-whole? (<= line-count (get style :listing-keep-lines 25))]
+    (into [:fo/block (cond-> (get style :listing)
+                       keep-whole? (assoc :keep-together.within-page "always")
                        (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (concat
             (when-let [file (:file author)]

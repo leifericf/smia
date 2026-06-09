@@ -42,7 +42,9 @@
                            (fo-overrides (seed-p-first (:fo tokens)))
                            (assoc :highlight?   (get-in tokens [:type :highlight] false)
                                   :code-colors  (merge default-code-colors
-                                                       (:code tokens))))
+                                                       (:code tokens))
+                                  :line-numbers? (get-in tokens [:type :line-numbers] true)
+                                  :listing-keep-lines (get-in tokens [:type :listing-keep-lines] 25)))
      :link-color       (get color :link "#1a0dab")
      :rule-color       (get color :rule "#999999")
      :muted-color      (get color :muted "#666666")
