@@ -141,6 +141,15 @@
                           (assoc-in sparse [:type :hyphenation-ladder] 3) :print)]
     (is (= "3" (-> style :p :hyphenation-ladder-count)))))
 
+(deftest code-and-monospace-are-excluded-from-hyphenation
+  (let [{:keys [style]} (theme/compile-theme sparse :print)]
+    (testing "running prose hyphenates"
+      (is (= "true" (-> style :p :hyphenate))))
+    (testing "code and monospace elements never hyphenate"
+      (doseq [tag [:code :pre :file-bar]]
+        (is (= "false" (-> style tag :hyphenate))
+            (str tag " is a code/monospace special case"))))))
+
 (deftest pagination-count-tokens-must-be-positive-integers
   (doseq [[token bad] [[:hyphenation-ladder "lots"]
                        [:hyphenation-ladder 0]

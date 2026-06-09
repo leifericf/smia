@@ -10,6 +10,12 @@
 
 (defn- catch-data [f] (try (f) nil (catch Exception e (error/data e))))
 
+(defn- strip-wj
+  "Drop the word joiners (U+2060) that protect inline code from hyphenation,
+   so a test can compare against the plain text."
+  [x]
+  (when (string? x) (str/replace x "\u2060" "")))
+
 (deftest paragraph-expands-to-block
   (let [out (ex [:p "hello"])]
     (is (= :fo/block (first out)))
@@ -426,7 +432,7 @@
                 (tree-seq vector? seq out)))
       (is (some #(= "Defines xs" (last %))
                 (filter vector? (tree-seq vector? seq out))))
-      (is (some #(= "reduce" (last %)) inlines)
+      (is (some #(= "reduce" (strip-wj (last %))) inlines)
           "rich inline note content is expanded"))
     (testing "the listing is kept together on a page"
       (is (= "always" (:keep-together.within-page (second out)))))))
@@ -596,7 +602,7 @@
 
 (deftest description-list-definitions-keep-inline-markup
   (let [out (ex [:dl [:dt "reduce"] [:dd "Folds with " [:code "reduce"] "."]])]
-    (is (some #(and (vector? %) (= :fo/inline (first %)) (= "reduce" (last %)))
+    (is (some #(and (vector? %) (= :fo/inline (first %)) (= "reduce" (strip-wj (last %))))
               (tree-seq vector? seq out))
         "inline markup in a definition is expanded")))
 
@@ -740,6 +746,20 @@
             (str (pr-str attrs) " is rejected")))))
   (testing "valid alignment and spans still expand"
     (is (ex [:table [:tr [:td {:align "right" :colspan 2} "x"]]]))))
+
+(deftest inline-code-is-protected-from-hyphenation
+  (let [wj "\u2060"
+        [tag attrs text] (ex [:code "clojure.spec.alpha"])]
+    (is (= :fo/inline tag))
+    (is (= "monospace" (:font-family attrs)))
+    (testing "letter runs are word-joined so FOP cannot hyphenate them"
+      (is (str/includes? text wj))
+      (is (str/includes? text (str "c" wj "l" wj "o" wj "j" wj "u" wj "r" wj "e"))
+          "the run 'clojure' is joined letter by letter"))
+    (testing "the joiners are invisible: stripping them recovers the code"
+      (is (= "clojure.spec.alpha" (str/replace text wj ""))))
+    (testing "dots and other separators are left as the only break points"
+      (is (not (str/includes? text (str "." wj))) "no joiner straddles the dot"))))
 
 (deftest long-urls-get-zero-width-break-opportunities
   (let [zwsp "\u200b"]

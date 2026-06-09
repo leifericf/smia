@@ -50,6 +50,19 @@
                  (fn [tok] (str/replace tok url-break-after-re "$1\u200b")))
     s))
 
+;; --- inline-code hyphenation suppression ----------------------------------
+
+(defn- protect-code
+  "Suppress hyphenation inside an inline-code string. FOP resolves
+   hyphenation at the block level and ignores `hyphenate=\"false\"` on an
+   `fo:inline`, so a code identifier in a justified paragraph is otherwise
+   hyphenated like prose (`clojure.spec.alpha` -> `clo-jure\u2026`). A word joiner
+   (U+2060, zero-width no-break) between the letters of each run stops FOP
+   from finding a hyphenation point, while the token's own hyphens, dots, and
+   slashes stay as the only places it may break."
+  [s]
+  (str/replace s #"\p{L}{2,}" #(str/join "\u2060" %)))
+
 ;; --- the public transform -------------------------------------------------
 
 (defn expand
@@ -171,8 +184,14 @@
    ;; Inline code sits inside serif body text; monospace faces carry a
    ;; larger x-height, so equal sizes make code tower over the prose.
    ;; Block code (`:pre`) styles itself — this never applies inside it.
-   :code       {:font-family "monospace" :font-size "0.85em"}
+   ;; hyphenate="false" stops hyphenation for block-level code, which FOP
+   ;; honors. It does NOT help inline code: FOP resolves hyphenation per
+   ;; block and ignores the flag on an fo:inline, so inline code is also
+   ;; word-joined at render time (see `protect-code`). The flag stays for
+   ;; correctness and any non-FOP consumer of the style.
+   :code       {:font-family "monospace" :font-size "0.85em" :hyphenate "false"}
    :pre        {:font-family "monospace" :white-space "pre" :wrap-option "wrap"
+                :hyphenate "false"
                 :space-before "6pt" :space-after "8pt"
                 :background-color "#f4f4f4" :padding "6pt" :font-size "9.5pt"}
    :blockquote {:start-indent "18pt" :end-indent "18pt" :font-style "italic"
@@ -208,6 +227,7 @@
                 :text-align "center"}
    :listing    {:space-before "6pt" :space-after "8pt"}
    :file-bar   {:font-family "monospace" :font-size "8pt" :font-weight "bold"
+                :hyphenate "false"
                 :background-color "#e8e8e8" :padding "3pt 6pt"}
    ;; The badge box is the inline's background: the digit's glyph box sits
    ;; flush at the font ascent with the descent's empty space below, so the
@@ -238,11 +258,19 @@
 (defn- styled-inline [props children style]
   (into [:fo/inline props] (expand-all children style)))
 
+(defn- styled-code-inline
+  "An inline for monospace/code text whose string content is hyphenation-
+   protected (see `protect-code`); other children expand normally."
+  [props children style]
+  (into [:fo/inline props]
+        (map (fn [n] (if (string? n) (protect-code n) (expand n style))) children)))
+
 ;; Interface-vocabulary inline styling. Geometric separators are avoided in
 ;; the menu path: the base-14 serif has no triangle glyph, so a portable
 ;; ASCII ">" keeps the PDF (and PDF/X) free of missing-glyph boxes.
 (def ^:private kbd-style
   {:font-family "monospace" :font-size "0.85em" :background-color "#eeeeee"
+   :hyphenate "false"
    :border "0.5pt solid #cccccc" :padding "0pt 2pt"})
 
 (def ^:private button-style
@@ -757,9 +785,9 @@
      :hr         (fn [_ _ s] [:fo/block (get s :hr)])
      :strong     (fn [_ c s] (styled-inline {:font-weight "bold"} c s))
      :em         (fn [_ c s] (styled-inline {:font-style "italic"} c s))
-     :code       (fn [_ c s] (styled-inline (get s :code) c s))
+     :code       (fn [_ c s] (styled-code-inline (get s :code) c s))
      :span       (fn [_ c s] (into [:fo/inline] (expand-all c s)))
-     :kbd        (fn [_ c s] (styled-inline kbd-style c s))
+     :kbd        (fn [_ c s] (styled-code-inline kbd-style c s))
      :menu       (fn [_ c s] (into [:fo/inline {}]
                                    (interpose menu-separator (expand-all c s))))
      :button     (fn [_ c s] (styled-inline button-style c s))
