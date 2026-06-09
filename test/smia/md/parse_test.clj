@@ -87,3 +87,13 @@
     (is (= :fenced-code-block (:type fence)))
     (is (= "clojure {:test true}" (:info fence)))
     (is (= "(+ 1 2)\n" (:literal fence)))))
+
+(deftest bare-urls-autolink-to-links
+  ;; A citation's bare URL must become a real link so a PDF viewer follows
+  ;; the full destination rather than auto-detecting truncated text.
+  (let [doc   (parse/parse "See https://www.juxt.pro/blog/x-y-z/ now.\n" "d.md")
+        para  (first (:children doc))
+        link  (first (filter #(= :link (:type %)) (:children para)))]
+    (is (some? link) "the bare URL is parsed as a link")
+    (is (= "https://www.juxt.pro/blog/x-y-z/" (:destination link))
+        "the link carries the full URL as its destination")))

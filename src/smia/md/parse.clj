@@ -21,6 +21,7 @@
                                   TableBody TableRow TableCell)
    (org.commonmark.ext.footnotes FootnotesExtension FootnoteReference
                                  FootnoteDefinition InlineFootnote)
+   (org.commonmark.ext.autolink AutolinkExtension)
    (org.commonmark.node Node SourceSpan CustomBlock
                         Document Heading Paragraph Text
                         StrongEmphasis Emphasis Code
@@ -216,6 +217,7 @@
     (-> (Parser/builder)
         (.includeSourceSpans IncludeSourceSpans/BLOCKS_AND_INLINES)
         (.extensions [(TablesExtension/create)
+                      (AutolinkExtension/create)
                       (-> (FootnotesExtension/builder)
                           (.inlineFootnotes true)
                           (.build))])

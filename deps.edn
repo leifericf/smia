@@ -14,7 +14,11 @@
         net.sf.offo/fop-hyph       {:mvn/version "2.0"}
         org.commonmark/commonmark  {:mvn/version "0.24.0"}
         org.commonmark/commonmark-ext-gfm-tables {:mvn/version "0.24.0"}
-        org.commonmark/commonmark-ext-footnotes   {:mvn/version "0.24.0"}}
+        org.commonmark/commonmark-ext-footnotes   {:mvn/version "0.24.0"}
+        ;; Autolinks bare URLs (and www. hosts) so a citation's URL becomes a
+        ;; real link annotation carrying the full destination, instead of
+        ;; plain text a PDF viewer auto-detects and truncates at a line break.
+        org.commonmark/commonmark-ext-autolink    {:mvn/version "0.24.0"}}
 
  ;; Lets Clojure developers install Smia as a named tool straight from git:
  ;; `clojure -Ttools install io.github.leifericf/smia '{:git/tag "..." :git/sha "..."}' :as smia`
