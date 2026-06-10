@@ -448,14 +448,43 @@
         (is (every? #(= "center center" (:background-position (second %))) bodies))
         (is (every? #(= "no-repeat" (:background-repeat (second %))) bodies))))))
 
+(defn- master-named [masters nm]
+  (some #(when (and (vector? %) (= :fo/simple-page-master (first %))
+                    (= nm (:master-name (second %)))) %)
+        masters))
+
+(defn- svg-of [master]
+  (decode-bg (first (region-bodies [master]))))
+
+(defn- text-x [svg] (Double/parseDouble (second (re-find #"<text x=\"([0-9.]+)\"" svg))))
+(defn- svg-w  [svg] (Double/parseDouble (second (re-find #"width=\"([0-9.]+)pt\"" svg))))
+
 (deftest watermark-text-is-embedded-in-the-svg
   (let [masters (:masters (theme/compile-theme tokens :print {:watermark "BETA — Ada"}))
-        svg     (decode-bg (first (region-bodies masters)))]
+        svg     (svg-of (master-named masters "book-recto"))]
     (is (str/includes? svg "http://www.w3.org/2000/svg"))
     (is (str/includes? svg "BETA — Ada"))
-    (testing "sized to the trim (letter = 612x792pt) so it spans the page"
-      (is (str/includes? svg "612"))
-      (is (str/includes? svg "792")))))
+    (testing "sized to the body region (smaller than the full trim)"
+      (is (< (svg-w svg) 612.0)))))
+
+(deftest watermark-is-centred-on-the-physical-page
+  (testing "print: the binding-margin asymmetry shifts the text within each "
+    (let [masters (:masters (theme/compile-theme tokens :print {:watermark "BETA"}))
+          recto   (svg-of (master-named masters "book-recto"))
+          verso   (svg-of (master-named masters "book-verso"))]
+      ;; recto binds on the wider inside margin (30mm) so its body sits
+      ;; further right; centring on the page pulls the text left of the
+      ;; body's own centre, and verso mirrors it — so the two differ.
+      (is (not= (text-x recto) (text-x verso)))
+      ;; origin-x + text-x must land on the page centre (612/2 = 306) for both
+      (is (< (Math/abs (- (+ 85.0 (text-x recto)) 306.0)) 1.0)
+          "recto: 30mm inside margin + text-x ≈ page centre")
+      (is (< (Math/abs (- (+ 51.0 (text-x verso)) 306.0)) 1.0)
+          "verso: 18mm outside margin + text-x ≈ page centre")))
+  (testing "screen: symmetric margins put the text at its own canvas centre"
+    (let [masters (:masters (theme/compile-theme tokens :screen {:watermark "BETA"}))
+          svg     (svg-of (master-named masters "book-page"))]
+      (is (< (Math/abs (- (text-x svg) (/ (svg-w svg) 2.0))) 1.0)))))
 
 (deftest watermark-styling-tokens-flow-into-the-svg
   (let [toks    (assoc sparse :watermark {:color "#aa0000" :opacity 0.3})

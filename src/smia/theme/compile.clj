@@ -311,16 +311,22 @@
    [:fo/region-after  (cond-> {:extent footer} after-name  (assoc :region-name after-name))]])
 
 (defn- watermark-bg
-  "The body-region background attrs for a `wm` spec (`{:text :style}`) on a
-   page `width`×`height`, or empty when there is no watermark. The SVG is
-   sized to the trim and embedded as a `data:` URI, so it repeats behind the
-   text on every page that uses the master."
-  [wm width height]
+  "Background attrs painting the watermark behind the text on a body region
+   whose box is `region-w`×`region-h` (pt) with its top-left at (`origin-x`,
+   `origin-y`) on a `page-w`×`page-h` page. The SVG is sized to the region
+   (FOP anchors an oversized background at the region's top-left and clips
+   rather than centering it, so the canvas must match the region) and the
+   text is centred on the *page*, expressed in region-local coordinates —
+   keeping the mark page-centred despite the asymmetric binding margins.
+   Empty when there is no watermark."
+  [wm {:keys [region-w region-h origin-x origin-y page-w page-h]}]
   (if wm
     {:background-image    (watermark/background-image
                             (watermark/svg (merge {:text      (:text wm)
-                                                   :width-pt  (parse-pt width)
-                                                   :height-pt (parse-pt height)}
+                                                   :width-pt  region-w
+                                                   :height-pt region-h
+                                                   :cx-pt     (- (/ page-w 2.0) origin-x)
+                                                   :cy-pt     (- (/ page-h 2.0) origin-y)}
                                                   (:style wm))))
      :background-repeat   "no-repeat"
      :background-position "center center"}
@@ -338,7 +344,6 @@
    in a fixed order, for deterministic FO."
   [layout geometry wm]
   (let [{:keys [width height]} (page-dims geometry)
-        body-bg (watermark-bg wm width height)
         ;; Margins default to the classical canon, derived from the trim;
         ;; an explicit margin key in the theme wins for that key alone.
         canon   (canon-margins width (get geometry :text-coverage 2/3))
@@ -351,24 +356,37 @@
         footer  (get geometry :footer-extent "12mm")
         page    {:page-width width :page-height height
                  :margin-top mt :margin-bottom mb}
-        body    [:fo/region-body (merge {:margin-top header :margin-bottom footer}
-                                        body-bg)]
+        ;; The body region's box on the page (pt), so the watermark can be
+        ;; centred on the physical page. The body sits inside the page
+        ;; margins, then inset by its own header/footer margins; its left
+        ;; edge is the binding-side margin, which swaps recto/verso.
+        pw      (parse-pt width)  ph (parse-pt height)
+        top-pt  (+ (parse-pt mt) (parse-pt header))
+        rh      (- ph (parse-pt mt) (parse-pt mb) (parse-pt header) (parse-pt footer))
+        box     (fn [left right] {:region-w (- pw (parse-pt left) (parse-pt right))
+                                  :region-h rh :origin-x (parse-pt left) :origin-y top-pt
+                                  :page-w pw :page-h ph})
+        body-of (fn [body-bg]
+                  [:fo/region-body (merge {:margin-top header :margin-bottom footer}
+                                          body-bg)])
         alt     (fn [ref conditions]
                   [:fo/conditional-page-master-reference
                    (assoc conditions :master-reference ref)])]
     (if (= layout :print)
-      (let [recto (assoc page :margin-left inside :margin-right outside)
-            verso (assoc page :margin-left outside :margin-right inside)]
+      (let [recto    (assoc page :margin-left inside :margin-right outside)
+            verso    (assoc page :margin-left outside :margin-right inside)
+            recto-bg (watermark-bg wm (box inside outside))
+            verso-bg (watermark-bg wm (box outside inside))]
         [(into [:fo/simple-page-master (assoc recto :master-name "book-recto")]
-               (regions header footer "head-recto" "foot-recto" body-bg))
+               (regions header footer "head-recto" "foot-recto" recto-bg))
          (into [:fo/simple-page-master (assoc verso :master-name "book-verso")]
-               (regions header footer "head-verso" "foot-verso" body-bg))
+               (regions header footer "head-verso" "foot-verso" verso-bg))
          [:fo/simple-page-master (assoc recto :master-name "book-first-recto")
-          body [:fo/region-after {:extent footer :region-name "foot-recto"}]]
+          (body-of recto-bg) [:fo/region-after {:extent footer :region-name "foot-recto"}]]
          [:fo/simple-page-master (assoc verso :master-name "book-first-verso")
-          body [:fo/region-after {:extent footer :region-name "foot-verso"}]]
+          (body-of verso-bg) [:fo/region-after {:extent footer :region-name "foot-verso"}]]
          [:fo/simple-page-master (assoc verso :master-name "book-blank")
-          body]
+          (body-of verso-bg)]
          [:fo/page-sequence-master {:master-name "book"}
           [:fo/repeatable-page-master-alternatives
            (alt "book-blank"       {:blank-or-not-blank "blank"})
@@ -376,11 +394,12 @@
            (alt "book-first-verso" {:page-position "first" :odd-or-even "even"})
            (alt "book-recto"       {:odd-or-even "odd"})
            (alt "book-verso"       {:odd-or-even "even"})]]])
-      (let [sym (assoc page :margin-left side :margin-right side)]
+      (let [sym    (assoc page :margin-left side :margin-right side)
+            sym-bg (watermark-bg wm (box side side))]
         [(into [:fo/simple-page-master (assoc sym :master-name "book-page")]
-               (regions header footer nil nil body-bg))
+               (regions header footer nil nil sym-bg))
          [:fo/simple-page-master (assoc sym :master-name "book-first")
-          body [:fo/region-after {:extent footer}]]
+          (body-of sym-bg) [:fo/region-after {:extent footer}]]
          [:fo/page-sequence-master {:master-name "book"}
           [:fo/repeatable-page-master-alternatives
            (alt "book-first" {:page-position "first"})

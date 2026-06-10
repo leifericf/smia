@@ -41,15 +41,20 @@
     (-> s (str/replace #"0+$" "") (str/replace #"\.$" ""))))
 
 (defn svg
-  "The watermark SVG XML string for a page `width-pt` × `height-pt` (points).
-   `:text` is the watermark line; `:color`, `:opacity`, and `:angle` override
-   the styling `defaults`; `:font-size` (pt) overrides the auto-fit size."
-  [{:keys [text width-pt height-pt color opacity angle font-size]}]
+  "The watermark SVG XML string for a canvas `width-pt` × `height-pt`
+   (points). `:text` is the watermark line; `:color`, `:opacity`, and
+   `:angle` override the styling `defaults`; `:font-size` (pt) overrides the
+   auto-fit size. `:cx-pt`/`:cy-pt` place the (rotated) text's centre within
+   the canvas — defaulting to the canvas centre. The body region this paints
+   is offset from the physical page by asymmetric margins, so the caller
+   passes the page centre in canvas-local coordinates to keep the mark
+   centred on the page rather than on the text block."
+  [{:keys [text width-pt height-pt color opacity angle font-size cx-pt cy-pt]}]
   (let [color   (or color (:color defaults))
         opacity (if (nil? opacity) (:opacity defaults) opacity)
         angle   (if (nil? angle) (:angle defaults) angle)
-        cx (/ width-pt 2.0)
-        cy (/ height-pt 2.0)
+        cx (if (nil? cx-pt) (/ width-pt 2.0) cx-pt)
+        cy (if (nil? cy-pt) (/ height-pt 2.0) cy-pt)
         fs (or font-size (fitted-font-size text width-pt height-pt))]
     (str "<svg xmlns=\"http://www.w3.org/2000/svg\""
          " width=\"" (fmt width-pt) "pt\" height=\"" (fmt height-pt) "pt\""
