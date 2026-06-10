@@ -274,6 +274,20 @@
                            {:book/title "T" :book/chapters []
                             :book/references "refs.edn"})))))))
 
+(deftest draft-is-normalized-onto-the-manuscript
+  (testing ":book/draft true surfaces as a canonical draft map"
+    (let [m (load/load-manuscript "." {:book/title "T" :book/chapters []
+                                       :book/draft true})]
+      (is (= "BETA" (-> m :draft :watermark)))
+      (is (string? (-> m :draft :notice)))))
+  (testing "a draft map overrides per key"
+    (let [m (load/load-manuscript "." {:book/title "T" :book/chapters []
+                                       :book/draft {:watermark "DRAFT"}})]
+      (is (= "DRAFT" (-> m :draft :watermark)))))
+  (testing "no :book/draft leaves :draft nil"
+    (is (nil? (:draft (load/load-manuscript
+                        "." {:book/title "T" :book/chapters []}))))))
+
 (deftest include-must-name-a-regular-file
   (testing "a blank include path is rejected"
     (let [dir (tmp-book "inc-blank")]

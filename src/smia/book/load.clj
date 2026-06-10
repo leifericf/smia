@@ -17,6 +17,7 @@
    overrides both."
   (:require
    [smia.book.datatable :as datatable]
+   [smia.book.draft :as draft]
    [smia.book.structure :as structure]
    [smia.error :as error]
    [smia.md.compile :as md-compile]
@@ -93,6 +94,7 @@
       :credit        (:book/credit config)
       :author        (:book/author config)
       :language      (:book/language config)
+      :draft         (draft/normalize (:book/draft config))
       :numbering     numbering
       :running-heads (:book/running-heads config)
       :references    (load-references book-root config)
