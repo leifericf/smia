@@ -84,6 +84,28 @@
                                                :toggle-color-scheme)}
      (dictionary/localize (:language ctx) :toggle-color-scheme)]))
 
+(defn draft-watermark
+  "The beta-review watermark, when the build is marked `:draft`. A single
+   faint, click-through line of text the stylesheet fixes diagonally across
+   the viewport, so it rides over every page exactly like the PDF's
+   per-page background. `aria-hidden` keeps it out of the reading order."
+  [ctx]
+  (when-let [draft (:draft ctx)]
+    [:div {:class "draft-watermark" :aria-hidden "true"}
+     (:watermark draft)]))
+
+(defn draft-banner
+  "The beta-review cover banner, when the build is marked `:draft`: a clear
+   notice bar declaring the copy a review draft — the visible half of the
+   marking, mirroring the PDF cover notice."
+  [ctx]
+  (when-let [draft (:draft ctx)]
+    [:div {:class "draft-banner" :role "note"}
+     (when-let [label (:label draft)]
+       [:strong {:class "draft-banner-label"} label])
+     (when-let [notice (:notice draft)]
+       [:span {:class "draft-banner-text"} notice])]))
+
 (defn reader-script
   "The reader-preferences island's script tag, when the controls are on.
    Like the dark-toggle script it is NOT deferred: it runs in `<head>`

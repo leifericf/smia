@@ -51,6 +51,40 @@
                 (:href (second %)))
              (tree-seq vector? seq tree))))
 
+(defn- by-class [tree cls]
+  (nodes tree #(= cls (:class (second %)))))
+
+;; --- beta-review draft marking -----------------------------------------------
+
+(def ^:private draft-book
+  (assoc book :draft {:label "Beta"
+                      :notice "Confidential review copy. Not for distribution."
+                      :watermark "BETA"}))
+
+(deftest draft-watermark-rides-every-page
+  (let [res (html-assemble/assemble draft-book {})]
+    (testing "every page carries the click-through watermark element"
+      (doseq [p (:pages res)]
+        (let [wm (by-class (:hiccup p) "draft-watermark")]
+          (is (= 1 (count wm)) (str (:file p) " has one watermark"))
+          (is (.contains (apply str (filter string? (tree-seq vector? seq (first wm))))
+                         "BETA")))))))
+
+(deftest draft-banner-leads-the-cover
+  (let [res  (html-assemble/assemble draft-book {})
+        home (:hiccup (page-in res "index.html"))]
+    (testing "the home/cover page shows the clear notice banner"
+      (let [banner (by-class home "draft-banner")]
+        (is (= 1 (count banner)))
+        (is (.contains (apply str (filter string? (tree-seq vector? seq (first banner))))
+                       "Confidential review copy. Not for distribution."))))))
+
+(deftest no-draft-leaves-no-marks
+  (testing "a final book carries neither watermark nor banner on any page"
+    (doseq [p (:pages result)]
+      (is (empty? (by-class (:hiccup p) "draft-watermark")))
+      (is (empty? (by-class (:hiccup p) "draft-banner"))))))
+
 (deftest page-set-has-home-chapters-and-back-matter-in-order
   (is (= ["index.html" "preface.html" "chapter-01.html" "chapter-02.html"
           "bibliography.html" "book-index.html" "list-of-figures.html"]

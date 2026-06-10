@@ -75,6 +75,7 @@
   [book opts contents home-loc search-sp]
   {:book-title (:title book)
    :author     (:author book)
+   :draft       (:draft book)
    :contents   contents
    :home-loc   home-loc
    :home-url   (:url home-loc)
@@ -577,6 +578,7 @@
                  (chrome/mermaid-scripts ctx)))
    (into [:body {}]
          (concat
+           (when-let [w (chrome/draft-watermark ctx)] [w])
            (when-let [p (chrome/reading-progress ctx)] [p])
            (when-let [b (chrome/theme-toggle ctx)] [b])
            (when-let [c (chrome/reader-controls ctx)] [c])
@@ -617,7 +619,12 @@
         toc?    (get chrome :home-toc? true)
         main    (cond-> [(book-header book (not toc?))]
                   toc?
-                  (conj (toc-nav contents href-to (:language base-ctx))))]
+                  (conj (toc-nav contents href-to (:language base-ctx))))
+        ;; the beta-review cover banner leads the landing, mirroring the
+        ;; PDF cover notice; nil (and so dropped) when the book is final
+        main    (cond->> main
+                  (chrome/draft-banner base-ctx)
+                  (into [(chrome/draft-banner base-ctx)]))]
     (assoc spec :hiccup
            (wrap-page chrome ctx (:title book) main))))
 

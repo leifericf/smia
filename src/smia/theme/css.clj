@@ -603,6 +603,38 @@
    [".downloads ul" {:list-style "none" :padding-left "0"}]
    [".downloads li" {:margin "0 0 4pt"}]])
 
+(defn- draft-rules
+  "The beta-review marking: a faint, click-through diagonal watermark fixed
+   across the viewport (the web mirror of the PDF's per-page background) and
+   a clear cover banner. Emitted only for a draft build, so a final book's
+   stylesheet is byte-identical."
+  [{:keys [block muted rule panel head-family]}]
+  [[".draft-watermark" {:position       "fixed"
+                        :top            "50%"
+                        :left           "50%"
+                        :transform      "translate(-50%, -50%) rotate(-30deg)"
+                        :font-family    head-family
+                        :font-size      "20vw"
+                        :font-weight    "700"
+                        :letter-spacing "0.1em"
+                        :color          muted
+                        :opacity        "0.08"
+                        :white-space    "nowrap"
+                        :pointer-events "none"
+                        :user-select    "none"
+                        :z-index        "9999"}]
+   [".draft-banner" {:display       "block"
+                     :margin        (str "0 0 " block)
+                     :padding       "8pt 12pt"
+                     :border        (str "1px solid " rule)
+                     :background    panel
+                     :text-align    "center"
+                     :font-size     "0.9em"}]
+   [".draft-banner-label" {:text-transform "uppercase"
+                           :letter-spacing "0.12em"
+                           :margin-right   "0.5em"}]
+   [".draft-banner-text" {:color muted}]])
+
 (defn- search-rules
   "The search island (opt-in; these rules are inert without it)."
   [{:keys [rule bg var-or muted head-family code-bg]}]
@@ -868,7 +900,7 @@
    `html[data-theme=…]` overrides the toggle island flips, and the button
    style."
   ([tokens] (compile-css tokens {}))
-  ([tokens {:keys [dark? toggle? reader? keyboard?] :as opts}]
+  ([tokens {:keys [dark? toggle? reader? keyboard? draft?] :as opts}]
    (let [{:keys [light palette vars? measure tokens] :as ctx}
          (style-context tokens opts)]
      (vec
@@ -910,6 +942,7 @@
          (when reader? (reader-control-rules ctx))
 
          (when keyboard? (kbd-help-rules ctx))
+         (when draft? (draft-rules ctx))
          (when dark? svg-invert-rules)
 
          ;; the theme's :css styling hatch, last so user rules win

@@ -104,6 +104,7 @@
    (head ctx title)
    (into [:body {}]
          (concat
+           (when-let [w (chrome/draft-watermark ctx)] [w])
            (when-let [p (chrome/reading-progress ctx)] [p])
            (when-let [b (chrome/theme-toggle ctx)] [b])
            (when-let [c (chrome/reader-controls ctx)] [c])

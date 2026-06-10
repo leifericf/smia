@@ -180,7 +180,8 @@
          page-map (into {"styles.css" (css/css tokens {:dark?     dark?
                                                        :toggle?   theme-blocks?
                                                        :reader?   reader?
-                                                       :keyboard? keyboard?})}
+                                                       :keyboard? keyboard?
+                                                       :draft?    (boolean (:draft book))})}
                         (map (fn [{:keys [file hiccup]}]
                                [file (html-serialize/serialize
                                        hiccup {:doctype? true})])

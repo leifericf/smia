@@ -421,3 +421,21 @@
       (is (str/includes? (:transition btn) "0.15s")))
     (testing "with a hover state"
       (is (= "var(--ink)" (:color (rule rules ".theme-toggle:hover")))))))
+
+(deftest draft-stylesheet-adds-watermark-and-banner
+  (let [rules (css/compile-css tokens {:draft? true})
+        wm    (rule rules ".draft-watermark")
+        bn    (rule rules ".draft-banner")]
+    (testing "the watermark is fixed, faint, and click-through"
+      (is (= "fixed" (:position wm)))
+      (is (= "none" (:pointer-events wm)))
+      (is (str/includes? (:transform wm) "rotate"))
+      (is (= "0.08" (:opacity wm))))
+    (testing "the cover banner is a bordered notice bar"
+      (is (some? bn))
+      (is (str/includes? (:border bn) "solid")))))
+
+(deftest final-stylesheet-omits-draft-rules
+  (testing "without :draft? the stylesheet is byte-identical to before"
+    (is (= (css/css tokens {}) (css/css tokens {:draft? false})))
+    (is (not (str/includes? (css/css tokens {}) ".draft-watermark")))))
