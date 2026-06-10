@@ -539,10 +539,22 @@
           toks)
     [text]))
 
+(defn- code-keep
+  "Keep-together for a code block short enough to sit on one page, so a
+   short listing slides to the next page whole instead of stranding a line
+   or two across a break. A longer listing drops the keep so FOP may split
+   it, with the line-number gutter as the continuity cue. The threshold is
+   the theme's `:listing-keep-lines`."
+  [line-count style]
+  (when (<= line-count (get style :listing-keep-lines 25))
+    {:keep-together.within-page "always"}))
+
 (defn- code-block [author children style]
-  (into [:fo/block (cond-> (get style :pre)
-                     (:id author) (assoc :id (hiccup/as-id (:id author))))]
-        (code-content (:lang author) (hiccup/code-text children) style)))
+  (let [text (hiccup/code-text children)]
+    (into [:fo/block (cond-> (merge (get style :pre)
+                                    (code-keep (count (str/split text #"\n" -1)) style))
+                       (:id author) (assoc :id (hiccup/as-id (:id author))))]
+          (code-content (:lang author) text style))))
 
 (defn- annotation-mark
   "A small theme-styled badge carrying an annotation's ordinal `n`. The same
@@ -569,7 +581,8 @@
   [author lines style gutter? marks]
   (let [width (count (str (count lines)))
         lang  (:lang author)]
-    (into [:fo/block (cond-> (get style :pre)
+    (into [:fo/block (cond-> (merge (get style :pre)
+                                    (code-keep (count lines) style))
                        (:id author) (assoc :id (hiccup/as-id (:id author))))]
           (map-indexed
             (fn [i line]

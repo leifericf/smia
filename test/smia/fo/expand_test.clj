@@ -412,8 +412,9 @@
     (is (some #(= "core.clj" (last %)) (filter vector? (tree-seq vector? seq out)))
         "the filename header bar")
     (is (some #(= "Listing 1. " (last %)) (filter vector? (tree-seq vector? seq out))))
-    (testing "a plain code block (no file/caption) is unchanged"
-      (is (= [:fo/block (get expand/default-style :pre) "code"]
+    (testing "a plain code block (no file/caption) keeps together when short"
+      (is (= [:fo/block (merge (get expand/default-style :pre)
+                               {:keep-together.within-page "always"}) "code"]
              (ex [:pre {:line-numbers false} "code"]))))))
 
 (deftest annotated-listing-marks-lines-and-emits-a-bound-list
@@ -465,7 +466,8 @@
               (tree-seq vector? seq out))
         "the keyword 'defn' is colored")
     (testing "highlighting off leaves a single plain string child"
-      (is (= [:fo/block (get expand/default-style :pre) "(defn f \"s\")"]
+      (is (= [:fo/block (merge (get expand/default-style :pre)
+                               {:keep-together.within-page "always"}) "(defn f \"s\")"]
              (expand/expand [:pre {:lang :clojure :line-numbers false} "(defn f \"s\")"]
                             expand/default-style))))))
 
@@ -490,12 +492,14 @@
       (is (some #(str/starts-with? (str %) "1") nums))
       (is (some #(str/starts-with? (str %) "3") nums))))
   (testing "{:line-numbers false} on the listing suppresses the gutter"
-    (is (= [:fo/block (get expand/default-style :pre) "a\nb\nc"]
+    (is (= [:fo/block (merge (get expand/default-style :pre)
+                             {:keep-together.within-page "always"}) "a\nb\nc"]
            (expand/expand [:pre {:lang :clojure :line-numbers false} "a\nb\nc"]
                           expand/default-style))))
   (testing "a theme default of :line-numbers? false opts out globally"
     (let [style (assoc expand/default-style :line-numbers? false)]
-      (is (= [:fo/block (get style :pre) "a\nb\nc"]
+      (is (= [:fo/block (merge (get style :pre)
+                               {:keep-together.within-page "always"}) "a\nb\nc"]
              (expand/expand [:pre {:lang :clojure} "a\nb\nc"] style)))))
   (testing "an explicit :line-numbers true overrides a theme opt-out"
     (let [style (assoc expand/default-style :line-numbers? false)
