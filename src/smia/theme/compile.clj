@@ -11,7 +11,8 @@
    edition's descriptor names the layout it renders with. No IO."
   (:require
    [smia.error :as error]
-   [smia.fo.expand :as expand]))
+   [smia.fo.expand :as expand]
+   [smia.fo.watermark :as watermark]))
 
 (def page-sizes
   "Trim sizes by name (width x height)."
@@ -25,18 +26,30 @@
   {:keyword "#0033cc" :string "#008800" :comment "#888888"
    :number  "#aa5500" :literal "#7700aa"})
 
-(declare style-from-tokens fo-overrides seed-p-first page-dims regions masters
-         running-regions canon-margins heading-rhythm checked-rhythm
-         checked-count leading-pt fmt-pt)
+(declare compile-theme* style-from-tokens fo-overrides seed-p-first page-dims
+         regions masters running-regions canon-margins heading-rhythm
+         checked-rhythm checked-count leading-pt fmt-pt parse-pt)
 
 (defn compile-theme
   "Compile validated `tokens` and a page `layout` (`:screen` or
    `:print`) into `{:layout :style :master-reference :masters
    :link-color :rule-color :muted-color :chapter-drop}`. The palette
    colors are surfaced for the assembled furniture (title page, TOC,
-   rules)."
-  [tokens layout]
-  (let [color (:color tokens)]
+   rules).
+
+   `opts` may carry `:watermark` — the beta-review watermark text. When
+   present, a page-sized SVG of that text (styled by the optional
+   `:watermark` token group) is stamped as the `background-image` of every
+   master's body region, so it rides behind the text on every page. Absent,
+   the FO output is byte-identical to before."
+  ([tokens layout] (compile-theme tokens layout {}))
+  ([tokens layout {:keys [watermark]}]
+   (compile-theme* tokens layout watermark)))
+
+(defn- compile-theme* [tokens layout watermark]
+  (let [color (:color tokens)
+        wm    (when (and watermark (seq watermark))
+                {:text watermark :style (get tokens :watermark)})]
     {:layout           layout
      :style            (-> (style-from-tokens tokens)
                            (fo-overrides (seed-p-first (:fo tokens)))
@@ -49,7 +62,7 @@
      :rule-color       (get color :rule "#999999")
      :muted-color      (get color :muted "#666666")
      :master-reference "book"
-     :masters          (masters layout (:layout tokens))
+     :masters          (masters layout (:layout tokens) wm)
      :running-regions  (running-regions layout)
      ;; The chapter drop: white space above a chapter opening's heading.
      ;; Deeper than a web heading would sit — the classical cue that a
@@ -289,11 +302,29 @@
 (defn- regions
   "Body, header, and footer regions. `before-name`/`after-name` give the
    header/footer regions explicit names so a page-sequence can target
-   distinct recto/verso running content; nil keeps the FO default names."
-  [header footer before-name after-name]
-  [[:fo/region-body {:margin-top header :margin-bottom footer}]
+   distinct recto/verso running content; nil keeps the FO default names.
+   `body-bg` is merged onto the body region (the beta-review watermark
+   background, or empty)."
+  [header footer before-name after-name body-bg]
+  [[:fo/region-body (merge {:margin-top header :margin-bottom footer} body-bg)]
    [:fo/region-before (cond-> {:extent header} before-name (assoc :region-name before-name))]
    [:fo/region-after  (cond-> {:extent footer} after-name  (assoc :region-name after-name))]])
+
+(defn- watermark-bg
+  "The body-region background attrs for a `wm` spec (`{:text :style}`) on a
+   page `width`×`height`, or empty when there is no watermark. The SVG is
+   sized to the trim and embedded as a `data:` URI, so it repeats behind the
+   text on every page that uses the master."
+  [wm width height]
+  (if wm
+    {:background-image    (watermark/background-image
+                            (watermark/svg (merge {:text      (:text wm)
+                                                   :width-pt  (parse-pt width)
+                                                   :height-pt (parse-pt height)}
+                                                  (:style wm))))
+     :background-repeat   "no-repeat"
+     :background-position "center center"}
+    {}))
 
 (defn- masters
   "Page-master fragments for the page `layout`, all reachable through the
@@ -305,8 +336,9 @@
    parity-inserted blank pages (`blank-or-not-blank`), so a forced verso
    renders truly empty. The alternatives are listed most specific first,
    in a fixed order, for deterministic FO."
-  [layout geometry]
+  [layout geometry wm]
   (let [{:keys [width height]} (page-dims geometry)
+        body-bg (watermark-bg wm width height)
         ;; Margins default to the classical canon, derived from the trim;
         ;; an explicit margin key in the theme wins for that key alone.
         canon   (canon-margins width (get geometry :text-coverage 2/3))
@@ -319,7 +351,8 @@
         footer  (get geometry :footer-extent "12mm")
         page    {:page-width width :page-height height
                  :margin-top mt :margin-bottom mb}
-        body    [:fo/region-body {:margin-top header :margin-bottom footer}]
+        body    [:fo/region-body (merge {:margin-top header :margin-bottom footer}
+                                        body-bg)]
         alt     (fn [ref conditions]
                   [:fo/conditional-page-master-reference
                    (assoc conditions :master-reference ref)])]
@@ -327,9 +360,9 @@
       (let [recto (assoc page :margin-left inside :margin-right outside)
             verso (assoc page :margin-left outside :margin-right inside)]
         [(into [:fo/simple-page-master (assoc recto :master-name "book-recto")]
-               (regions header footer "head-recto" "foot-recto"))
+               (regions header footer "head-recto" "foot-recto" body-bg))
          (into [:fo/simple-page-master (assoc verso :master-name "book-verso")]
-               (regions header footer "head-verso" "foot-verso"))
+               (regions header footer "head-verso" "foot-verso" body-bg))
          [:fo/simple-page-master (assoc recto :master-name "book-first-recto")
           body [:fo/region-after {:extent footer :region-name "foot-recto"}]]
          [:fo/simple-page-master (assoc verso :master-name "book-first-verso")
@@ -345,7 +378,7 @@
            (alt "book-verso"       {:odd-or-even "even"})]]])
       (let [sym (assoc page :margin-left side :margin-right side)]
         [(into [:fo/simple-page-master (assoc sym :master-name "book-page")]
-               (regions header footer nil nil))
+               (regions header footer nil nil body-bg))
          [:fo/simple-page-master (assoc sym :master-name "book-first")
           body [:fo/region-after {:extent footer}]]
          [:fo/page-sequence-master {:master-name "book"}

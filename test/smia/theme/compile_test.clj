@@ -1,7 +1,9 @@
 (ns smia.theme.compile-test
   (:require
    [smia.theme.compile :as theme]
-   [clojure.test :refer [deftest is testing]]))
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing]])
+  (:import (java.util Base64)))
 
 (def tokens
   {:color   {:text "#222222" :code-background "#eeeeee" :rule "#777777"}
@@ -415,3 +417,49 @@
     (is (= "serif" (-> style :body :font-family)))
     (is (= "210mm" (:page-width (second (first masters))))
         "defaults to A4 when no page-size token is given")))
+
+;; --- beta-review watermark ---------------------------------------------------
+
+(defn- region-bodies [masters]
+  (filter #(and (vector? %) (= :fo/region-body (first %)))
+          (tree-seq vector? seq (into [:masters] masters))))
+
+(defn- decode-bg [region-body]
+  (let [bg  (:background-image (second region-body))
+        uri (second (re-find #"data:image/svg\+xml;base64,([^')]+)" (str bg)))]
+    (when uri (String. (.decode (Base64/getDecoder) uri) "UTF-8"))))
+
+(deftest no-watermark-leaves-region-bodies-clean
+  (testing "default (no :watermark opt) sets no background on any master"
+    (doseq [layout [:print :screen]]
+      (let [masters (:masters (theme/compile-theme sparse layout))]
+        (is (every? #(nil? (:background-image (second %))) (region-bodies masters)))))))
+
+(deftest watermark-rides-every-region-body
+  (testing "with a :watermark, every master's body carries the SVG background"
+    (doseq [layout [:print :screen]]
+      (let [masters (:masters (theme/compile-theme sparse layout {:watermark "BETA"}))
+            bodies  (region-bodies masters)]
+        (is (seq bodies))
+        (is (every? #(str/starts-with? (str (:background-image (second %)))
+                                       "url('data:image/svg+xml;base64,")
+                    bodies)
+            "print covers recto/verso/first/blank; screen covers page/first")
+        (is (every? #(= "center center" (:background-position (second %))) bodies))
+        (is (every? #(= "no-repeat" (:background-repeat (second %))) bodies))))))
+
+(deftest watermark-text-is-embedded-in-the-svg
+  (let [masters (:masters (theme/compile-theme tokens :print {:watermark "BETA — Ada"}))
+        svg     (decode-bg (first (region-bodies masters)))]
+    (is (str/includes? svg "http://www.w3.org/2000/svg"))
+    (is (str/includes? svg "BETA — Ada"))
+    (testing "sized to the trim (letter = 612x792pt) so it spans the page"
+      (is (str/includes? svg "612"))
+      (is (str/includes? svg "792")))))
+
+(deftest watermark-styling-tokens-flow-into-the-svg
+  (let [toks    (assoc sparse :watermark {:color "#aa0000" :opacity 0.3})
+        masters (:masters (theme/compile-theme toks :screen {:watermark "REVIEW"}))
+        svg     (decode-bg (first (region-bodies masters)))]
+    (is (str/includes? svg "#aa0000"))
+    (is (str/includes? svg "fill-opacity=\"0.3\""))))
