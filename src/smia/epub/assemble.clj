@@ -46,13 +46,21 @@
 
 (defn- page-wrap
   "Reader chrome: EPUB readers supply navigation, so a page is just its
-   titled, styled content."
-  [_ctx title main]
-  [:html
-   [:head
-    [:title {} title]
-    [:link {:rel "stylesheet" :type "text/css" :href "styles.css"}]]
-   [:body {} (into [:main {}] main)]])
+   titled, styled content.
+
+   A reflowable EPUB has no fixed page viewport, so it cannot carry the
+   PDF/HTML diagonal per-page watermark. A draft build instead leads each
+   content page with a small `draft-note` line; the cover/home page carries
+   the full notice banner (emitted by the shared HTML assembler)."
+  [ctx title main]
+  (let [note (when-let [draft (:draft ctx)]
+               (when (not= :home (:kind (:page ctx)))
+                 [:p {:class "draft-note" :role "note"} (:label draft)]))]
+    [:html
+     [:head
+      [:title {} title]
+      [:link {:rel "stylesheet" :type "text/css" :href "styles.css"}]]
+     [:body {} (into [:main {}] (if note (cons note main) main))]]))
 
 (def ^:private chrome
   {:page-wrap page-wrap
@@ -96,7 +104,7 @@
                                          (or language (:language book)))}
         css-entry     {:path    "OEBPS/styles.css"
                        :id      "css"
-                       :content (css/css tokens)}
+                       :content (css/css tokens {:draft? (boolean (:draft book))})}
         manifest      (concat [nav-entry css-entry] page-entries image-entries)
         opf           {:path    "OEBPS/content.opf"
                        :content (package-doc book

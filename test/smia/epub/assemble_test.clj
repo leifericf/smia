@@ -33,6 +33,36 @@
 (defn- entry [path]
   (first (filter #(= path (:path %)) entries)))
 
+;; --- beta-review draft marking -----------------------------------------------
+
+(def ^:private draft-result
+  (epub/assemble (assoc book :draft {:label "Beta"
+                                     :notice "Confidential review copy."
+                                     :watermark "BETA"})
+                 tokens {:identifier "urn:smia:the-book"}))
+
+(defn- draft-entry [path]
+  (first (filter #(= path (:path %)) (:entries draft-result))))
+
+(deftest draft-cover-page-carries-the-notice-banner
+  (let [home (:content (draft-entry "OEBPS/index.xhtml"))]
+    (is (str/includes? home "draft-banner"))
+    (is (str/includes? home "Confidential review copy."))))
+
+(deftest draft-content-pages-carry-a-per-chapter-note
+  (testing "reflowable EPUB shows a small per-chapter draft line, not a watermark"
+    (let [ch (:content (draft-entry "OEBPS/chapter-01.xhtml"))]
+      (is (str/includes? ch "draft-note"))
+      (is (str/includes? ch "Beta")))))
+
+(deftest draft-stylesheet-styles-the-note
+  (is (str/includes? (:content (draft-entry "OEBPS/styles.css")) ".draft-note")))
+
+(deftest no-draft-epub-is-unmarked
+  (is (not (str/includes? (:content (entry "OEBPS/index.xhtml")) "draft-banner")))
+  (is (not (str/includes? (:content (entry "OEBPS/chapter-01.xhtml")) "draft-note")))
+  (is (not (str/includes? (:content (entry "OEBPS/styles.css")) ".draft-note"))))
+
 (deftest mimetype-is-first-stored-and-exact
   (let [m (first entries)]
     (is (= "mimetype" (:path m)))

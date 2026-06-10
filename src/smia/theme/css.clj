@@ -633,7 +633,16 @@
    [".draft-banner-label" {:text-transform "uppercase"
                            :letter-spacing "0.12em"
                            :margin-right   "0.5em"}]
-   [".draft-banner-text" {:color muted}]])
+   [".draft-banner-text" {:color muted}]
+   ;; reflowable EPUB has no fixed viewport, so it shows a small per-chapter
+   ;; note instead of the diagonal watermark.
+   [".draft-note" {:margin         (str "0 0 " block)
+                   :font-family    head-family
+                   :font-size      "0.75em"
+                   :text-transform "uppercase"
+                   :letter-spacing "0.12em"
+                   :text-align     "center"
+                   :color          muted}]])
 
 (defn- search-rules
   "The search island (opt-in; these rules are inert without it)."
