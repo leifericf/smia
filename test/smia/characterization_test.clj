@@ -156,6 +156,64 @@
       (is (not (str/includes? (slurp (io/file site-dir "index.html"))
                               "Licensed to"))))))
 
+;; --- beta-review draft marking ----------------------------------------------
+
+(def ^:private tiny-root "test/fixtures/synthetic/valid-book")
+
+(defn- copy-tree! [^java.io.File src ^java.io.File dst]
+  (.mkdirs dst)
+  (doseq [^java.io.File f (.listFiles src)]
+    (let [d (io/file dst (.getName f))]
+      (if (.isDirectory f) (copy-tree! f d) (io/copy f d)))))
+
+(defn- draft-book!
+  "Copy the tiny synthetic book to a fresh dir, splice `draft` in as
+   `:book/draft` (or leave it off when nil), and return the dir path."
+  [draft]
+  (let [dir    (io/file (out-root))
+        config (read-string (slurp (io/file tiny-root "book.edn")))]
+    (copy-tree! (io/file tiny-root) dir)
+    (spit (io/file dir "book.edn")
+          (pr-str (cond-> config draft (assoc :book/draft draft))))
+    (.getPath dir)))
+
+(defn- pages-with [doc re]
+  (count (for [i (range 1 (inc (.getNumberOfPages doc)))
+               :let [s (doto (PDFTextStripper.) (.setStartPage i) (.setEndPage i))]
+               :when (re-find re (.getText s doc))]
+           i)))
+
+(deftest ^:integration draft-marks-every-page-and-the-cover
+  (let [man (api/build {:book-root (draft-book! {:label "Beta"
+                                                 :notice "Confidential review copy."
+                                                 :watermark "BETA"})
+                        :editions [:print] :output-root (out-root)})]
+    (with-open [doc (Loader/loadPDF (io/file (artifact-path man :print)))]
+      (testing "the watermark rides behind text on every page"
+        (is (> (.getNumberOfPages doc) 1))
+        (is (= (.getNumberOfPages doc) (pages-with doc #"BETA"))
+            "BETA appears on every page, the title page included"))
+      (testing "the cover carries the clear notice"
+        (is (str/includes? (.getText (PDFTextStripper.) doc)
+                           "Confidential review copy."))))))
+
+(deftest ^:integration draft-watermark-names-the-licensee
+  (let [man (api/build {:book-root (draft-book! true)
+                        :editions [:print]
+                        :licensee "Ada Lovelace"
+                        :output-root (out-root)})]
+    (with-open [doc (Loader/loadPDF (io/file (artifact-path man :print)))]
+      (testing "the woven-in licensee makes a leaked copy traceable"
+        (is (pos? (pages-with doc #"Ada Lovelace")))))))
+
+(deftest ^:integration no-draft-is-byte-clean
+  (let [man (api/build {:book-root (draft-book! nil)
+                        :editions [:print] :output-root (out-root)})]
+    (with-open [doc (Loader/loadPDF (io/file (artifact-path man :print)))]
+      (let [text (.getText (PDFTextStripper.) doc)]
+        (is (zero? (pages-with doc #"BETA")))
+        (is (not (str/includes? text "Confidential review copy")))))))
+
 (deftest ^:integration manual-epub-is-byte-reproducible
   (testing "two EPUB builds of the same manuscript are identical bytes"
     (let [a (artifact-path (build! [:epub]) :epub)

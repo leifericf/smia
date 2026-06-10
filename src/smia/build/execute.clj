@@ -13,6 +13,7 @@
    [smia.book.attrs :as attrs]
    [smia.book.conditional :as conditional]
    [smia.book.config :as config]
+   [smia.book.draft :as draft]
    [smia.book.linkcheck :as linkcheck]
    [smia.book.load :as book-load]
    [smia.book.number :as number]
@@ -280,7 +281,12 @@
    `:print-x` descriptor additionally turns on PDF/X conformance. Writes
    the intermediate FO and the final PDF; returns the artifact entry."
   [{:keys [book-root book tokens config licensee]} {:keys [edition fo-path pdf-path]} descriptor]
-  (let [the-theme (cond-> (theme-compile/compile-theme tokens (:layout descriptor))
+  (let [;; A beta-review build stamps an unobtrusive watermark behind the
+        ;; text on every page; the licensee (if any) is woven in so a leaked
+        ;; PDF is traceable. The cover notice is emitted by the assembler.
+        watermark (draft/watermark-text (:draft book) licensee)
+        the-theme (cond-> (theme-compile/compile-theme tokens (:layout descriptor)
+                                                       {:watermark watermark})
                     ;; PDF/X forbids link annotations: render references
                     ;; as text and let the page citations locate them.
                     (:pdf-x descriptor) (-> (assoc :links? false)
