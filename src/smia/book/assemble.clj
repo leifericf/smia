@@ -12,6 +12,7 @@
    earlier, by the numbering pass (`book.number`), so assembly may assume
    every `:xref`/`:cite` is already labelled. No IO."
   (:require
+   [smia.book.draft :as draft]
    [smia.book.structure :as structure]
    [clojure.string :as str]))
 
@@ -62,7 +63,8 @@
                     :running-heads (merge-with merge default-running-heads
                                                (:running-heads book))
                     :licensee      (:licensee book)
-                    :draft         (:draft book)}
+                    :draft         (:draft book)
+                    :build-stamp   (:build-stamp book)}
         body-style (get style :body)]
     (into [:fo/root (merge {:font-family (:font-family body-style)
                             :font-size   (:font-size body-style)
@@ -279,28 +281,47 @@
                 :leader-length.maximum  "100%"}]
    [:fo/page-number-citation {:ref-id id}]])
 
+(defn- stamp-inlines
+  "The inline children of a beta build-stamp line for a captured
+   `build-stamp` (or nil when there is none): the timestamp, then the
+   book's short SHA in a monospace face after a middot. `labeled?` prefixes
+   \"Build \" for the prominent cover line; the bare form is the discreet
+   per-page header. The SHA is dropped when the build root is not a git
+   checkout, leaving just the timestamp."
+  [build-stamp labeled?]
+  (when-let [at (:built-at build-stamp)]
+    (let [sha (some-> (:sha build-stamp) str/trim not-empty)]
+      (cond-> [(str (when labeled? "Build ") at)]
+        sha (conj " · " [:fo/inline {:font-family "monospace"} sha])))))
+
 (defn- cover-notice
   "The beta-review notice for the title page: a bordered, centered box
    declaring the copy a review draft. Present only when the build is
    marked `:draft`, so it is the visible, unmistakable half of the
    marking (the watermark is the unobtrusive half). Names the `licensee`
-   when one is set, so a per-reviewer cover is identifiable too. Nil when
-   the book is not a draft."
-  [{:keys [draft licensee]} rule-color muted-color]
+   when one is set, and stamps the build (date-time + short SHA) below it,
+   so a per-reviewer cover is identifiable and traceable to an exact
+   source build. Nil when the book is not a draft."
+  [{:keys [draft licensee build-stamp]} rule-color muted-color]
   (when draft
-    (into [:fo/block {:border (str "1pt solid " rule-color)
-                      :padding "10pt" :space-before "48pt"
-                      :text-align "center"}]
-          (concat
-            (when-let [label (:label draft)]
-              [[:fo/block {:font-weight "bold" :font-size "11pt"
-                           :text-transform "uppercase" :letter-spacing "0.12em"
-                           :space-after "5pt"} label]])
-            (when-let [notice (:notice draft)]
-              [[:fo/block {:font-size "10pt" :color muted-color} notice]])
-            (when licensee
-              [[:fo/block {:font-size "9pt" :color muted-color :space-before "5pt"}
-                (str "Prepared for " licensee)]])))))
+    (let [stamp (stamp-inlines build-stamp true)]
+      (into [:fo/block {:border (str "1pt solid " rule-color)
+                        :padding "10pt" :space-before "48pt"
+                        :text-align "center"}]
+            (concat
+              (when-let [label (:label draft)]
+                [[:fo/block {:font-weight "bold" :font-size "11pt"
+                             :text-transform "uppercase" :letter-spacing "0.12em"
+                             :space-after "5pt"} label]])
+              (when-let [notice (:notice draft)]
+                [[:fo/block {:font-size "10pt" :color muted-color} notice]])
+              (when licensee
+                [[:fo/block {:font-size "9pt" :color muted-color :space-before "5pt"}
+                  (str "Prepared for " licensee)]])
+              (when stamp
+                [(into [:fo/block {:font-size "9pt" :color muted-color
+                                   :space-before (if licensee "2pt" "5pt")}]
+                       stamp)]))))))
 
 (defn- title-page [title subtitle credit author head-family muted-color notice]
   (cond-> [:fo/block {:text-align "center" :space-before "108pt"
@@ -362,18 +383,31 @@
               :space-before "2pt"}
    (str "Licensed to " licensee)])
 
+(defn- stamp-header-block
+  "The discreet centered beta build stamp at the top of a header region: a
+   small, muted line carrying the date-time and short SHA, so every page of
+   a review copy is traceable to an exact source build."
+  [stamp-inlines muted-color]
+  (into [:fo/block {:text-align "center" :font-size "7pt" :color muted-color
+                    :space-after "3pt"}]
+        stamp-inlines))
+
 (defn- static-contents
   "The `fo:static-content` for every running region the theme declares,
    choosing each region's content from the running-heads config. With
    `headers?` false (front matter, part dividers) only footers are emitted.
-   When a `licensee` is set, each footer also carries the licensee notice."
-  [{:keys [theme running-heads book-title headers? licensee]}]
-  (let [{:keys [running-regions muted-color]} theme]
+   When a `licensee` is set, each footer also carries the licensee notice.
+   On a beta build, each header region opens with the discreet build stamp."
+  [{:keys [theme running-heads book-title headers? licensee draft build-stamp]}]
+  (let [{:keys [running-regions muted-color]} theme
+        stamp-inl (when (and draft headers?) (stamp-inlines build-stamp false))]
     (keep (fn [{:keys [slot name parity]}]
             (let [cfg-slot (when (or headers? (= slot :after))
                              (get-in running-heads [(parity-key parity) slot]))
                   inline   (slot->inline cfg-slot book-title)
                   blocks   (cond-> []
+                             (and (= slot :before) stamp-inl)
+                             (conj (stamp-header-block stamp-inl muted-color))
                              inline
                              (conj (region-block slot parity inline theme))
                              (and (= slot :after) licensee)

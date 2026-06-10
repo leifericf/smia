@@ -45,3 +45,21 @@
 (deftest notice-text-reads-the-notice-slot
   (is (= "Hush." (draft/notice-text (draft/normalize {:notice "Hush."}))))
   (is (nil? (draft/notice-text nil))))
+
+(deftest stamp-line-nil-without-a-stamp
+  (testing "no stamp, or a stamp missing its timestamp, yields nil"
+    (is (nil? (draft/stamp-line nil true)))
+    (is (nil? (draft/stamp-line nil false)))
+    (is (nil? (draft/stamp-line {:sha "5d05bd7"} true)))))
+
+(deftest stamp-line-labeled-vs-bare
+  (let [stamp {:built-at "2026-06-10 18:05" :sha "5d05bd7"}]
+    (testing "the cover form is labeled \"Build\""
+      (is (= "Build 2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp true))))
+    (testing "the per-page form is bare"
+      (is (= "2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp false))))))
+
+(deftest stamp-line-drops-the-sha-when-absent
+  (testing "a non-git build keeps the timestamp and drops the middot+SHA"
+    (is (= "Build 2026-06-10 18:05" (draft/stamp-line {:built-at "2026-06-10 18:05"} true)))
+    (is (= "2026-06-10 18:05" (draft/stamp-line {:built-at "2026-06-10 18:05" :sha "  "} false)))))

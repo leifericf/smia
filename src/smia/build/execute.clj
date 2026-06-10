@@ -37,9 +37,12 @@
    [smia.site.islands :as islands]
    [smia.theme.compile :as theme-compile]
    [smia.theme.load :as theme]
-   [clojure.java.io :as io])
+   [clojure.java.io :as io]
+   [clojure.java.shell :as shell]
+   [clojure.string :as str])
   (:import
-   (java.time Instant)))
+   (java.time Instant LocalDateTime ZoneId)
+   (java.time.format DateTimeFormatter)))
 
 (declare build-paths load-book render-edition! dry-run-plan
          attr-contexts resolve-content number-for-edition)
@@ -70,6 +73,32 @@
      :paths      (schema/check schema/Paths paths
                                :smia.build.execute/invalid-paths)}))
 
+(def ^:private stamp-format
+  "Beta build-stamp timestamp format: 'YYYY-MM-DD HH:MM' in the builder's
+   local zone."
+  (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm"))
+
+(defn- git-short-sha
+  "The book repo's short HEAD SHA, or nil when `book-root` is not a git
+   checkout (or git is unavailable) — the stamp then carries only its
+   timestamp."
+  [book-root]
+  (try
+    (let [{:keys [exit out]} (shell/sh "git" "-C" (str book-root)
+                                       "rev-parse" "--short" "HEAD")]
+      (when (zero? exit) (not-empty (str/trim out))))
+    (catch Exception _ nil)))
+
+(defn- build-stamp
+  "The beta build stamp — only for a draft build — capturing when it was
+   built and the book's short commit, so a distributed review copy is
+   traceable to an exact source build. Nil for a non-draft build."
+  [book book-root started]
+  (when (:draft book)
+    {:built-at (.format stamp-format
+                        (LocalDateTime/ofInstant started (ZoneId/systemDefault)))
+     :sha      (git-short-sha book-root)}))
+
 (defn execute!
   "Perform a Plan: load the book once, render each edition, and write the
    manifest. Returns the manifest map. When the plan enables code
@@ -79,6 +108,7 @@
            licensee]}]
   (let [started       (Instant/now)
         book          (load-book book-root manuscript)
+        stamp         (build-stamp book book-root started)
         ;; Document attributes resolve once, and edition-independent
         ;; conditionals prune once, before numbering — so a book without
         ;; edition-dependent content numbers once and every edition agrees on
@@ -97,7 +127,8 @@
                               base     {:book-root book-root :book numbered
                                         :tokens (:tokens manuscript)
                                         :config (:config manuscript)
-                                        :licensee licensee}]
+                                        :licensee licensee
+                                        :build-stamp stamp}]
                           (render-edition! base step)))
         artifacts-out (mapv render-step edition-steps)
         finished      (Instant/now)]
@@ -280,7 +311,7 @@
    `:book/print-x`, its fonts are embedded in every PDF edition and the
    `:print-x` descriptor additionally turns on PDF/X conformance. Writes
    the intermediate FO and the final PDF; returns the artifact entry."
-  [{:keys [book-root book tokens config licensee]} {:keys [edition fo-path pdf-path]} descriptor]
+  [{:keys [book-root book tokens config licensee build-stamp]} {:keys [edition fo-path pdf-path]} descriptor]
   (let [;; A beta-review build stamps an unobtrusive watermark behind the
         ;; text on every page; the licensee (if any) is woven in so a leaked
         ;; PDF is traceable. The cover notice is emitted by the assembler.
@@ -294,7 +325,8 @@
         ;; The book language drives localized apparatus labels in expansion
         ;; (admonition titles); the assembler reads it from `book` directly.
         style     (assoc (:style the-theme) :language (:book/language config))
-        fo-xml    (-> (assemble/assemble (assoc book :licensee licensee) the-theme)
+        fo-xml    (-> (assemble/assemble (assoc book :licensee licensee
+                                                :build-stamp build-stamp) the-theme)
                       (expand/expand style)
                       (serialize/serialize))]
     (io/make-parents (io/file fo-path))

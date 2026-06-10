@@ -44,3 +44,19 @@
   "The cover-notice body for a normalized `draft`, or nil when off."
   [draft]
   (:notice draft))
+
+(defn stamp-line
+  "The build-stamp display line for a captured `stamp`
+   (`{:built-at \"YYYY-MM-DD HH:MM\" :sha \"5d05bd7\"}`), or nil when there
+   is no stamp (no `:built-at`). `labeled?` prefixes \"Build \" for the
+   prominent cover line; the bare form (date-time then middot then short
+   SHA) is for the discreet per-page header. The SHA is dropped when the
+   build root is not a git checkout (`:sha` nil/blank), leaving just the
+   timestamp — so a non-git build still stamps when it was made."
+  [stamp labeled?]
+  (when-let [at (:built-at stamp)]
+    (let [sha  (:sha stamp)
+          base (if labeled? (str "Build " at) at)]
+      (if (and sha (seq (str/trim sha)))
+        (str base " · " (str/trim sha))
+        base))))
