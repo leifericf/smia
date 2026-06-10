@@ -61,7 +61,8 @@
                     :floats        (:floats book)
                     :running-heads (merge-with merge default-running-heads
                                                (:running-heads book))
-                    :licensee      (:licensee book)}
+                    :licensee      (:licensee book)
+                    :draft         (:draft book)}
         body-style (get style :body)]
     (into [:fo/root (merge {:font-family (:font-family body-style)
                             :font-size   (:font-size body-style)
@@ -278,19 +279,43 @@
                 :leader-length.maximum  "100%"}]
    [:fo/page-number-citation {:ref-id id}]])
 
-(defn- title-page [title subtitle credit author head-family muted-color]
-  [:fo/block {:text-align "center" :space-before "108pt"
-              :space-before.conditionality "retain"}
-   [:fo/block {:font-family head-family :font-size "36pt" :font-weight "bold"
-               :space-after "12pt"} title]
-   (when subtitle
-     [:fo/block {:font-family head-family :font-size "16pt" :font-style "italic"
-                 :color muted-color :space-after "18pt"} subtitle])
-   (when author
-     [:fo/block {:font-size "13pt" :color muted-color} author])
-   (when credit
-     [:fo/block {:font-size "10pt" :font-style "italic" :color muted-color
-                 :space-before "24pt"} credit])])
+(defn- cover-notice
+  "The beta-review notice for the title page: a bordered, centered box
+   declaring the copy a review draft. Present only when the build is
+   marked `:draft`, so it is the visible, unmistakable half of the
+   marking (the watermark is the unobtrusive half). Names the `licensee`
+   when one is set, so a per-reviewer cover is identifiable too. Nil when
+   the book is not a draft."
+  [{:keys [draft licensee]} rule-color muted-color]
+  (when draft
+    (into [:fo/block {:border (str "1pt solid " rule-color)
+                      :padding "10pt" :space-before "48pt"
+                      :text-align "center"}]
+          (concat
+            (when-let [label (:label draft)]
+              [[:fo/block {:font-weight "bold" :font-size "11pt"
+                           :text-transform "uppercase" :letter-spacing "0.12em"
+                           :space-after "5pt"} label]])
+            (when-let [notice (:notice draft)]
+              [[:fo/block {:font-size "10pt" :color muted-color} notice]])
+            (when licensee
+              [[:fo/block {:font-size "9pt" :color muted-color :space-before "5pt"}
+                (str "Prepared for " licensee)]])))))
+
+(defn- title-page [title subtitle credit author head-family muted-color notice]
+  (cond-> [:fo/block {:text-align "center" :space-before "108pt"
+                      :space-before.conditionality "retain"}
+           [:fo/block {:font-family head-family :font-size "36pt" :font-weight "bold"
+                       :space-after "12pt"} title]
+           (when subtitle
+             [:fo/block {:font-family head-family :font-size "16pt" :font-style "italic"
+                         :color muted-color :space-after "18pt"} subtitle])
+           (when author
+             [:fo/block {:font-size "13pt" :color muted-color} author])
+           (when credit
+             [:fo/block {:font-size "10pt" :font-style "italic" :color muted-color
+                         :space-before "24pt"} credit])]
+    notice (conj notice)))
 
 ;; --- running heads and footers --------------------------------------------
 
@@ -383,11 +408,12 @@
 (defn- toc-furniture [title subtitle credit author prepared ctx]
   (let [{:keys [style rule-color muted-color]} (:theme ctx)
         body-style  (:body style)
-        head-family (get-in style [:h1 :font-family])]
+        head-family (get-in style [:h1 :font-family])
+        notice      (cover-notice ctx rule-color muted-color)]
     (page-sequence
       {:format "i"} ctx false body-style
       (concat
-        [(title-page title subtitle credit author head-family muted-color)]
+        [(title-page title subtitle credit author head-family muted-color notice)]
         [[:fo/block {:font-family head-family :font-size "18pt"
                      :font-weight "bold" :break-before "page"
                      :border-bottom (str "0.5pt solid " rule-color)

@@ -276,6 +276,37 @@
   (let [out (assemble/assemble manuscript the-theme)]
     (is (not (.contains (text-of (footer out "foot-recto")) "Licensed to")))))
 
+;; --- beta-review cover notice ------------------------------------------------
+
+(def draft-spec
+  {:label "Beta" :notice "Confidential review copy. Not for distribution."
+   :watermark "BETA"})
+
+(deftest draft-stamps-a-clear-cover-notice
+  (let [out (assemble/assemble (assoc manuscript :draft draft-spec) the-theme)
+        txt (text-of out)]
+    (testing "the notice body and its label appear on the cover/title page"
+      (is (.contains txt "Confidential review copy. Not for distribution."))
+      (is (.contains txt "Beta")))
+    (testing "the notice sits in a bordered block, visually distinct"
+      (let [bordered (filter #(and (vector? %)
+                                   (:border (second %))
+                                   (.contains (text-of %)
+                                              "Confidential review copy"))
+                             (find-all :fo/block out))]
+        (is (seq bordered))))))
+
+(deftest no-draft-leaves-no-cover-notice
+  (let [out (assemble/assemble manuscript the-theme)]
+    (is (not (.contains (text-of out) "Confidential review copy")))))
+
+(deftest draft-cover-notice-names-the-licensee-when-present
+  (testing "a per-reviewer copy is identifiable on the cover too"
+    (let [out (assemble/assemble (assoc manuscript :draft draft-spec
+                                        :licensee "Ada Lovelace")
+                                 the-theme)]
+      (is (.contains (text-of out) "Ada Lovelace")))))
+
 ;; --- chapter drop ------------------------------------------------------------
 
 (deftest chapter-headings-take-the-themed-drop
