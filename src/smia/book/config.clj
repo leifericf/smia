@@ -360,22 +360,27 @@
 
 (defn- check-draft
   "`:book/draft` (optional) marks a build as a beta review copy — a clear
-   cover notice and an unobtrusive per-page watermark. It is a boolean
-   (`true` for defaults, `false`/absent for off) or a map tuning the text,
-   with optional string keys `:label`, `:notice`, `:watermark`. A wrong
-   shape would otherwise mark — or fail to mark — a copy silently."
+   cover notice and an unobtrusive per-page footer stamp, plus an optional
+   diagonal watermark. It is a boolean (`true` for defaults, `false`/absent
+   for off) or a map tuning the text, with optional string keys `:label`,
+   `:notice`, `:watermark`; `:watermark` may also be `false` to drop the
+   diagonal watermark while keeping the rest. A wrong shape would otherwise
+   mark — or fail to mark — a copy silently."
   [config path]
   (when (contains? config :book/draft)
-    (let [d (:book/draft config)]
+    (let [d (:book/draft config)
+          w (:watermark d)]
       (when-not (or (boolean? d)
                     (nil? d)
                     (and (map? d)
                          (every? draft-keys (keys d))
-                         (every? string? (vals d))))
+                         (every? string? (vals (dissoc d :watermark)))
+                         (or (nil? w) (false? w) (string? w))))
         (throw (error/ex :smia.book.config/invalid-draft
                          (str ":book/draft in " path " must be true, false, or a "
                               "map of optional string keys "
-                              (pr-str (vec (sort draft-keys))) ".")
+                              (pr-str (vec (sort draft-keys)))
+                              " (:watermark may also be false).")
                          {:path path :value d}))))))
 
 (def ^:private known-book-keys

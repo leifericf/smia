@@ -42,24 +42,33 @@
 (deftest watermark-text-nil-without-draft
   (is (nil? (draft/watermark-text nil "Ada"))))
 
+(deftest watermark-text-off-when-disabled
+  (testing "a false or blank :watermark disables the diagonal mark, even with a licensee"
+    (is (nil? (draft/watermark-text (draft/normalize {:watermark false}) nil)))
+    (is (nil? (draft/watermark-text (draft/normalize {:watermark false}) "Ada Lovelace")))
+    (is (nil? (draft/watermark-text (draft/normalize {:watermark ""}) "Ada Lovelace")))))
+
 (deftest notice-text-reads-the-notice-slot
   (is (= "Hush." (draft/notice-text (draft/normalize {:notice "Hush."}))))
   (is (nil? (draft/notice-text nil))))
 
 (deftest stamp-line-nil-without-a-stamp
   (testing "no stamp, or a stamp missing its timestamp, yields nil"
-    (is (nil? (draft/stamp-line nil true)))
-    (is (nil? (draft/stamp-line nil false)))
-    (is (nil? (draft/stamp-line {:sha "5d05bd7"} true)))))
+    (is (nil? (draft/stamp-line nil "Build ")))
+    (is (nil? (draft/stamp-line nil "")))
+    (is (nil? (draft/stamp-line {:sha "5d05bd7"} "Build ")))))
 
-(deftest stamp-line-labeled-vs-bare
+(deftest stamp-line-prefixes-the-lead
   (let [stamp {:built-at "2026-06-10 18:05" :sha "5d05bd7"}]
-    (testing "the cover form is labeled \"Build\""
-      (is (= "Build 2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp true))))
-    (testing "the per-page form is bare"
-      (is (= "2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp false))))))
+    (testing "the cover line leads with \"Build \""
+      (is (= "Build 2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp "Build "))))
+    (testing "the footer stamp leads with \"BETA · \""
+      (is (= "BETA · 2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp "BETA · "))))
+    (testing "an empty lead gives the bare line"
+      (is (= "2026-06-10 18:05 · 5d05bd7" (draft/stamp-line stamp ""))))))
 
 (deftest stamp-line-drops-the-sha-when-absent
   (testing "a non-git build keeps the timestamp and drops the middot+SHA"
-    (is (= "Build 2026-06-10 18:05" (draft/stamp-line {:built-at "2026-06-10 18:05"} true)))
-    (is (= "2026-06-10 18:05" (draft/stamp-line {:built-at "2026-06-10 18:05" :sha "  "} false)))))
+    (is (= "Build 2026-06-10 18:05" (draft/stamp-line {:built-at "2026-06-10 18:05"} "Build ")))
+    (is (= "BETA · 2026-06-10 18:05"
+           (draft/stamp-line {:built-at "2026-06-10 18:05" :sha "  "} "BETA · ")))))

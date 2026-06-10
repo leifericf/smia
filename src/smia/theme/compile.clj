@@ -338,7 +338,8 @@
    masters, every layout carries a `page-position=\"first\"` master per
    parity whose page has no before-region at all — a chapter opener cannot
    show a running head, while its after-region reuses the parity footer
-   name so the folio stays. `:print` adds a body-only master selected for
+   name so the folio (and the beta footer stamp) stays. `:print` adds a
+   body-only master selected for
    parity-inserted blank pages (`blank-or-not-blank`), so a forced verso
    renders truly empty. The alternatives are listed most specific first,
    in a fixed order, for deterministic FO."

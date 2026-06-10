@@ -271,27 +271,39 @@
   ;; leader must be free to stretch (maximum 100%) so it absorbs all the
   ;; slack. A fixed-length leader would instead leave the line short and
   ;; spill the leftover space into the title's word spacing.
-  [:fo/block (cond-> {:text-align-last "justify" :space-after "5pt"}
-               (pos? level) (assoc :start-indent (str (* level 16) "pt"))
-               bold?        (assoc :font-weight "bold"))
-   (maybe-link theme id text)
-   [:fo/leader {:leader-pattern         "dots"
-                :leader-length.minimum  "12pt"
-                :leader-length.optimum  "12pt"
-                :leader-length.maximum  "100%"}]
-   [:fo/page-number-citation {:ref-id id}]])
+  (if bold?
+    ;; A part heading: bold, set off with space above, its folio flush right
+    ;; over a blank leader — a dense dotted run on a part line reads as
+    ;; clutter against the chapters it groups.
+    [:fo/block {:font-weight "bold" :text-align-last "justify"
+                :space-before "14pt" :space-after "6pt"}
+     (maybe-link theme id text)
+     [:fo/leader {:leader-pattern "space" :leader-length.maximum "100%"}]
+     [:fo/page-number-citation {:ref-id id}]]
+    ;; A chapter or section: title, a light, widely-spaced dotted leader (so
+    ;; it guides the eye without crowding it), and the folio.
+    [:fo/block (cond-> {:text-align-last "justify" :space-after "5pt"}
+                 (pos? level) (assoc :start-indent (str (* level 16) "pt")))
+     (maybe-link theme id text)
+     [:fo/leader {:leader-pattern         "dots"
+                  :leader-pattern-width   "5pt"
+                  :color                  (:rule-color theme)
+                  :leader-length.minimum  "12pt"
+                  :leader-length.optimum  "12pt"
+                  :leader-length.maximum  "100%"}]
+     [:fo/page-number-citation {:ref-id id}]]))
 
 (defn- stamp-inlines
   "The inline children of a beta build-stamp line for a captured
-   `build-stamp` (or nil when there is none): the timestamp, then the
-   book's short SHA in a monospace face after a middot. `labeled?` prefixes
-   \"Build \" for the prominent cover line; the bare form is the discreet
-   per-page header. The SHA is dropped when the build root is not a git
-   checkout, leaving just the timestamp."
-  [build-stamp labeled?]
+   `build-stamp` (or nil when there is none): the `lead` prefix, the
+   timestamp, then the book's short SHA in a monospace face after a middot.
+   `lead` is \"Build \" for the prominent cover line and \"BETA · \" for the
+   discreet per-page footer stamp. The SHA is dropped when the build root is
+   not a git checkout, leaving just the lead and timestamp."
+  [build-stamp lead]
   (when-let [at (:built-at build-stamp)]
     (let [sha (some-> (:sha build-stamp) str/trim not-empty)]
-      (cond-> [(str (when labeled? "Build ") at)]
+      (cond-> [(str lead at)]
         sha (conj " · " [:fo/inline {:font-family "monospace"} sha])))))
 
 (defn- cover-notice
@@ -304,7 +316,7 @@
    source build. Nil when the book is not a draft."
   [{:keys [draft licensee build-stamp]} rule-color muted-color]
   (when draft
-    (let [stamp (stamp-inlines build-stamp true)]
+    (let [stamp (stamp-inlines build-stamp "Build ")]
       (into [:fo/block {:border (str "1pt solid " rule-color)
                         :padding "10pt" :space-before "48pt"
                         :text-align "center"}]
@@ -383,13 +395,15 @@
               :space-before "2pt"}
    (str "Licensed to " licensee)])
 
-(defn- stamp-header-block
-  "The discreet centered beta build stamp at the top of a header region: a
-   small, muted line carrying the date-time and short SHA, so every page of
-   a review copy is traceable to an exact source build."
-  [stamp-inlines muted-color]
-  (into [:fo/block {:text-align "center" :font-size "7pt" :color muted-color
-                    :space-after "3pt"}]
+(defn- stamp-footer-block
+  "The discreet beta build stamp in the footer, beneath the folio: a small,
+   light-grey, centered line carrying BETA, the build date-time, and the
+   short SHA, so every page of a review copy is marked and traceable to an
+   exact source build without drawing the eye. The footer region rides every
+   master, so openers and part dividers carry it too."
+  [stamp-inlines]
+  (into [:fo/block {:text-align "center" :font-size "7pt" :color "#bbbbbb"
+                    :space-before "2pt"}]
         stamp-inlines))
 
 (defn- static-contents
@@ -397,19 +411,22 @@
    choosing each region's content from the running-heads config. With
    `headers?` false (front matter, part dividers) only footers are emitted.
    When a `licensee` is set, each footer also carries the licensee notice.
-   On a beta build, each header region opens with the discreet build stamp."
-  [{:keys [theme running-heads book-title headers? licensee draft build-stamp]}]
+
+   On a beta build the footer also carries the discreet build stamp on every
+   page; `cover?` suppresses it so the title page stays clean."
+  [{:keys [theme running-heads book-title headers? licensee draft build-stamp cover?]}]
   (let [{:keys [running-regions muted-color]} theme
-        stamp-inl (when (and draft headers?) (stamp-inlines build-stamp false))]
+        stamp-inl (when (and draft build-stamp (not cover?))
+                    (stamp-inlines build-stamp "BETA · "))]
     (keep (fn [{:keys [slot name parity]}]
             (let [cfg-slot (when (or headers? (= slot :after))
                              (get-in running-heads [(parity-key parity) slot]))
                   inline   (slot->inline cfg-slot book-title)
                   blocks   (cond-> []
-                             (and (= slot :before) stamp-inl)
-                             (conj (stamp-header-block stamp-inl muted-color))
                              inline
                              (conj (region-block slot parity inline theme))
+                             (and (= slot :after) stamp-inl)
+                             (conj (stamp-footer-block stamp-inl))
                              (and (= slot :after) licensee)
                              (conj (licensee-block licensee muted-color)))]
               (when (seq blocks)
@@ -445,7 +462,7 @@
         head-family (get-in style [:h1 :font-family])
         notice      (cover-notice ctx rule-color muted-color)]
     (page-sequence
-      {:format "i"} ctx false body-style
+      {:format "i"} (assoc ctx :cover? true) false body-style
       (concat
         [(title-page title subtitle credit author head-family muted-color notice)]
         [[:fo/block {:font-family head-family :font-size "18pt"

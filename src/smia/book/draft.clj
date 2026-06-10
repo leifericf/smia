@@ -30,12 +30,14 @@
     :else                    defaults))
 
 (defn watermark-text
-  "The per-page watermark string for a normalized `draft` (or nil when the
-   marking is off). When a non-blank `licensee` is supplied it is woven in
+  "The diagonal per-page watermark string for a normalized `draft`, or nil
+   when the marking is off or the watermark is disabled (`:watermark false`
+   or blank — a book that marks beta with the cover notice and footer stamp
+   alone). When a non-blank `licensee` is supplied it is woven in
    (\"BETA — Ada\"), so a leaked review PDF is traceable to its recipient."
   [draft licensee]
-  (when draft
-    (let [base (:watermark draft)]
+  (when-let [base (and draft (:watermark draft))]
+    (when (and (string? base) (seq base))
       (if (and licensee (seq (str/trim licensee)))
         (str base " — " (str/trim licensee))
         base))))
@@ -48,15 +50,14 @@
 (defn stamp-line
   "The build-stamp display line for a captured `stamp`
    (`{:built-at \"YYYY-MM-DD HH:MM\" :sha \"5d05bd7\"}`), or nil when there
-   is no stamp (no `:built-at`). `labeled?` prefixes \"Build \" for the
-   prominent cover line; the bare form (date-time then middot then short
-   SHA) is for the discreet per-page header. The SHA is dropped when the
-   build root is not a git checkout (`:sha` nil/blank), leaving just the
-   timestamp — so a non-git build still stamps when it was made."
-  [stamp labeled?]
+   is no stamp (no `:built-at`). `lead` is prepended verbatim — \"Build \"
+   for the cover line, \"BETA · \" for the per-page footer stamp, \"\" for a
+   bare line. The short SHA follows a middot; it is dropped when the build
+   root is not a git checkout, leaving just the lead and timestamp."
+  [stamp lead]
   (when-let [at (:built-at stamp)]
     (let [sha  (:sha stamp)
-          base (if labeled? (str "Build " at) at)]
+          base (str lead at)]
       (if (and sha (seq (str/trim sha)))
         (str base " · " (str/trim sha))
         base))))
