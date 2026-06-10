@@ -217,6 +217,57 @@
                  "book.edn"))]
       (is (= :smia.book.config/invalid-attributes (:error/type d))))))
 
+(deftest draft-accepts-boolean-or-map
+  (testing "true / false / nil pass"
+    (doseq [v [true false nil]]
+      (is (vector? (config/validate
+                     {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                      :book/draft v}
+                     "book.edn")))))
+  (testing "a map of optional string label/notice/watermark passes"
+    (is (vector? (config/validate
+                   {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                    :book/draft {:label "Beta"
+                                 :notice "Confidential review copy."
+                                 :watermark "BETA"}}
+                   "book.edn"))))
+  (testing "a partial map passes"
+    (is (vector? (config/validate
+                   {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                    :book/draft {:watermark "DRAFT"}}
+                   "book.edn")))))
+
+(deftest malformed-draft-rejected
+  (testing "a non-boolean, non-map scalar"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/draft "yes"}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-draft (:error/type d)))))
+  (testing "a map with an unknown key"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/draft {:lable "Beta"}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-draft (:error/type d)))))
+  (testing "a map with a non-string value"
+    (let [d (catch-data
+              #(config/validate
+                 {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                  :book/draft {:watermark :BETA}}
+                 "book.edn"))]
+      (is (= :smia.book.config/invalid-draft (:error/type d))))))
+
+(deftest draft-is-a-known-key
+  (testing ":book/draft earns no unknown-key warning"
+    (let [warnings (config/validate
+                     {:book/slug "x" :book/title "t" :book/chapters ["a.md"]
+                      :book/draft true}
+                     "book.edn")]
+      (is (empty? (filter #(some #{:book/draft} (:warning/keys %)) warnings))))))
+
 (deftest edit-url-must-be-absolute
   (testing "an absolute http(s) edit-url passes"
     (is (vector? (config/validate

@@ -24,7 +24,8 @@
          valid-part? check-parts valid-matter? check-matter check-appendices
          check-numbering check-language check-no-duplicate-files check-files-exist
          valid-download-asset? check-downloads check-redirects check-site-url
-         check-edit-url check-attributes unknown-key-warnings compute-warnings)
+         check-edit-url check-attributes check-draft unknown-key-warnings
+         compute-warnings)
 
 (defn validate
   "Pure validation of an already-parsed `book.edn` map. Performs no IO.
@@ -52,6 +53,7 @@
   (check-site-url config path)
   (check-edit-url config path)
   (check-attributes config path)
+  (check-draft config path)
   (check-no-duplicate-files config path)
   (compute-warnings config))
 
@@ -351,15 +353,41 @@
                             "keyword -> (string | number | author Hiccup).")
                        {:path path :value attrs})))))
 
+(def ^:private draft-keys
+  "The tunable text slots a `:book/draft` map may carry: the cover-notice
+   label, the cover-notice body, and the per-page watermark text."
+  #{:label :notice :watermark})
+
+(defn- check-draft
+  "`:book/draft` (optional) marks a build as a beta review copy — a clear
+   cover notice and an unobtrusive per-page watermark. It is a boolean
+   (`true` for defaults, `false`/absent for off) or a map tuning the text,
+   with optional string keys `:label`, `:notice`, `:watermark`. A wrong
+   shape would otherwise mark — or fail to mark — a copy silently."
+  [config path]
+  (when (contains? config :book/draft)
+    (let [d (:book/draft config)]
+      (when-not (or (boolean? d)
+                    (nil? d)
+                    (and (map? d)
+                         (every? draft-keys (keys d))
+                         (every? string? (vals d))))
+        (throw (error/ex :smia.book.config/invalid-draft
+                         (str ":book/draft in " path " must be true, false, or a "
+                              "map of optional string keys "
+                              (pr-str (vec (sort draft-keys))) ".")
+                         {:path path :value d}))))))
+
 (def ^:private known-book-keys
   "Every `:book/*` key smia interprets. A `:book/*` key outside this set
    is almost certainly a typo, so it earns a warning — unlike keys in
    other namespaces, which are presumed deliberate extensions."
   #{:book/accessibility :book/appendices :book/attributes :book/author
-    :book/back-matter :book/chapters :book/downloads :book/edit-url
-    :book/front-matter :book/identifier :book/language :book/numbering
-    :book/parts :book/print-x :book/redirects :book/references
-    :book/running-heads :book/site-url :book/slug :book/title})
+    :book/back-matter :book/chapters :book/downloads :book/draft
+    :book/edit-url :book/front-matter :book/identifier :book/language
+    :book/numbering :book/parts :book/print-x :book/redirects
+    :book/references :book/running-heads :book/site-url :book/slug
+    :book/title})
 
 (defn- unknown-key-warnings
   "Warn about top-level keys smia does not interpret: keys outside the
