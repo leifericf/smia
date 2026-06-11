@@ -298,13 +298,15 @@
    `build-stamp` (or nil when there is none): the `lead` prefix, the
    timestamp, then the book's short SHA in a monospace face after a middot.
    `lead` is \"Build \" for the prominent cover line and \"BETA · \" for the
-   discreet per-page footer stamp. The SHA is dropped when the build root is
-   not a git checkout, leaving just the lead and timestamp."
-  [build-stamp lead]
+   discreet per-page footer stamp. The SHA is set in the theme's `mono-family`
+   so it embeds with the rest of the book rather than falling back to the
+   viewer's Courier. The SHA is dropped when the build root is not a git
+   checkout, leaving just the lead and timestamp."
+  [build-stamp lead mono-family]
   (when-let [at (:built-at build-stamp)]
     (let [sha (some-> (:sha build-stamp) str/trim not-empty)]
       (cond-> [(str lead at)]
-        sha (conj " · " [:fo/inline {:font-family "monospace"} sha])))))
+        sha (conj " · " [:fo/inline {:font-family mono-family} sha])))))
 
 (defn- cover-notice
   "The beta-review notice for the title page: a bordered, centered box
@@ -314,9 +316,9 @@
    when one is set, and stamps the build (date-time + short SHA) below it,
    so a per-reviewer cover is identifiable and traceable to an exact
    source build. Nil when the book is not a draft."
-  [{:keys [draft licensee build-stamp]} rule-color muted-color]
+  [{:keys [draft licensee build-stamp]} rule-color muted-color mono-family]
   (when draft
-    (let [stamp (stamp-inlines build-stamp "Build ")]
+    (let [stamp (stamp-inlines build-stamp "Build " mono-family)]
       (into [:fo/block {:border (str "1pt solid " rule-color)
                         :padding "10pt" :space-before "48pt"
                         :text-align "center"}]
@@ -415,9 +417,9 @@
    On a beta build the footer also carries the discreet build stamp on every
    page; `cover?` suppresses it so the title page stays clean."
   [{:keys [theme running-heads book-title headers? licensee draft build-stamp cover?]}]
-  (let [{:keys [running-regions muted-color]} theme
+  (let [{:keys [running-regions muted-color mono-family]} theme
         stamp-inl (when (and draft build-stamp (not cover?))
-                    (stamp-inlines build-stamp "BETA · "))]
+                    (stamp-inlines build-stamp "BETA · " mono-family))]
     (keep (fn [{:keys [slot name parity]}]
             (let [cfg-slot (when (or headers? (= slot :after))
                              (get-in running-heads [(parity-key parity) slot]))
@@ -457,10 +459,10 @@
                   flow-children)]))))
 
 (defn- toc-furniture [title subtitle credit author prepared ctx]
-  (let [{:keys [style rule-color muted-color]} (:theme ctx)
+  (let [{:keys [style rule-color muted-color mono-family]} (:theme ctx)
         body-style  (:body style)
         head-family (get-in style [:h1 :font-family])
-        notice      (cover-notice ctx rule-color muted-color)]
+        notice      (cover-notice ctx rule-color muted-color mono-family)]
     (page-sequence
       {:format "i"} (assoc ctx :cover? true) false body-style
       (concat

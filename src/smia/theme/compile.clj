@@ -61,6 +61,7 @@
      :link-color       (get color :link "#1a0dab")
      :rule-color       (get color :rule "#999999")
      :muted-color      (get color :muted "#666666")
+     :mono-family      (get-in tokens [:type :mono-family] "monospace")
      :master-reference "book"
      :masters          (masters layout (:layout tokens) wm)
      :running-regions  (running-regions layout)
