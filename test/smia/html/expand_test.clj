@@ -281,6 +281,13 @@
            [:xref {:to :ch-two :label "Chapter 2" :title "Setup" :style :full}]
            ctx))))
 
+(deftest short-style-xref-abbreviates-the-kind
+  (is (= [:a {:class "xref" :href "resolved.html#ch-two"} "ch. 2"]
+         (html-expand/expand
+           [:xref {:to :ch-two :label "Chapter 2" :kind :chapter
+                   :number "2" :style :short}]
+           ctx))))
+
 (deftest xref-with-children-keeps-them
   (is (= [:a {:class "xref" :href "resolved.html#ch-two"} "the setup chapter"]
          (html-expand/expand

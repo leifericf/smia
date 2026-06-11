@@ -33,6 +33,10 @@
         ;; in-flow furniture: the xref page phrase, the disclosure
         ;; summary, and the overview panel's default title
         :on-page "on page" :details "Details" :overview "Overview"
+        ;; abbreviated forms for short cross-references ("ch. 2, p. 21")
+        :part-abbrev "pt." :chapter-abbrev "ch." :appendix-abbrev "app."
+        :figure-abbrev "fig." :table-abbrev "tbl." :listing-abbrev "lst."
+        :section-abbrev "sec." :page-abbrev "p."
         ;; site chrome and the EPUB navigation document
         :contents "Contents" :table-of-contents "Table of contents"
         :landmarks "Landmarks" :start-of-content "Start of content"

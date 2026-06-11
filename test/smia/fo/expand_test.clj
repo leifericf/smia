@@ -382,6 +382,12 @@
       (is (= "Chapter 2" (nth out 2)))
       (is (= ", on page " (nth out 3)))
       (is (= [:fo/page-number-citation {:ref-id "ch-config"}] (last out)))))
+  (testing ":style :short abbreviates the kind and the page word"
+    (let [out (ex [:xref {:to :ch-config :label "Chapter 2" :kind :chapter
+                          :number "2" :style :short :page true}])]
+      (is (= "ch. 2" (nth out 2)))
+      (is (= ", p. " (nth out 3)))
+      (is (= [:fo/page-number-citation {:ref-id "ch-config"}] (last out)))))
   (testing "an unnumbered target falls back to its title"
     (is (= "Getting Set Up"
            (last (ex [:xref {:to :setup :title "Getting Set Up" :kind :section}]))))))

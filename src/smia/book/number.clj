@@ -330,13 +330,15 @@
 ;; --- cross-reference rewriting --------------------------------------------
 
 (defn- xref-attrs
-  "Merge the registry entry's label, title, and kind onto a childless
-   xref's attrs so the expander can compose its final text."
+  "Merge the registry entry's label, title, kind, and number onto a
+   childless xref's attrs so the expander can compose its final text
+   (the number lets the `:short` style abbreviate \"Chapter 2\" to \"ch. 2\")."
   [a entry]
   (cond-> a
-    (:label entry) (assoc :label (:label entry))
-    (:title entry) (assoc :title (:title entry))
-    (:kind entry)  (assoc :kind (:kind entry))))
+    (:label entry)  (assoc :label (:label entry))
+    (:title entry)  (assoc :title (:title entry))
+    (:kind entry)   (assoc :kind (:kind entry))
+    (:number entry) (assoc :number (:number entry))))
 
 (defn- cite-label
   "Compose a citation's visible label from a bibliography `entry`: \"Author

@@ -368,12 +368,19 @@
 (defn- composed-xref
   "The text of a childless cross-reference from the label/title the
    numbering pass resolved: \"Chapter 2\" by default, \"Chapter 2: Title\"
-   with `:style :full`. HTML has no page numbers, so there is no page
-   citation fallback — an unlabeled target falls back to its title or id."
-  [author dest]
-  (let [label (:label author)
-        title (:title author)]
+   with `:style :full`, the abbreviated \"ch. 2\" with `:style :short`. HTML
+   has no page numbers, so there is no page citation fallback — an unlabeled
+   target falls back to its title or id."
+  [author dest ctx]
+  (let [label  (:label author)
+        title  (:title author)
+        kind   (:kind author)
+        number (:number author)]
     (cond
+      (and (= :short (:style author)) kind number)
+      (str (dictionary/localize
+            (:language ctx) (keyword (str (name kind) "-abbrev")))
+           " " number)
       (and (= :full (:style author)) label title) (str label ": " title)
       label label
       title title
@@ -388,7 +395,7 @@
     (into [:a {:class "xref" :href ((:resolve ctx) dest)}]
           (if (seq (hiccup/flatten-children children))
             (expand-all children ctx)
-            [(composed-xref author dest)]))))
+            [(composed-xref author dest ctx)]))))
 
 (defn- cite [author ctx]
   (let [key (:key author)]

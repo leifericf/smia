@@ -66,7 +66,8 @@
                                 (chapter-section :config "Configuration")]})
         para (nth (content-for out :intro) 2)]
     (is (= [:p "See "
-            [:xref {:to :config :label "Chapter 2" :title "Configuration" :kind :chapter}]
+            [:xref {:to :config :label "Chapter 2" :title "Configuration"
+                    :kind :chapter :number "2"}]
             "."]
            para))))
 
@@ -203,7 +204,7 @@
                                                  [:figure {:id :diagram :caption "D"} [:img {:src "d.png"}]]
                                                  [:p "See " [:xref {:to :diagram}] "."])]})
         para (nth (content-for out :a) 3)]
-    (is (= [:xref {:to :diagram :label "Figure 1" :title "D" :kind :figure}]
+    (is (= [:xref {:to :diagram :label "Figure 1" :title "D" :kind :figure :number "1"}]
            (nth para 2)))))
 
 (deftest citations-resolve-against-the-references

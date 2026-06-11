@@ -758,20 +758,31 @@
 (defn- composed-xref
   "Build the inline content of a childless cross-reference from the
    label/title the numbering pass resolved: \"Chapter 2\" by default,
-   \"Chapter 2: Title\" with `:style :full`, optionally followed by
-   \", on page N\" when `:page` is set. With nothing resolved, fall back to
-   a bare page-number citation (the pre-numbering behavior)."
+   \"Chapter 2: Title\" with `:style :full`, the abbreviated \"ch. 2\" with
+   `:style :short`. When `:page` is set a page pointer follows: \", on page
+   N\" normally, or the terse \", p. N\" in the short style. With nothing
+   resolved, fall back to a bare page-number citation (the pre-numbering
+   behavior)."
   [author dest style]
-  (let [label (:label author)
-        title (:title author)
-        text  (cond
-                (and (= :full (:style author)) label title) (str label ": " title)
-                label label
-                title title)]
+  (let [lang   (:language style)
+        label  (:label author)
+        title  (:title author)
+        kind   (:kind author)
+        number (:number author)
+        short? (= :short (:style author))
+        terse? (boolean (and short? kind number))
+        text   (cond
+                 terse? (str (dictionary/localize
+                              lang (keyword (str (name kind) "-abbrev")))
+                             " " number)
+                 (and (= :full (:style author)) label title) (str label ": " title)
+                 label label
+                 title title)]
     (if text
       (cond-> [text]
         (:page author)
-        (conj (str ", " (dictionary/localize (:language style) :on-page) " ")
+        (conj (str ", " (dictionary/localize lang (if terse? :page-abbrev :on-page))
+                   " ")
               [:fo/page-number-citation {:ref-id dest}]))
       [[:fo/page-number-citation {:ref-id dest}]])))
 
